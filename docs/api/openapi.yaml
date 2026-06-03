@@ -1,0 +1,854 @@
+openapi: 3.2.0
+info:
+  title: xLab Personal Blog API
+  version: 0.1.0
+  summary: Unix-like content tree blog API
+  description: >-
+    API contract for a single-author full-stack blog organized as a Unix-like
+    content tree. Public content is modeled as Directory/File Nodes; FileContent
+    supports Markdown articles and sandboxed full HTML documents. Search uses
+    PostgreSQL full-text retrieval plus Qwen/DashScope text-embedding-v4 semantic
+    retrieval fused with RRF.
+servers:
+  - url: /api
+security:
+  - bearerAuth: []
+tags:
+  - name: Auth
+  - name: Public Tree
+  - name: Search
+  - name: Comments
+  - name: Likes
+  - name: Assets
+  - name: Admin Tree
+  - name: Admin Search
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a reader account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Reader account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '409': { $ref: '#/components/responses/Conflict' }
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with email and password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: JWT issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Return the current authenticated user
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /tree/resolve:
+    get:
+      tags: [Public Tree]
+      summary: Resolve a public content-tree path
+      description: >-
+        Resolve the current tree first. If not found, look up path_redirects and
+        return a redirect response for the SPA to navigate with replace=true.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/PathQuery'
+      responses:
+        '200':
+          description: Directory, file, or redirect resolution
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TreeResolveResponse'
+        '404': { $ref: '#/components/responses/NotFound' }
+  /tree:
+    get:
+      tags: [Public Tree]
+      summary: Return root directory children
+      security: []
+      responses:
+        '200':
+          description: Root directory page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DirectoryPage'
+  /tree/{node_id}/children:
+    get:
+      tags: [Public Tree]
+      summary: Return published children for a directory node
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/NodeId'
+      responses:
+        '200':
+          description: Directory children
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DirectoryPage'
+        '404': { $ref: '#/components/responses/NotFound' }
+  /recent:
+    get:
+      tags: [Public Tree]
+      summary: Return recently updated published files
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Recent files
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileEntryList'
+
+  /search:
+    get:
+      tags: [Search]
+      summary: Hybrid search over published files
+      description: >-
+        Search File.name, FileContent.keywords, extracted search_text, and path.
+        Ranking combines full-text retrieval and Qwen/DashScope embedding
+        semantic retrieval with Reciprocal Rank Fusion. No LLM query expansion or
+        reranking is performed in this release.
+      security: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 1 }
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+
+  /files/{file_id}/comments:
+    get:
+      tags: [Comments]
+      summary: Return public comment thread for a file
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/FileId'
+      responses:
+        '200':
+          description: Two-level comment thread
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentThread'
+    post:
+      tags: [Comments]
+      summary: Create a top-level comment or reply
+      parameters:
+        - $ref: '#/components/parameters/FileId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentRequest'
+      responses:
+        '201':
+          description: Comment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /comments/{comment_id}:
+    delete:
+      tags: [Comments]
+      summary: Soft-delete a comment or reply
+      parameters:
+        - $ref: '#/components/parameters/CommentId'
+      responses:
+        '204': { description: Comment soft-deleted }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /files/{file_id}/like:
+    put:
+      tags: [Likes]
+      summary: Like a file idempotently
+      parameters:
+        - $ref: '#/components/parameters/FileId'
+      responses:
+        '200':
+          description: Like state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LikeState'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    delete:
+      tags: [Likes]
+      summary: Unlike a file idempotently
+      parameters:
+        - $ref: '#/components/parameters/FileId'
+      responses:
+        '200':
+          description: Like state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LikeState'
+  /comments/{comment_id}/like:
+    put:
+      tags: [Likes]
+      summary: Like a comment idempotently
+      parameters:
+        - $ref: '#/components/parameters/CommentId'
+      responses:
+        '200':
+          description: Like state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LikeState'
+    delete:
+      tags: [Likes]
+      summary: Unlike a comment idempotently
+      parameters:
+        - $ref: '#/components/parameters/CommentId'
+      responses:
+        '200':
+          description: Like state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LikeState'
+
+  /assets/{asset_id}/{filename}:
+    get:
+      tags: [Assets]
+      summary: Return an immutable published file asset
+      description: >-
+        Published assets are immutable and may be served with
+        Cache-Control: public, max-age=31536000, immutable. Draft assets require
+        admin access through admin endpoints, not this public route.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/AssetId'
+        - name: filename
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: "Asset bytes. PDF assets may be returned with Content-Disposition: inline but are not auto-embedded by the blog shell."
+          headers:
+            Cache-Control:
+              schema: { type: string }
+              example: public, max-age=31536000, immutable
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /admin/nodes:
+    post:
+      tags: [Admin Tree]
+      summary: Create a directory or file node
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNodeRequest'
+      responses:
+        '201':
+          description: Node created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminNodeDetail'
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /admin/nodes/{node_id}:
+    get:
+      tags: [Admin Tree]
+      summary: Return admin node detail, including draft data
+      parameters:
+        - $ref: '#/components/parameters/NodeId'
+      responses:
+        '200':
+          description: Admin node detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminNodeDetail'
+    patch:
+      tags: [Admin Tree]
+      summary: Update node name, slug, parent, or sort order
+      description: >-
+        Published path changes create path_redirects for affected published
+        files. Root-level reserved slugs are rejected.
+      parameters:
+        - $ref: '#/components/parameters/NodeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNodeRequest'
+      responses:
+        '200':
+          description: Node updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminNodeDetail'
+    delete:
+      tags: [Admin Tree]
+      summary: Delete a draft node or draft-only subtree
+      parameters:
+        - $ref: '#/components/parameters/NodeId'
+      responses:
+        '204': { description: Draft node deleted }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /admin/files/{file_id}/content:
+    put:
+      tags: [Admin Tree]
+      summary: Upsert file content and metadata
+      description: >-
+        Draft files may change content_format. Published files cannot change
+        content_format directly; unpublish first. Updating content refreshes
+        search_text and marks embedding_status pending/failed/ready depending on
+        embedding refresh outcome.
+      parameters:
+        - $ref: '#/components/parameters/FileId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFileContentRequest'
+      responses:
+        '200':
+          description: File content updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileContent'
+  /admin/files/{file_id}/publish:
+    post:
+      tags: [Admin Tree]
+      summary: Publish a draft file
+      parameters:
+        - $ref: '#/components/parameters/FileId'
+      responses:
+        '200':
+          description: File published
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileContent'
+  /admin/files/{file_id}/unpublish:
+    post:
+      tags: [Admin Tree]
+      summary: Unpublish a file back to draft
+      parameters:
+        - $ref: '#/components/parameters/FileId'
+      responses:
+        '200':
+          description: File unpublished
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileContent'
+  /admin/files/{file_id}/assets:
+    post:
+      tags: [Admin Tree, Assets]
+      summary: Upload an immutable asset for a file (MIME allowlist includes images, PDF, CSS/JS, JSON/text/CSV)
+      parameters:
+        - $ref: '#/components/parameters/FileId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Asset uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileAsset'
+  /admin/assets/{asset_id}:
+    delete:
+      tags: [Admin Tree, Assets]
+      summary: Delete or detach an asset
+      parameters:
+        - $ref: '#/components/parameters/AssetId'
+      responses:
+        '204': { description: Asset deleted or detached }
+
+  /admin/files/{file_id}/refresh-embedding:
+    post:
+      tags: [Admin Search]
+      summary: Refresh Qwen embedding for one file
+      description: >-
+        Uses the configured EmbeddingProvider. Current first implementation is
+        Qwen/DashScope text-embedding-v4 with 1024 dimensions. Failure must not
+        block file saving; it sets embedding_status=failed and preserves
+        full-text search.
+      parameters:
+        - $ref: '#/components/parameters/FileId'
+      responses:
+        '202':
+          description: Embedding refresh accepted or completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmbeddingState'
+  /admin/search-index/rebuild:
+    post:
+      tags: [Admin Search]
+      summary: Rebuild search_text, tsvector, and embeddings
+      responses:
+        '202':
+          description: Rebuild accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { type: string, enum: [accepted] }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    NodeId:
+      name: node_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    FileId:
+      name: file_id
+      in: path
+      required: true
+      description: Node id whose kind is file
+      schema: { type: string, format: uuid }
+    CommentId:
+      name: comment_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    AssetId:
+      name: asset_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    PathQuery:
+      name: path
+      in: query
+      required: true
+      schema:
+        type: string
+        pattern: '^/.*'
+      example: /research-notes/go-auth-practice
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    Offset:
+      name: offset
+      in: query
+      required: false
+      schema: { type: integer, minimum: 0, default: 0 }
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+        details: { type: object, additionalProperties: true }
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8 }
+        display_name: { type: string }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+    AuthResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token: { type: string }
+        user: { $ref: '#/components/schemas/User' }
+    User:
+      type: object
+      required: [id, email, role, provider, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        display_name: { type: string }
+        role: { type: string, enum: [admin, reader] }
+        provider: { type: string, enum: [local, github] }
+        created_at: { type: string, format: date-time }
+
+    NodeKind:
+      type: string
+      enum: [directory, file]
+    ContentFormat:
+      type: string
+      enum: [markdown, html_document]
+    PublishStatus:
+      type: string
+      enum: [draft, published]
+    EmbeddingStatus:
+      type: string
+      enum: [pending, ready, failed]
+    Node:
+      type: object
+      required: [id, kind, name, slug, path, sort_order, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        parent_id: { type: [string, 'null'], format: uuid }
+        kind: { $ref: '#/components/schemas/NodeKind' }
+        name: { type: string }
+        slug: { type: string }
+        path: { type: string, example: /research-notes/go-auth-practice }
+        sort_order: { type: integer }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    DirectoryEntry:
+      type: object
+      required: [node, child_directory_count, child_file_count]
+      properties:
+        node: { $ref: '#/components/schemas/Node' }
+        child_directory_count: { type: integer, minimum: 0 }
+        child_file_count: { type: integer, minimum: 0 }
+    FileEntry:
+      type: object
+      required: [node, content_format, status, keywords, like_count, comment_count]
+      properties:
+        node: { $ref: '#/components/schemas/Node' }
+        content_format: { $ref: '#/components/schemas/ContentFormat' }
+        status: { $ref: '#/components/schemas/PublishStatus' }
+        keywords:
+          type: array
+          items: { type: string }
+        published_at: { type: [string, 'null'], format: date-time }
+        like_count: { type: integer, minimum: 0 }
+        comment_count: { type: integer, minimum: 0 }
+        reading_time_minutes: { type: [integer, 'null'], minimum: 1 }
+    FileContent:
+      type: object
+      required: [node_id, content_format, keywords, body_raw, search_text, status, embedding_status]
+      properties:
+        node_id: { type: string, format: uuid }
+        content_format: { $ref: '#/components/schemas/ContentFormat' }
+        keywords:
+          type: array
+          items: { type: string }
+          maxItems: 50
+        body_raw: { type: string }
+        body_html:
+          type: [string, 'null']
+          description: Sanitized Markdown HTML cache; null or unused for html_document.
+        search_text: { type: string }
+        status: { $ref: '#/components/schemas/PublishStatus' }
+        published_at: { type: [string, 'null'], format: date-time }
+        embedding: false
+        embedding_model: { type: [string, 'null'], example: text-embedding-v4 }
+        embedding_status: { $ref: '#/components/schemas/EmbeddingStatus' }
+        embedding_error: { type: [string, 'null'] }
+        embedding_updated_at: { type: [string, 'null'], format: date-time }
+    FilePage:
+      type: object
+      required: [node, content, keywords_public, like_count, comment_count, assets]
+      properties:
+        node: { $ref: '#/components/schemas/Node' }
+        content: { $ref: '#/components/schemas/FileContent' }
+        keywords_public:
+          type: array
+          maxItems: 3
+          items: { type: string }
+        like_count: { type: integer, minimum: 0 }
+        viewer_has_liked: { type: boolean }
+        comment_count: { type: integer, minimum: 0 }
+        assets:
+          type: array
+          items: { $ref: '#/components/schemas/FileAsset' }
+    DirectoryPage:
+      type: object
+      required: [node, entries]
+      properties:
+        node:
+          anyOf:
+            - $ref: '#/components/schemas/Node'
+            - type: 'null'
+          description: Null for synthetic root directory.
+        path: { type: string, example: / }
+        entries:
+          type: array
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/DirectoryEntry'
+              - $ref: '#/components/schemas/FileEntry'
+    FileEntryList:
+      type: object
+      required: [items, limit, offset]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/FileEntry' }
+        limit: { type: integer }
+        offset: { type: integer }
+    TreeResolveResponse:
+      oneOf:
+        - type: object
+          required: [type, directory]
+          properties:
+            type: { type: string, const: directory }
+            directory: { $ref: '#/components/schemas/DirectoryPage' }
+        - type: object
+          required: [type, file]
+          properties:
+            type: { type: string, const: file }
+            file: { $ref: '#/components/schemas/FilePage' }
+        - type: object
+          required: [type, new_path]
+          properties:
+            type: { type: string, const: redirect }
+            new_path: { type: string }
+    SearchResponse:
+      type: object
+      required: [query, items]
+      properties:
+        query: { type: string }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/SearchResult' }
+    SearchResult:
+      type: object
+      required: [file, path, snippet, score, match_sources]
+      properties:
+        file: { $ref: '#/components/schemas/FileEntry' }
+        path: { type: string }
+        snippet: { type: string }
+        score: { type: number, format: double }
+        match_sources:
+          type: array
+          items: { type: string, enum: [text, semantic, keyword] }
+
+    CommentThread:
+      type: object
+      required: [file_id, comments]
+      properties:
+        file_id: { type: string, format: uuid }
+        comments:
+          type: array
+          items: { $ref: '#/components/schemas/Comment' }
+    Comment:
+      type: object
+      required: [id, file_node_id, user, body, created_at, replies, like_count, deleted]
+      properties:
+        id: { type: string, format: uuid }
+        file_node_id: { type: string, format: uuid }
+        parent_id: { type: [string, 'null'], format: uuid }
+        reply_to_user_id: { type: [string, 'null'], format: uuid }
+        user: { $ref: '#/components/schemas/PublicUser' }
+        body: { type: string, description: Plain text; escaped by clients. }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        deleted_at: { type: [string, 'null'], format: date-time }
+        deleted: { type: boolean }
+        like_count: { type: integer, minimum: 0 }
+        viewer_has_liked: { type: boolean }
+        replies:
+          type: array
+          items: { $ref: '#/components/schemas/CommentReply' }
+    CommentReply:
+      allOf:
+        - $ref: '#/components/schemas/CommentBase'
+    CommentBase:
+      type: object
+      required: [id, file_node_id, parent_id, user, body, created_at, deleted, like_count]
+      properties:
+        id: { type: string, format: uuid }
+        file_node_id: { type: string, format: uuid }
+        parent_id: { type: string, format: uuid }
+        reply_to_user_id: { type: [string, 'null'], format: uuid }
+        user: { $ref: '#/components/schemas/PublicUser' }
+        body: { type: string }
+        created_at: { type: string, format: date-time }
+        deleted: { type: boolean }
+        like_count: { type: integer, minimum: 0 }
+    CreateCommentRequest:
+      type: object
+      required: [body]
+      properties:
+        body: { type: string, minLength: 1, maxLength: 5000 }
+        parent_id:
+          type: [string, 'null']
+          format: uuid
+          description: Top-level parent comment id. Replies to replies are normalized to the top-level parent.
+        reply_to_user_id: { type: [string, 'null'], format: uuid }
+    PublicUser:
+      type: object
+      required: [id, display_name]
+      properties:
+        id: { type: string, format: uuid }
+        display_name: { type: string }
+    LikeState:
+      type: object
+      required: [liked, like_count]
+      properties:
+        liked: { type: boolean }
+        like_count: { type: integer, minimum: 0 }
+
+    FileAsset:
+      type: object
+      required: [id, file_node_id, filename, mime_type, size_bytes, storage_provider, public_url, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        file_node_id: { type: string, format: uuid }
+        filename: { type: string }
+        mime_type: { type: string }
+        size_bytes: { type: integer, minimum: 0 }
+        storage_provider: { type: string, enum: [local, s3, r2, oss] }
+        storage_key: { type: string }
+        public_url: { type: string }
+        created_at: { type: string, format: date-time }
+
+    CreateNodeRequest:
+      type: object
+      required: [kind, name, slug]
+      properties:
+        parent_id: { type: [string, 'null'], format: uuid }
+        kind: { $ref: '#/components/schemas/NodeKind' }
+        name: { type: string }
+        slug: { type: string }
+        sort_order: { type: integer, default: 0 }
+        content_format:
+          $ref: '#/components/schemas/ContentFormat'
+    UpdateNodeRequest:
+      type: object
+      properties:
+        parent_id: { type: [string, 'null'], format: uuid }
+        name: { type: string }
+        slug: { type: string }
+        sort_order: { type: integer }
+    UpdateFileContentRequest:
+      type: object
+      required: [content_format, body_raw, keywords]
+      properties:
+        content_format: { $ref: '#/components/schemas/ContentFormat' }
+        body_raw: { type: string }
+        keywords:
+          type: array
+          items: { type: string }
+          default: []
+    AdminNodeDetail:
+      type: object
+      required: [node]
+      properties:
+        node: { $ref: '#/components/schemas/Node' }
+        content:
+          anyOf:
+            - $ref: '#/components/schemas/FileContent'
+            - type: 'null'
+        assets:
+          type: array
+          items: { $ref: '#/components/schemas/FileAsset' }
+        redirects_created:
+          type: array
+          items: { $ref: '#/components/schemas/PathRedirect' }
+    PathRedirect:
+      type: object
+      required: [id, old_path, new_path, node_id, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        old_path: { type: string }
+        new_path: { type: string }
+        node_id: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+    EmbeddingState:
+      type: object
+      required: [file_id, provider, model, dimensions, status]
+      properties:
+        file_id: { type: string, format: uuid }
+        provider: { type: string, const: qwen }
+        model: { type: string, const: text-embedding-v4 }
+        dimensions: { type: integer, const: 1024 }
+        status: { $ref: '#/components/schemas/EmbeddingStatus' }
+        error: { type: [string, 'null'] }
+        updated_at: { type: [string, 'null'], format: date-time }
+  responses:
+    Unauthorized:
+      description: Authentication required or invalid token
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Role lacks permission
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Conflict:
+      description: Conflict, such as duplicate slug or email
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }

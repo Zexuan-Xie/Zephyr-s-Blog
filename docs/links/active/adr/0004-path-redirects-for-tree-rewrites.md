@@ -1,0 +1,1 @@
+../../../adr/0004-path-redirects-for-tree-rewrites.md

@@ -1,0 +1,1 @@
+../../../adr/0006-per-file-assets.md

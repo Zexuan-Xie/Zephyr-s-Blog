@@ -1,0 +1,1 @@
+../../../archive/decisions/blog-design-decisions-2026-06-02.md

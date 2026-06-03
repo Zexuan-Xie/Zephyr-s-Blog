@@ -1,0 +1,58 @@
+# Local environment
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Conda local artifacts
+.conda/
+conda-meta/
+
+# Node / Vite
+node_modules/
+dist/
+build/
+coverage/
+.npm/
+.pnpm-store/
+web/node_modules/
+web/dist/
+web/.vite/
+
+# Go
+api/bin/
+api/coverage.out
+api/*.test
+*.prof
+
+# Docker / local data
+uploads/
+postgres_data/
+*.sqlite
+*.db
+
+# OMX / local agent runtime
+.superpowers/
+.omx/cache/
+.omx/logs/
+.omx/runtime/
+.omx/state/
+.code-review-graph/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*

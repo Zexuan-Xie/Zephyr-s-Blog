@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glass · Rice-paper · v2</title>
+<style>
+  :root{
+    --primary:#0066cc;
+    --ink:#26221c;            /* warm near-black, fits paper better than cold #1d1d1f */
+    --ink-60:#6b6256;
+    --ink-40:#9a9082;
+    --radius:22px;
+    --radius-sm:14px;
+    --font-display:"SF Pro Display",-apple-system,system-ui,"Inter","PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;
+    --font-text:"SF Pro Text",-apple-system,system-ui,"Inter","PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;
+    --font-mono:"SF Mono",ui-monospace,"JetBrains Mono","Cascadia Code",monospace;
+    /* reusable frosted grain (sandblasted glass surface) */
+    --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:var(--font-text);color:var(--ink);
+    line-height:1.47;letter-spacing:-0.01em;
+    /* warm rice-paper base — soft beige radial glows, very restrained */
+    background:
+      radial-gradient(1000px 720px at 18% -10%, #fbf0d8 0%, transparent 60%),
+      radial-gradient(900px 680px at 88% 8%, #f7ead0 0%, transparent 55%),
+      linear-gradient(180deg,#f4ecdc 0%, #efe6d3 100%);
+    background-attachment:fixed;min-height:100%;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* 宣纸 fiber grain over the whole page */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:var(--grain);background-size:180px 180px;
+    opacity:0.05;mix-blend-mode:multiply;
+  }
+  /* one soft warm light pool, low + calm */
+  .glow{position:fixed;width:680px;height:680px;border-radius:50%;
+    background:radial-gradient(circle, #f6e4be 0%, transparent 65%);
+    filter:blur(40px);opacity:.45;top:8%;left:50%;transform:translateX(-50%);z-index:0;pointer-events:none;}
+
+  .wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:0 20px 80px;}
+
+  /* ---------- FROSTED GLASS PRIMITIVE (more transparent + rougher + stronger edge) ---------- */
+  .glass{
+    position:relative;
+    background:rgba(255,253,247,0.38);          /* more transparent, warm white */
+    -webkit-backdrop-filter:blur(20px) saturate(125%);  /* lower saturate = calmer */
+    backdrop-filter:blur(20px) saturate(125%);
+    border-radius:var(--radius);
+    box-shadow:
+      0 16px 44px rgba(120,98,64,0.13),         /* warm soft drop, lifts off paper */
+      0 3px 10px rgba(120,98,64,0.07),
+      inset 0 1.6px 0 rgba(255,255,255,0.95),   /* STRONG top-edge highlight */
+      inset 0 -1px 0 rgba(255,255,255,0.35);
+  }
+  /* STRONGER refractive edge — thicker, higher-contrast directional ring */
+  .glass::before{
+    content:"";position:absolute;inset:0;border-radius:inherit;padding:1.8px;
+    background:linear-gradient(135deg,
+      rgba(255,255,255,1)    0%,
+      rgba(255,255,255,0.55) 18%,
+      rgba(255,255,255,0.02) 48%,
+      rgba(255,255,255,0.40) 78%,
+      rgba(255,255,255,1)    100%);
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor;mask-composite:exclude;
+    pointer-events:none;
+  }
+  /* roughness: matte grain ON the glass surface (replaces glossy sheen) */
+  .glass::after{
+    content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    background-image:var(--grain);background-size:180px 180px;
+    opacity:0.10;mix-blend-mode:soft-light;
+  }
+  .glass>*{position:relative;z-index:1;}
+
+  /* ---------- NAV ---------- */
+  nav.glass{position:sticky;top:14px;z-index:5;display:flex;align-items:center;justify-content:space-between;
+    height:54px;padding:0 22px;margin:14px auto 28px;max-width:760px;border-radius:9999px;}
+  .brand{font-family:var(--font-display);font-weight:600;font-size:17px;letter-spacing:-0.02em;}
+  .navlinks{display:flex;gap:22px;font-size:14px;color:var(--ink-60);}
+  .navlinks a{color:inherit;text-decoration:none;}
+  .navlinks a.active{color:var(--ink);font-weight:600;}
+
+  /* ---------- ARTICLE ---------- */
+  article.glass{padding:46px 44px;margin-bottom:26px;}
+  .cat{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;letter-spacing:.04em;
+    color:var(--primary);background:rgba(0,102,204,0.09);padding:5px 12px;border-radius:9999px;text-transform:uppercase;}
+  h1{font-family:var(--font-display);font-weight:600;font-size:40px;line-height:1.1;letter-spacing:-0.03em;margin:18px 0 10px;}
+  .meta{font-size:14px;color:var(--ink-40);margin-bottom:26px;}
+  .lead{font-family:var(--font-display);font-weight:400;font-size:21px;line-height:1.45;color:var(--ink);letter-spacing:-0.01em;margin-bottom:22px;}
+  article p{font-size:17px;line-height:1.6;color:#3a342b;margin-bottom:18px;}
+  article a.inline{color:var(--primary);text-decoration:none;border-bottom:1px solid rgba(0,102,204,.3);}
+
+  pre{position:relative;margin:8px 0 22px;border-radius:var(--radius-sm);overflow:hidden;
+    background:rgba(38,33,26,0.80);  /* warm charcoal, not cold blue-black */
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.10),0 8px 24px rgba(38,33,26,.18);}
+  pre .bar{display:flex;gap:7px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.07);}
+  pre .bar i{width:11px;height:11px;border-radius:50%;display:block;}
+  pre code{display:block;padding:16px 18px;font-family:var(--font-mono);font-size:13.5px;line-height:1.7;color:#e3ddd0;white-space:pre;}
+  .k{color:#e0a3b8;} .f{color:#8fd9b6;} .s{color:#e8c07d;} .c{color:#7d756a;}
+
+  .bar-actions{display:flex;gap:12px;margin-top:30px;}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:500;padding:10px 18px;border-radius:9999px;
+    cursor:pointer;border:none;background:rgba(255,253,247,0.42);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+    color:var(--ink);box-shadow:inset 0 1.4px 0 rgba(255,255,255,.9),0 5px 16px rgba(120,98,64,.12);transition:transform .15s ease;}
+  .pill:active{transform:scale(0.95);}
+  .pill.primary{background:var(--primary);color:#fff;box-shadow:0 6px 18px rgba(0,102,204,.30);}
+
+  .label{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-40);margin:36px 0 14px;}
+  .detail{display:flex;gap:16px;}
+  .chip{flex:1;padding:22px;border-radius:var(--radius-sm);text-align:center;font-size:13px;color:var(--ink-60);}
+  .chip strong{display:block;font-size:15px;color:var(--ink);margin-bottom:6px;font-family:var(--font-display);font-weight:600;}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .card{padding:22px;border-radius:var(--radius-sm);}
+  .card h3{font-family:var(--font-display);font-weight:600;font-size:18px;letter-spacing:-0.02em;margin:10px 0 6px;line-height:1.25;}
+  .card p{font-size:14px;color:var(--ink-60);line-height:1.5;}
+  .card .tag{font-size:11px;font-weight:600;color:var(--primary);letter-spacing:.04em;}
+</style>
+</head>
+<body>
+  <div class="glow"></div>
+
+  <nav class="glass">
+    <span class="brand">zexuan</span>
+    <span class="navlinks"><a class="active">Posts</a><a>Notes</a><a>About</a></span>
+  </nav>
+
+  <div class="wrap">
+
+    <article class="glass">
+      <span class="cat">● Systems</span>
+      <h1>写一个能读懂的全栈 blog</h1>
+      <div class="meta">2026-05-30 · 8 min read · Go / React / Postgres</div>
+      <p class="lead">前后端解耦不是为了赶时髦，而是想亲眼看到那条 HTTP 边界——SSR 框架刻意把它抹掉了。</p>
+      <p>第一次做全栈，我的目标不是"从零默写"，而是"能读懂、能判断、能改" AI 生成的每一块。Go + chi，因为 handler 是原生 <a class="inline">net/http</a> 签名，学到的是所有 Go web 框架的公分母，每一行都透明可读。</p>
+      <pre>
+<span class="bar"><i style="background:#e0a3b8"></i><i style="background:#e8c07d"></i><i style="background:#8fd9b6"></i></span><code><span class="k">func</span> <span class="f">main</span>() {
+  r := chi.<span class="f">NewRouter</span>()
+  r.<span class="f">Use</span>(middleware.Logger)
+  r.<span class="f">Get</span>(<span class="s">"/api/tree/resolve"</span>, resolvePath) <span class="c">// 公开内容树</span>
+  http.<span class="f">ListenAndServe</span>(<span class="s">":8080"</span>, r)
+}</code></pre>
+      <p>磨砂玻璃表面带细颗粒（哑光、不反光），但斜切边缘因厚度折射出明亮的光线——背后那层暖米黄柔光透过来，像在宣纸上盖了一层毛玻璃。</p>
+
+      <div class="bar-actions">
+        <button class="pill primary">♥ 点赞 · 42</button>
+        <button class="pill">💬 评论 · 7</button>
+        <button class="pill">↗ 分享</button>
+      </div>
+    </article>
+
+    <div class="label">边缘光线折射 — 细节（已加强）</div>
+    <div class="detail">
+      <div class="chip glass"><strong>方向性折射边</strong>1.8px 高对比渐变环，两角全白、中段近透明</div>
+      <div class="chip glass"><strong>顶缘强高光</strong>inset 1.6px 纯白反光线</div>
+      <div class="chip glass"><strong>磨砂颗粒</strong>feTurbulence 噪点，哑光粗糙质感</div>
+    </div>
+
+    <div class="label">文章列表 — 密度示意</div>
+    <div class="grid">
+      <div class="card glass"><span class="tag">GO</span><h3>手写 SQL，不用 ORM</h3><p>为什么 pgx + 手写 SQL 比 GORM 更适合"读懂每一行"。</p></div>
+      <div class="card glass"><span class="tag">AUTH</span><h3>JWT 全链路打通的那天</h3><p>从登录表单到 middleware 校验，第一次看清边界。</p></div>
+    </div>
+
+  </div>
+</body>
+</html>
