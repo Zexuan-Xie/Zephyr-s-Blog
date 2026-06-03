@@ -3,6 +3,7 @@ package config
 import "testing"
 
 func TestLoadRequiresDatabaseURLAndJWTSecret(t *testing.T) {
+	clearEnv(t)
 	t.Setenv("DATABASE_URL", "")
 	t.Setenv("JWT_SECRET", "")
 
@@ -13,6 +14,7 @@ func TestLoadRequiresDatabaseURLAndJWTSecret(t *testing.T) {
 }
 
 func TestLoadDefaultsAndExactEmbeddingSettings(t *testing.T) {
+	clearEnv(t)
 	t.Setenv("DATABASE_URL", "postgres://user:pass@localhost:5432/blog")
 	t.Setenv("JWT_SECRET", "test-secret")
 
@@ -32,6 +34,7 @@ func TestLoadDefaultsAndExactEmbeddingSettings(t *testing.T) {
 }
 
 func TestLoadRejectsPartialAdminSeed(t *testing.T) {
+	clearEnv(t)
 	t.Setenv("DATABASE_URL", "postgres://user:pass@localhost:5432/blog")
 	t.Setenv("JWT_SECRET", "test-secret")
 	t.Setenv("ADMIN_EMAIL", "admin@example.com")
@@ -39,5 +42,25 @@ func TestLoadRejectsPartialAdminSeed(t *testing.T) {
 	_, err := Load()
 	if err == nil {
 		t.Fatal("expected partial admin seed error")
+	}
+}
+
+
+func clearEnv(t *testing.T) {
+	t.Helper()
+	for _, key := range []string{
+		"DATABASE_URL",
+		"JWT_SECRET",
+		"ADMIN_EMAIL",
+		"ADMIN_PASSWORD",
+		"HTTP_ADDR",
+		"ASSETS_DIR",
+		"EMBEDDING_PROVIDER",
+		"DASHSCOPE_API_KEY",
+		"EMBEDDING_BASE_URL",
+		"EMBEDDING_MODEL",
+		"EMBEDDING_DIMENSIONS",
+	} {
+		t.Setenv(key, "")
 	}
 }
