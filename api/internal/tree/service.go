@@ -2,109 +2,176 @@ package tree
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	"github.com/google/uuid"
 )
 
-type Service struct {
-	repo Repository
+type LifecycleRepository interface {
+	GetNode(ctx context.Context, nodeID uuid.UUID) (Node, error)
+	GetFileContent(ctx context.Context, nodeID uuid.UUID) (FileContent, error)
+	UpsertFileContent(ctx context.Context, nodeID uuid.UUID, input UpsertFileContentInput) (FileContent, error)
+	PublishFile(ctx context.Context, nodeID uuid.UUID) (FileContent, error)
+	UnpublishFile(ctx context.Context, nodeID uuid.UUID) (FileContent, error)
+	DeleteNode(ctx context.Context, nodeID uuid.UUID) error
+	HasPublishedDescendantFiles(ctx context.Context, directoryID uuid.UUID) (bool, error)
+	PublishedDescendantFilePaths(ctx context.Context, directoryID uuid.UUID) ([]PublishedFilePath, error)
+	UpdateRedirectTargets(ctx context.Context, nodeID uuid.UUID, finalPath string) error
+	UpsertPathRedirect(ctx context.Context, oldPath, newPath string, nodeID uuid.UUID) error
 }
 
-func NewService(repo Repository) *Service {
-	return &Service{repo: repo}
+type LifecycleService struct {
+	repo LifecycleRepository
 }
 
-func (s *Service) Root(ctx context.Context) (DirectoryPage, error) {
-	return s.repo.DirectoryPage(ctx, nil)
+func NewLifecycleService(repo LifecycleRepository) *LifecycleService {
+	return &LifecycleService{repo: repo}
 }
 
-func (s *Service) Children(ctx context.Context, nodeID uuid.UUID) (DirectoryPage, error) {
-	return s.repo.DirectoryPage(ctx, &nodeID)
-}
-
-func (s *Service) Resolve(ctx context.Context, rawPath string) (ResolveResponse, error) {
-	path, err := NormalizePath(rawPath)
+func (s *LifecycleService) UpsertFileContent(ctx context.Context, nodeID uuid.UUID, input UpsertFileContentInput) (FileContent, error) {
+	node, err := s.repo.GetNode(ctx, nodeID)
 	if err != nil {
-		return ResolveResponse{}, err
+		return FileContent{}, err
 	}
-	if path == "/" {
-		page, err := s.repo.DirectoryPage(ctx, nil)
-		if err != nil {
-			return ResolveResponse{}, err
-		}
-		return ResolveResponse{Type: ResolveTypeDirectory, Directory: &page}, nil
+	if node.Kind != NodeKindFile {
+		return FileContent{}, ErrNodeIsNotFile
 	}
 
-	slugs := strings.Split(strings.TrimPrefix(path, "/"), "/")
-	var parentID *uuid.UUID
-	var node Node
-	for _, slug := range slugs {
-		node, err = s.repo.FindNodeByParentAndSlug(ctx, parentID, slug)
-		if err != nil {
-			return s.redirectOrNotFound(ctx, path)
-		}
-		currentID := node.ID
-		parentID = &currentID
+	existing, err := s.repo.GetFileContent(ctx, nodeID)
+	if err != nil && err != ErrFileContentNotFound {
+		return FileContent{}, err
+	}
+	if err == nil && existing.Status == PublishStatusPublished && existing.ContentFormat != input.ContentFormat {
+		return FileContent{}, ErrPublishedContentFormatChange
 	}
 
-	switch node.Kind {
-	case NodeKindDirectory:
-		page, err := s.repo.DirectoryPage(ctx, &node.ID)
-		if err != nil {
-			return ResolveResponse{}, err
+	input.Keywords = normalizeKeywords(input.Keywords)
+	if strings.TrimSpace(input.SearchText) == "" {
+		input.SearchText = buildSearchText(node, input)
+	}
+	return s.repo.UpsertFileContent(ctx, nodeID, input)
+}
+
+func (s *LifecycleService) PublishFile(ctx context.Context, nodeID uuid.UUID) (FileContent, error) {
+	node, err := s.repo.GetNode(ctx, nodeID)
+	if err != nil {
+		return FileContent{}, err
+	}
+	if node.Kind != NodeKindFile {
+		return FileContent{}, ErrNodeIsNotFile
+	}
+	if _, err := s.repo.GetFileContent(ctx, nodeID); err != nil {
+		return FileContent{}, err
+	}
+	return s.repo.PublishFile(ctx, nodeID)
+}
+
+func (s *LifecycleService) UnpublishFile(ctx context.Context, nodeID uuid.UUID) (FileContent, error) {
+	node, err := s.repo.GetNode(ctx, nodeID)
+	if err != nil {
+		return FileContent{}, err
+	}
+	if node.Kind != NodeKindFile {
+		return FileContent{}, ErrNodeIsNotFile
+	}
+	return s.repo.UnpublishFile(ctx, nodeID)
+}
+
+func (s *LifecycleService) DeleteNode(ctx context.Context, nodeID uuid.UUID) error {
+	node, err := s.repo.GetNode(ctx, nodeID)
+	if err != nil {
+		return err
+	}
+
+	if node.Kind == NodeKindFile {
+		content, err := s.repo.GetFileContent(ctx, nodeID)
+		if err != nil && err != ErrFileContentNotFound {
+			return err
 		}
-		return ResolveResponse{Type: ResolveTypeDirectory, Directory: &page}, nil
-	case NodeKindFile:
-		page, err := s.repo.FilePage(ctx, node)
+		if err == nil && content.Status == PublishStatusPublished {
+			return ErrPublishedFileDelete
+		}
+		return s.repo.DeleteNode(ctx, nodeID)
+	}
+
+	hasPublished, err := s.repo.HasPublishedDescendantFiles(ctx, nodeID)
+	if err != nil {
+		return err
+	}
+	if hasPublished {
+		return ErrDirectoryHasPublishedDescendants
+	}
+	return s.repo.DeleteNode(ctx, nodeID)
+}
+
+func (s *LifecycleService) RecordPathChange(ctx context.Context, nodeID uuid.UUID, oldPath string, newPath string) error {
+	oldPath = NormalizePath(oldPath)
+	newPath = NormalizePath(newPath)
+	if oldPath == "/" || newPath == "/" || oldPath == newPath {
+		return nil
+	}
+
+	node, err := s.repo.GetNode(ctx, nodeID)
+	if err != nil {
+		return err
+	}
+
+	if node.Kind == NodeKindFile {
+		content, err := s.repo.GetFileContent(ctx, nodeID)
 		if err != nil {
-			if errors.Is(err, ErrNotFound) {
-				return s.redirectOrNotFound(ctx, path)
+			if err == ErrFileContentNotFound {
+				return nil
 			}
-			return ResolveResponse{}, err
+			return err
 		}
-		return ResolveResponse{Type: ResolveTypeFile, File: &page}, nil
-	default:
-		return ResolveResponse{}, ErrNotFound
-	}
-}
-
-func (s *Service) redirectOrNotFound(ctx context.Context, path string) (ResolveResponse, error) {
-	newPath, err := s.repo.RedirectPath(ctx, path)
-	if err == nil {
-		return ResolveResponse{Type: ResolveTypeRedirect, NewPath: newPath}, nil
-	}
-	return ResolveResponse{}, ErrNotFound
-}
-
-func NormalizePath(rawPath string) (string, error) {
-	path := strings.TrimSpace(rawPath)
-	if path == "" {
-		path = "/"
-	}
-	if !strings.HasPrefix(path, "/") {
-		return "", ErrInvalidPath
+		if content.Status != PublishStatusPublished {
+			return nil
+		}
+		if err := s.repo.UpdateRedirectTargets(ctx, nodeID, newPath); err != nil {
+			return err
+		}
+		return s.repo.UpsertPathRedirect(ctx, oldPath, newPath, nodeID)
 	}
 
-	parts := strings.FieldsFunc(path, func(r rune) bool { return r == '/' })
-	if len(parts) == 0 {
-		return "/", nil
+	files, err := s.repo.PublishedDescendantFilePaths(ctx, nodeID)
+	if err != nil {
+		return err
 	}
-	for _, part := range parts {
-		if part == "." || part == ".." {
-			return "", ErrInvalidPath
+	for _, file := range files {
+		finalPath := NormalizePath(file.Path)
+		oldFilePath := replacePathPrefix(finalPath, newPath, oldPath)
+		if oldFilePath == finalPath {
+			continue
+		}
+		if err := s.repo.UpdateRedirectTargets(ctx, file.NodeID, finalPath); err != nil {
+			return err
+		}
+		if err := s.repo.UpsertPathRedirect(ctx, oldFilePath, finalPath, file.NodeID); err != nil {
+			return err
 		}
 	}
-	return "/" + strings.Join(parts, "/"), nil
+	return nil
 }
 
-func PublicKeywords(keywords []string) []string {
-	limit := 3
-	if len(keywords) < limit {
-		limit = len(keywords)
+func normalizeKeywords(values []string) []string {
+	out := make([]string, 0, len(values))
+	seen := map[string]struct{}{}
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		key := strings.ToLower(value)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		out = append(out, value)
 	}
-	out := make([]string, limit)
-	copy(out, keywords[:limit])
 	return out
+}
+
+func buildSearchText(node Node, input UpsertFileContentInput) string {
+	parts := []string{node.Name, node.Path, strings.Join(input.Keywords, " "), input.BodyRaw}
+	return strings.TrimSpace(strings.Join(parts, "\n"))
 }
