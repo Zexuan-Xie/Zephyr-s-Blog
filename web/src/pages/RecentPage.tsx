@@ -12,7 +12,7 @@ export function RecentPage() {
     return <section className="glass status-panel">Loading recent files…</section>;
   }
 
-  if (recentQuery.isError) {
+  if (recentQuery.isError || !recentQuery.data) {
     return <section className="glass status-panel error">Unable to load recent files.</section>;
   }
 

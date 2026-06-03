@@ -12,7 +12,7 @@ export function RootPage() {
     return <section className="glass status-panel">Loading root directory…</section>;
   }
 
-  if (rootQuery.isError) {
+  if (rootQuery.isError || !rootQuery.data) {
     return <section className="glass status-panel error">Unable to load root directory.</section>;
   }
 

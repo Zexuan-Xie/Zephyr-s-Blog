@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { DirectoryPayload, FilePayload, ResolvePayload, SearchResult } from './types';
+import type { ContentEntry, DirectoryPayload, FilePayload, ResolvePayload, SearchResult } from './types';
 
 const apiBase = '/api';
 
