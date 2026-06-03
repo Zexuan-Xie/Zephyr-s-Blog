@@ -32,3 +32,23 @@ Command: `omx team status resume-xlab-blog-from-38975700 --json --tail-lines 100
 1. Refresh verification evidence after this checkpoint.
 2. Watch for `task-2` claim/progress because it is the only pending Packet D task in this snapshot.
 3. Update `PROGRESS.md` again after task lifecycle completions/failures, verification result changes, or blocker discoveries.
+
+## Verification Evidence — 2026-06-03 23:05 CST
+
+Commands were run from worker-4 worktree `/home/zephry_xzx/xlab/blog/.omx/team/resume-xlab-blog-from-38975700/worktrees/worker-4`.
+
+| Check | Result | Evidence |
+|---|---:|---|
+| Diff hygiene | PASS | `git diff --check` produced no errors. |
+| OpenAPI static parse/ref walk | PASS | Ruby/Psych check parsed `docs/api/openapi.yaml` and resolved local refs: `paths=22`, `schemas=33`, `refs=100`. |
+| Backend exact Go version | PASS | `/tmp/omx-go-1.26.4/go/bin/go version` -> `go version go1.26.4 linux/amd64`. |
+| Backend tests | PASS | `(cd api && PATH="/tmp/omx-go-1.26.4/go/bin:$PATH" go test ./...)` passed for auth/config/handlers/middleware packages; no-test packages compiled. |
+| Frontend lint/build | SKIP/BLOCKED | `web/node_modules` is missing; monitor lane did not install dependencies or mutate package artifacts. |
+| `blogenv` availability | BLOCKED | `conda env list` does not include `blogenv`. |
+| Docker Compose availability | BLOCKED | `docker compose version` reports Docker unavailable in this WSL distro. |
+
+Raw command output was captured during the worker run at `/tmp/worker4-task4-verification.log`; the durable summary above is the repo checkpoint.
+
+## Follow-up Lifecycle Observation — 2026-06-03 23:06 CST
+
+`omx team status resume-xlab-blog-from-38975700 --json --tail-lines 100` later reported `pending=0` and `in_progress=4`. Task files confirm `task-2` is now `in_progress`, owner/claim `worker-2`, lease `2026-06-03T15:18:51.739Z`. The monitor lane should next refresh evidence after an implementation task completes/fails or a new blocker appears.
