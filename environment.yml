@@ -1,0 +1,9 @@
+name: blogenv
+channels:
+  - conda-forge
+dependencies:
+  # Exact local toolchain versions from docs/specs/TECH_STACK.md.
+  # Do not loosen these pins without updating the spec first.
+  - nodejs=22.22.3
+  - npm=10.9.8
+  - go=1.26.4
