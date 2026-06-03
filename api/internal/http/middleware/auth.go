@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"xlab-blog/api/internal/auth"
-	httpapi "xlab-blog/api/internal/http"
+	"xlab-blog/api/internal/http/respond"
 	"xlab-blog/api/internal/users"
 )
 
@@ -49,12 +49,12 @@ func (a *Authenticator) RequireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tokenString, ok := bearerToken(r)
 		if !ok {
-			httpapi.WriteError(w, http.StatusUnauthorized, "authentication required")
+			respond.Error(w, http.StatusUnauthorized, "authentication required")
 			return
 		}
 		user, err := a.authenticate(r.Context(), tokenString)
 		if err != nil {
-			httpapi.WriteError(w, http.StatusUnauthorized, "invalid token")
+			respond.Error(w, http.StatusUnauthorized, "invalid token")
 			return
 		}
 		next.ServeHTTP(w, r.WithContext(withCurrentUser(r.Context(), user)))
@@ -65,7 +65,7 @@ func (a *Authenticator) RequireAdmin(next http.Handler) http.Handler {
 	return a.RequireAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, ok := CurrentUser(r.Context())
 		if !ok || user.Role != users.RoleAdmin {
-			httpapi.WriteError(w, http.StatusForbidden, "admin role required")
+			respond.Error(w, http.StatusForbidden, "admin role required")
 			return
 		}
 		next.ServeHTTP(w, r)

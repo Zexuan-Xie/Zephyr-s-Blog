@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	httpapi "xlab-blog/api/internal/http"
+	"xlab-blog/api/internal/http/respond"
 )
 
 type HealthHandler struct {
@@ -25,15 +25,15 @@ func NewHealthHandler(pool *pgxpool.Pool) *HealthHandler {
 
 func (h *HealthHandler) Check(w http.ResponseWriter, r *http.Request) {
 	if h.pool == nil {
-		httpapi.WriteJSON(w, http.StatusOK, HealthResponse{Status: "ok"})
+		respond.JSON(w, http.StatusOK, HealthResponse{Status: "ok"})
 		return
 	}
 
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 	defer cancel()
 	if err := h.pool.Ping(ctx); err != nil {
-		httpapi.WriteJSON(w, http.StatusServiceUnavailable, HealthResponse{Status: "degraded", Database: "unavailable"})
+		respond.JSON(w, http.StatusServiceUnavailable, HealthResponse{Status: "degraded", Database: "unavailable"})
 		return
 	}
-	httpapi.WriteJSON(w, http.StatusOK, HealthResponse{Status: "ok", Database: "ok"})
+	respond.JSON(w, http.StatusOK, HealthResponse{Status: "ok", Database: "ok"})
 }
