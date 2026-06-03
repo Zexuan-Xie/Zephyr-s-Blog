@@ -2,6 +2,7 @@ package tree
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/google/uuid"
@@ -58,7 +59,7 @@ func (s *Service) Resolve(ctx context.Context, rawPath string) (ResolveResponse,
 	case NodeKindFile:
 		page, err := s.repo.FilePage(ctx, node)
 		if err != nil {
-			if err == ErrNotFound {
+			if errors.Is(err, ErrNotFound) {
 				return s.redirectOrNotFound(ctx, path)
 			}
 			return ResolveResponse{}, err
