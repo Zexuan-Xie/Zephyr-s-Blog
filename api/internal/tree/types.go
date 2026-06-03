@@ -56,35 +56,35 @@ type DirectoryEntry struct {
 }
 
 type FileEntry struct {
-	Node               Node            `json:"node"`
-	ContentFormat      ContentFormat   `json:"content_format"`
-	Status             PublishStatus   `json:"status"`
-	Keywords           []string        `json:"keywords"`
-	PublishedAt        *time.Time      `json:"published_at"`
-	LikeCount          int             `json:"like_count"`
-	CommentCount       int             `json:"comment_count"`
-	ReadingTimeMinutes *int            `json:"reading_time_minutes"`
+	Node               Node          `json:"node"`
+	ContentFormat      ContentFormat `json:"content_format"`
+	Status             PublishStatus `json:"status"`
+	Keywords           []string      `json:"keywords"`
+	PublishedAt        *time.Time    `json:"published_at"`
+	LikeCount          int           `json:"like_count"`
+	CommentCount       int           `json:"comment_count"`
+	ReadingTimeMinutes *int          `json:"reading_time_minutes"`
 }
 
 type DirectoryPage struct {
-	Node    *Node `json:"node"`
+	Node    *Node  `json:"node"`
 	Path    string `json:"path,omitempty"`
 	Entries []any  `json:"entries"`
 }
 
 type FileContent struct {
 	NodeID             uuid.UUID       `json:"node_id"`
-	ContentFormat      ContentFormat  `json:"content_format"`
-	Keywords           []string       `json:"keywords"`
-	BodyRaw            string         `json:"body_raw"`
-	BodyHTML           *string        `json:"body_html"`
-	SearchText         string         `json:"search_text"`
-	Status             PublishStatus  `json:"status"`
-	PublishedAt        *time.Time     `json:"published_at"`
-	EmbeddingModel      *string        `json:"embedding_model"`
-	EmbeddingStatus     EmbeddingStatus `json:"embedding_status"`
-	EmbeddingError      *string        `json:"embedding_error"`
-	EmbeddingUpdatedAt  *time.Time     `json:"embedding_updated_at"`
+	ContentFormat      ContentFormat   `json:"content_format"`
+	Keywords           []string        `json:"keywords"`
+	BodyRaw            string          `json:"body_raw"`
+	BodyHTML           *string         `json:"body_html"`
+	SearchText         string          `json:"search_text"`
+	Status             PublishStatus   `json:"status"`
+	PublishedAt        *time.Time      `json:"published_at"`
+	EmbeddingModel     *string         `json:"embedding_model"`
+	EmbeddingStatus    EmbeddingStatus `json:"embedding_status"`
+	EmbeddingError     *string         `json:"embedding_error"`
+	EmbeddingUpdatedAt *time.Time      `json:"embedding_updated_at"`
 }
 
 type FileAsset struct {
@@ -98,13 +98,13 @@ type FileAsset struct {
 }
 
 type FilePage struct {
-	Node            Node        `json:"node"`
-	Content         FileContent `json:"content"`
-	KeywordsPublic  []string   `json:"keywords_public"`
-	LikeCount       int        `json:"like_count"`
-	ViewerHasLiked  bool       `json:"viewer_has_liked"`
-	CommentCount    int        `json:"comment_count"`
-	Assets          []FileAsset `json:"assets"`
+	Node           Node        `json:"node"`
+	Content        FileContent `json:"content"`
+	KeywordsPublic []string    `json:"keywords_public"`
+	LikeCount      int         `json:"like_count"`
+	ViewerHasLiked bool        `json:"viewer_has_liked"`
+	CommentCount   int         `json:"comment_count"`
+	Assets         []FileAsset `json:"assets"`
 }
 
 type ResolveType string
