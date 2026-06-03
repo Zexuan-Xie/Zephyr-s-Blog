@@ -1,6 +1,6 @@
 # xLab Blog Implementation Progress
 
-Last updated: 2026-06-03 23:07 CST
+Last updated: 2026-06-03 23:03 CST
 
 This file is the durable breakpoint/resume log for the xLab Blog implementation. Read this before resuming multi-agent work, then read `IMPLEMENTATION_PLAN.md` and active specs as needed.
 
@@ -125,10 +125,8 @@ Important: `docs/verification/phase-0-1-acceptance-matrix.md` should be updated 
 
 ## Active Milestone Log
 
-- 2026-06-03 23:07 CST: Packet D lane repair fully stabilized. Worker-2 was interrupted while doing old frontend Task 3; leader reverted its isolated worktree's wrong `web/src/lib/api.ts` change, manually claimed Task 2 for worker-2, and sent a backend-only instruction. Current intended state: task1 worker-1 backend public tree in_progress; task2 worker-2 backend file lifecycle in_progress; task3 worker-3 frontend resolver in_progress; task4 worker-4 monitor/verifier in_progress; task5/6 completed constraints.
-- 2026-06-03 23:05 CST: Packet D lane repair stabilized: task 1 is in progress under worker-1, task 3 under worker-3, task 4 under worker-4; constraint tasks 5/6 completed. Task 2 remains pending for worker-2, so leader sent an additional ACTION REQUIRED nudge to claim backend file lifecycle.
-- 2026-06-03 23:04 CST: Repaired Packet D team lane metadata after launch decomposition mismatch. Sent correction messages to all four workers. Constraint-only tasks 5 and 6 were completed; active product tasks should be task 1 backend public tree, task 2 backend file lifecycle, task 3 frontend resolver, task 4 monitor/verifier. Need continue monitoring because worker-2/3 initially claimed old shifted tasks before correction messages arrived.
-- 2026-06-03 23:02 CST: Launched fresh Packet D OMX team `resume-xlab-blog-from-38975700` with 4 executor workers in worktree mode. Launch task explicitly assigns lanes for backend public tree, backend file lifecycle, frontend resolver integration, and monitor/verifier/progress updates. Initial runtime summary: tasks `total=6`, `pending=6`, `completed=0`; next action is inspect task decomposition and repair/assign lanes if needed before workers proceed too far.
+- 2026-06-03 23:03 CST: Fresh Packet D team monitor checkpoint for `resume-xlab-blog-from-38975700` recorded. `omx team status resume-xlab-blog-from-38975700 --json --tail-lines 100` reports phase `team-exec`, workers `total=4`, `dead=0`, `non_reporting=0`; tasks `total=6`, `completed=2`, `in_progress=3`, `pending=1`, `failed=0`, `blocked=0`. Task files currently show `task-1` in progress (worker-1), `task-2` pending (worker-2, not claimed), `task-3` in progress (worker-3), `task-4` in progress (worker-4 monitor/verifier), and guardrail tasks `task-5`/`task-6` completed. Constraint remains active: do not assume `blogenv` or Docker are available; backend verification may use `/tmp/omx-go-1.26.4/go/bin/go`. Next monitor action: refresh verification evidence after this checkpoint and keep watching task-2 claim/progress.
+
 - 2026-06-03 23:00 CST: Created Packet D context snapshot `.omx/context/packet-d-content-tree-20260603T145745Z.md`. Next action: launch fresh OMX team for content tree/file lifecycle with a dedicated monitor/progress lane.
 - 2026-06-03 22:58 CST: Durable checkpoint commit created for terminal team reconciliation, monitor protocol, environment blocker documentation, and refreshed Phase 0/1 acceptance matrix. Next concrete step: launch a fresh Packet D team for content tree/file lifecycle, with a monitor/progress lane.
 - 2026-06-03 22:57 CST: Checkpoint verification before commit passed: `/tmp/omx-go-1.26.4/go/bin/go version` -> `go1.26.4`; `(cd api && PATH="/tmp/omx-go-1.26.4/go/bin:$PATH" go test ./...)` -> PASS; Ruby YAML/OpenAPI local-ref check -> PASS (`paths=22`, `schemas=33`); `git diff --check` -> PASS.
