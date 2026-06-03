@@ -48,13 +48,19 @@ Use Conda for local development. The environment name is fixed and declared in `
 
 ```bash
 conda env create -f environment.yml
+conda run -n blogenv npm install -g npm@10.9.8
 conda activate blogenv
 node --version   # expected 22.22.3
 npm --version    # expected 10.9.8
 go version       # expected 1.26.4
 ```
 
-If the solver cannot provide the exact versions in `docs/specs/TECH_STACK.md`, stop and update the spec only after an explicit decision; do not silently substitute versions.
+`environment.yml` pins Node.js and Go through Conda. The exact npm version is
+installed into `blogenv` with npm itself because the standalone `npm=10.9.8`
+Conda package is not available from the current conda-forge/defaults channels.
+If the solver cannot provide the exact versions in `docs/specs/TECH_STACK.md`,
+stop and update the spec only after an explicit decision; do not silently
+substitute versions.
 
 ## Local configuration
 

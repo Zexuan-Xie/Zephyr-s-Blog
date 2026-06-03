@@ -1,6 +1,6 @@
 # xLab Blog Implementation Progress
 
-Last updated: 2026-06-03 14:36 CST
+Last updated: 2026-06-03 22:58 CST
 
 This file is the durable breakpoint/resume log for the xLab Blog implementation. Read this before resuming multi-agent work, then read `IMPLEMENTATION_PLAN.md` and active specs as needed.
 
@@ -11,17 +11,34 @@ This file is the durable breakpoint/resume log for the xLab Blog implementation.
 - Key milestones include: task lifecycle completion/failure, verification result changes, toolchain/blocker discoveries, team launch/shutdown, and any handoff-worthy implementation checkpoint.
 - Each update should name the current breakpoint and the next concrete step.
 
+
+## Live Monitor / Subagent Protocol
+
+- 2026-06-03 14:44 CST: User requested a dedicated monitor subagent for subagent/team status and `PROGRESS.md` updates. Active execution rule: a monitor lane must watch team/task status and keep this file current at each key milestone while implementation lanes avoid editing this file unless recording their own verified checkpoint.
+- Current monitor finding: `conda` exists (`26.1.1`), but `blogenv` was not present yet and PATH had no `go`; later Active Milestone Log entries supersede the environment checkpoint with exact temporary Go success and Conda solve failure evidence.
+
+
+- 2026-06-03 22:44 CST: 监控子代理快照（`omx team status follow-implementation-b973ccd0 --json --tail-lines 300`；status timestamp `2026-06-03T14:44:37.930Z` / `2026-06-03 22:44 CST`）：
+  - Team phase remains `team-exec`; workers `total=4`, `dead=4`, `non_reporting=0`.
+  - Dead/idle or unknown workers: `worker-1` idle/dead, `worker-2` unknown/dead, `worker-3` idle/dead, `worker-4` idle/dead. Treat the old worker panes as observation targets only, not reliable executors.
+  - Tasks summary: `total=5`, `completed=4`, `pending=1`, `blocked=0`, `in_progress=0`, `failed=0`.
+  - Task-file reconciliation: `task-1`, `task-3`, `task-4`, and `task-5` are completed; `task-2.json` is `pending` (version 4, no owner/completed_at/result), so Backend Packet B/C remains **not terminal**.
+  - Git monitor snapshot: `## main...origin/main [ahead 23]`; observed working-tree change is `M PROGRESS.md`.
+  - Current breakpoint: newer `PROGRESS.md` Active Milestone Log says exact temporary Go `1.26.4` backend tests passed, while `conda env create -f environment.yml` failed because `npm=10.9.8` is unavailable from current channels; remaining monitor focus is task-2 terminal reconciliation/docs after main thread finishes that decision. This monitor lane must only update `PROGRESS.md` and must not edit code, specs, verification docs, or `.omx` state.
+  - Monitor rule: after each key node (toolchain result, task-2 terminal decision, verification pass/fail/blocker, team shutdown/relaunch, or handoff), refresh `PROGRESS.md` before moving to the next packet.
+
 ## Current Overall State
 
-- Active/last team: `follow-implementation-b973ccd0`
-- Team mode: OMX team, worktree mode, 4 executor workers
-- Latest observed team status (`omx team status follow-implementation-b973ccd0 --json`, 2026-06-03T14:36:37Z):
-  - workers: `dead=4`, `non_reporting=0`
-  - tasks: `total=5`, `completed=4`, `failed=0`, `pending=1` according to status summary
-  - task-file reconciliation: `task-2.json` still shows `in_progress` with an expired worker-2 claim; treat task 2 as **not terminal** and requiring reconciliation.
+- Active/last team: `follow-implementation-b973ccd0` (shutdown complete; status now missing)
+- Team mode: OMX team, worktree mode, 4 executor workers; terminal and shut down
+- Latest observed team status (`omx team status follow-implementation-b973ccd0 --json --tail-lines 300`, status timestamp 2026-06-03T14:44:37.930Z / 2026-06-03 22:44 CST):
+  - workers: `total=4`, `dead=4`, `non_reporting=0`
+  - tasks: `total=5`, `completed=5`, `failed=0`, `pending=0`, `in_progress=0`, `blocked=0` after Task 2 reconciliation
+  - task-file reconciliation: `task-2.json` now shows `status: completed` (version 6) with leader-side result and delegation compliance evidence.
+  - dead/idle-or-unknown worker map: `worker-1=idle/dead`, `worker-2=unknown/dead`, `worker-3=idle/dead`, `worker-4=idle/dead`.
 - Current git branch: `main`, ahead of `origin/main` by many local OMX checkpoint commits.
 - Latest observed leader HEAD: `0a0e712 omx(team): auto-checkpoint worker-2 [2]`.
-- Do **not** assume the stale team workers are recoverable; use the state files for evidence and either reconcile task 2 directly or launch a fresh follow-up team from this file.
+- Do **not** assume the stale team workers are recoverable; the team has been shut down after all tasks completed. Use `PROGRESS.md` and historical `.omx/reports/team-commit-hygiene/` evidence for resume.
 
 ## Completed Tasks
 
@@ -106,16 +123,28 @@ Worker-reported verification:
 
 Important: `docs/verification/phase-0-1-acceptance-matrix.md` should be updated or superseded because it still records some artifacts as missing.
 
+## Active Milestone Log
+
+- 2026-06-03 22:58 CST: Durable checkpoint commit created for terminal team reconciliation, monitor protocol, environment blocker documentation, and refreshed Phase 0/1 acceptance matrix. Next concrete step: launch a fresh Packet D team for content tree/file lifecycle, with a monitor/progress lane.
+- 2026-06-03 22:57 CST: Checkpoint verification before commit passed: `/tmp/omx-go-1.26.4/go/bin/go version` -> `go1.26.4`; `(cd api && PATH="/tmp/omx-go-1.26.4/go/bin:$PATH" go test ./...)` -> PASS; Ruby YAML/OpenAPI local-ref check -> PASS (`paths=22`, `schemas=33`); `git diff --check` -> PASS.
+- 2026-06-03 22:55 CST: A second `conda env create -f environment.yml` retry also failed during package download: `CondaHTTPError: HTTP 000 CONNECTION FAILED` for `https://conda.anaconda.org/conda-forge/linux-64/go-1.26.4-h282a287_0.conda`. Decision: stop retrying Conda in this turn; keep `blogenv` marked unavailable and rely on exact temporary Go for backend verification until network stabilizes.
+- 2026-06-03 22:53 CST: Stale OMX team `follow-implementation-b973ccd0` was gracefully shut down after terminal status (`completed=5`, `pending=0`, `in_progress=0`, `failed=0`). Shutdown output reported worker-2 historical merge conflict on `AGENT.md`, but leader working tree has no unmerged files and old worker diffs were already reachable/no-op for integrated code. `omx team status follow-implementation-b973ccd0` now returns `status=missing`.
+- 2026-06-03 22:52 CST: After adjusting `environment.yml`, `conda env create -f environment.yml` solved and began downloading `nodejs=22.22.3`/`go=1.26.4`, but failed during package download with `ConnectionResetError(104, 'Connection reset by peer')`. This is a network/download blocker, not a version-solver blocker. A second retry also failed with CondaHTTPError HTTP 000 for the Go package; `blogenv` still must be verified before future agents rely on it.
+- 2026-06-03 22:49 CST: Task 2 backend foundation was reconciled to OMX `completed` via claim-safe API. Evidence: exact Go 1.26.4 backend tests passed; transition result includes required `Subagent skip reason:` because the original worker-2 pane was dead and the remaining action was bounded leader-side lifecycle reconciliation. Next breakpoint: confirm team summary has `pending=0`, `in_progress=0`, `failed=0`, then shut down stale team safely.
+- 2026-06-03 14:51 CST: `conda env create -f environment.yml` failed during solve because `npm=10.9.8` is unavailable from current channels (`conda-forge`, `defaults`). Result: `blogenv` still does not exist, so future agents should not assume Conda-provided Go is available until the environment spec is adjusted or an alternate exact npm source is approved. Backend verification remains valid via the exact temporary Go 1.26.4 toolchain.
+- 2026-06-03 14:48 CST: Exact temporary Go toolchain `/tmp/omx-go-1.26.4/go/bin/go` is available and reports `go version go1.26.4 linux/amd64`. Backend verification passed with `(cd api && PATH="/tmp/omx-go-1.26.4/go/bin:$PATH" go test ./...)`: auth/config/handlers/middleware tests pass; no-test packages compile. `blogenv` creation from `environment.yml` is still running so future resumes may use Conda directly if it completes. Current breakpoint: reconcile task-2 terminal state/docs after confirming Conda environment outcome.
+
 ## Unresolved Breakpoint
 
 ### Task 2 — Backend Packet B/C foundation
 
-Status: **not terminal**.
+Status: completed via leader reconciliation.
 
 Evidence:
 
-- `task-2.json` still shows `status: in_progress`, owner `worker-2`, with expired claim token.
-- Team status currently reports one pending/unresolved task because all workers are dead.
+- `task-2.json` now shows `status: completed` (version 6), owner `worker-2`, completed at `2026-06-03T14:49:03.830Z`, with leader reconciliation result.
+- Team status should now report no pending/in-progress tasks; verify immediately before shutdown.
+- Worker-2 was assigned task 2 but is now `unknown/dead`; do not rely on the old worker lane for finalization.
 - Worker-2 integrated multiple checkpoints, but never successfully transitioned task 2 to completed.
 
 Integrated backend artifacts observed in leader:
