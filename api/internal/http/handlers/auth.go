@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"xlab-blog/api/internal/auth"
-	"xlab-blog/api/internal/http/respond"
 	"xlab-blog/api/internal/http/middleware"
+	"xlab-blog/api/internal/http/respond"
 	"xlab-blog/api/internal/users"
 )
 

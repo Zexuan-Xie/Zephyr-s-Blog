@@ -26,7 +26,7 @@ func (l fakeLoader) GetByID(_ context.Context, id uuid.UUID) (users.User, error)
 }
 
 func TestRequireAuthRejectsMissingBearerToken(t *testing.T) {
-	authenticator := NewAuthenticator(NewTokenService("secret", time.Hour), fakeLoader{})
+	authenticator := NewAuthenticator(auth.NewTokenService("secret", time.Hour), fakeLoader{})
 	response := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "/private", nil)
 	authenticator.RequireAuth(http.HandlerFunc(okHandler)).ServeHTTP(response, request)
@@ -37,7 +37,7 @@ func TestRequireAuthRejectsMissingBearerToken(t *testing.T) {
 }
 
 func TestRequireAuthAcceptsValidBearerToken(t *testing.T) {
-	tokens := NewTokenService("secret", time.Hour)
+	tokens := auth.NewTokenService("secret", time.Hour)
 	user := users.User{ID: uuid.New(), Email: "reader@example.com", Role: users.RoleReader}
 	token, err := tokens.Issue(user)
 	if err != nil {
@@ -55,7 +55,7 @@ func TestRequireAuthAcceptsValidBearerToken(t *testing.T) {
 }
 
 func TestRequireAdminRejectsReaderAndAcceptsAdmin(t *testing.T) {
-	tokens := NewTokenService("secret", time.Hour)
+	tokens := auth.NewTokenService("secret", time.Hour)
 	reader := users.User{ID: uuid.New(), Email: "reader@example.com", Role: users.RoleReader}
 	admin := users.User{ID: uuid.New(), Email: "admin@example.com", Role: users.RoleAdmin}
 	authenticator := NewAuthenticator(tokens, fakeLoader{users: map[uuid.UUID]users.User{reader.ID: reader, admin.ID: admin}})

@@ -45,7 +45,6 @@ func TestLoadRejectsPartialAdminSeed(t *testing.T) {
 	}
 }
 
-
 func clearEnv(t *testing.T) {
 	t.Helper()
 	for _, key := range []string{
