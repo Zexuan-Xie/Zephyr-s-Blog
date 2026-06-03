@@ -15,6 +15,7 @@ export interface ContentEntry {
   updated_at?: string;
   child_directory_count?: number;
   child_file_count?: number;
+  comment_count?: number;
   content_format?: ContentFormat;
   read_time_minutes?: number;
   keywords?: string[];
@@ -44,6 +45,7 @@ export interface FilePayload {
   published_at?: string;
   read_time_minutes?: number;
   like_count?: number;
+  comment_count?: number;
 }
 
 export interface RedirectPayload {
