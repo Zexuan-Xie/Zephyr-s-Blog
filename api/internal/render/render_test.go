@@ -59,11 +59,24 @@ func TestVisibleTextFromHTMLExcludesNonVisibleContent(t *testing.T) {
 	}
 }
 
-func TestVisibleTextFromHTMLNormalizesWhitespace(t *testing.T) {
-	document := "<main><p>  first\n\tline </p><p>second&nbsp;line</p></main>"
+func TestVisibleTextFromHTMLExcludesHiddenDescendantsAndImportantStyles(t *testing.T) {
+	document := `<main>
+		<section hidden><p>Nested hidden</p></section>
+		<p style="DISPLAY: none !important"><span>Important hidden</span></p>
+		<p style="visibility: hidden !IMPORTANT">Also hidden</p>
+		<p aria-hidden="false">Visible</p>
+	</main>`
 
-	if got := VisibleTextFromHTML(document); got != "first line second line" {
-		t.Fatalf("VisibleTextFromHTML() = %q, want %q", got, "first line second line")
+	if got := VisibleTextFromHTML(document); got != "Visible" {
+		t.Fatalf("VisibleTextFromHTML() = %q, want %q", got, "Visible")
+	}
+}
+
+func TestVisibleTextFromHTMLNormalizesWhitespace(t *testing.T) {
+	document := "<main><p>  first\n\tline </p><p>second&nbsp;line&#x2003;third</p></main>"
+
+	if got := VisibleTextFromHTML(document); got != "first line second line third" {
+		t.Fatalf("VisibleTextFromHTML() = %q, want %q", got, "first line second line third")
 	}
 }
 

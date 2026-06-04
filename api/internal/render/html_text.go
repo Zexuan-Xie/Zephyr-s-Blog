@@ -7,8 +7,7 @@ import (
 	"golang.org/x/net/html"
 )
 
-var whitespacePattern = regexp.MustCompile(`\s+`)
-var hiddenStylePattern = regexp.MustCompile(`(?i)(?:^|;)\s*(?:display\s*:\s*none|visibility\s*:\s*hidden)\s*(?:;|$)`)
+var hiddenStylePattern = regexp.MustCompile(`(?i)(?:^|;)\s*(?:display\s*:\s*none|visibility\s*:\s*hidden)(?:\s*!important)?\s*(?:;|$)`)
 
 // VisibleTextFromHTML extracts normalized text that a document can visibly
 // present. Executable, metadata, template, and hidden subtrees are excluded.
@@ -72,5 +71,5 @@ func hasHiddenAttribute(node *html.Node) bool {
 }
 
 func normalizeWhitespace(text string) string {
-	return strings.TrimSpace(whitespacePattern.ReplaceAllString(text, " "))
+	return strings.Join(strings.Fields(text), " ")
 }
