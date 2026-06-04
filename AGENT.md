@@ -3,43 +3,43 @@
 This file is generated for a live OMX team worker run and is disposable.
 
 ## Worker Identity
-- Team: resume-xlab-blog-from-38975700
-- Worker: worker-4
+- Team: resume-xlab-blog-from-1df8000b
+- Worker: worker-1
 - Role: executor
 - Leader cwd: /home/zephry_xzx/xlab/blog
-- Worktree root: /home/zephry_xzx/xlab/blog/.omx/team/resume-xlab-blog-from-38975700/worktrees/worker-4
+- Worktree root: /home/zephry_xzx/xlab/blog/.omx/team/resume-xlab-blog-from-1df8000b/worktrees/worker-1
 - Team state root: /home/zephry_xzx/xlab/blog/.omx/state
-- Inbox path: /home/zephry_xzx/xlab/blog/.omx/state/team/resume-xlab-blog-from-38975700/workers/worker-4/inbox.md
-- Mailbox path: /home/zephry_xzx/xlab/blog/.omx/state/team/resume-xlab-blog-from-38975700/mailbox/worker-4.json
-- Leader mailbox path: /home/zephry_xzx/xlab/blog/.omx/state/team/resume-xlab-blog-from-38975700/mailbox/leader-fixed.json
-- Task directory: /home/zephry_xzx/xlab/blog/.omx/state/team/resume-xlab-blog-from-38975700/tasks
-- Worker status path: /home/zephry_xzx/xlab/blog/.omx/state/team/resume-xlab-blog-from-38975700/workers/worker-4/status.json
-- Worker identity path: /home/zephry_xzx/xlab/blog/.omx/state/team/resume-xlab-blog-from-38975700/workers/worker-4/identity.json
+- Inbox path: /home/zephry_xzx/xlab/blog/.omx/state/team/resume-xlab-blog-from-1df8000b/workers/worker-1/inbox.md
+- Mailbox path: /home/zephry_xzx/xlab/blog/.omx/state/team/resume-xlab-blog-from-1df8000b/mailbox/worker-1.json
+- Leader mailbox path: /home/zephry_xzx/xlab/blog/.omx/state/team/resume-xlab-blog-from-1df8000b/mailbox/leader-fixed.json
+- Task directory: /home/zephry_xzx/xlab/blog/.omx/state/team/resume-xlab-blog-from-1df8000b/tasks
+- Worker status path: /home/zephry_xzx/xlab/blog/.omx/state/team/resume-xlab-blog-from-1df8000b/workers/worker-1/status.json
+- Worker identity path: /home/zephry_xzx/xlab/blog/.omx/state/team/resume-xlab-blog-from-1df8000b/workers/worker-1/identity.json
 
 ## Protocol
-1. Read your inbox at `/home/zephry_xzx/xlab/blog/.omx/state/team/resume-xlab-blog-from-38975700/workers/worker-4/inbox.md`.
+1. Read your inbox at `/home/zephry_xzx/xlab/blog/.omx/state/team/resume-xlab-blog-from-1df8000b/workers/worker-1/inbox.md`.
 2. Load the worker skill from the first existing path:
    - `${CODEX_HOME:-~/.codex}/skills/worker/SKILL.md`
    - `/home/zephry_xzx/xlab/blog/.codex/skills/worker/SKILL.md`
    - `/home/zephry_xzx/xlab/blog/skills/worker/SKILL.md`
 3. Send startup ACK before task work:
 
-   `omx team api send-message --input "{"team_name":"resume-xlab-blog-from-38975700","from_worker":"worker-4","to_worker":"leader-fixed","body":"ACK: worker-4 initialized"}" --json`
+   `omx team api send-message --input "{"team_name":"resume-xlab-blog-from-1df8000b","from_worker":"worker-1","to_worker":"leader-fixed","body":"ACK: worker-1 initialized"}" --json`
 
 4. Resolve canonical team state root in this order: `OMX_TEAM_STATE_ROOT` env -> worker identity `team_state_root` -> config/manifest `team_state_root` -> local cwd fallback.
-5. Read task files from `/home/zephry_xzx/xlab/blog/.omx/state/team/resume-xlab-blog-from-38975700/tasks/task-<id>.json` using bare `task_id` values in APIs.
+5. Read task files from `/home/zephry_xzx/xlab/blog/.omx/state/team/resume-xlab-blog-from-1df8000b/tasks/task-<id>.json` using bare `task_id` values in APIs.
 6. Use claim-safe lifecycle APIs only:
    - `omx team api claim-task --json`
    - `omx team api transition-task-status --json`
    - `omx team api release-task-claim --json` only for rollback to pending
 7. Use mailbox delivery flow:
-   - `omx team api mailbox-list --input "{"team_name":"resume-xlab-blog-from-38975700","worker":"worker-4"}" --json`
-   - `omx team api mailbox-mark-delivered --input "{"team_name":"resume-xlab-blog-from-38975700","worker":"worker-4","message_id":"<MESSAGE_ID>"}" --json`
+   - `omx team api mailbox-list --input "{"team_name":"resume-xlab-blog-from-1df8000b","worker":"worker-1"}" --json`
+   - `omx team api mailbox-mark-delivered --input "{"team_name":"resume-xlab-blog-from-1df8000b","worker":"worker-1","message_id":"<MESSAGE_ID>"}" --json`
 8. Preserve leader steering via inbox/mailbox nudges; task payload stays in inbox/task JSON, not this file.
 9. Do not pass `workingDirectory` to legacy team_* MCP tools; use `omx team api` CLI interop.
 
 ## Message Protocol
-- Always include `from_worker: "worker-3"`
+- Always include `from_worker: "worker-1"`
 - Send leader messages to `to_worker: "leader-fixed"`
 
 ## Scope Rules
