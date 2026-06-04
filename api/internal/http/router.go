@@ -13,10 +13,11 @@ import (
 )
 
 type Dependencies struct {
-	Pool        *pgxpool.Pool
-	AuthService *auth.Service
-	Tokens      *auth.TokenService
-	TreeService *tree.Service
+	Pool             *pgxpool.Pool
+	AuthService      *auth.Service
+	Tokens           *auth.TokenService
+	TreeService      *tree.Service
+	LifecycleService *tree.LifecycleService
 }
 
 func NewRouter(deps Dependencies) http.Handler {
@@ -42,6 +43,21 @@ func NewRouter(deps Dependencies) http.Handler {
 			api.Post("/auth/register", authHandler.Register)
 			api.Post("/auth/login", authHandler.Login)
 			api.With(authMiddleware.RequireAuth).Get("/auth/me", authHandler.Me)
+
+			lifecycleService := deps.LifecycleService
+			if lifecycleService == nil && deps.Pool != nil {
+				lifecycleService = tree.NewLifecycleService(tree.NewSQLRepository(deps.Pool))
+			}
+			if lifecycleService != nil {
+				lifecycleHandler := handlers.NewTreeLifecycleHandler(lifecycleService)
+				api.Route("/admin", func(admin chi.Router) {
+					admin.Use(authMiddleware.RequireAdmin)
+					admin.Delete("/nodes/{node_id}", lifecycleHandler.DeleteNode)
+					admin.Put("/files/{file_id}/content", lifecycleHandler.UpsertFileContent)
+					admin.Post("/files/{file_id}/publish", lifecycleHandler.PublishFile)
+					admin.Post("/files/{file_id}/unpublish", lifecycleHandler.UnpublishFile)
+				})
+			}
 		}
 	})
 	return router

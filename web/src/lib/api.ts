@@ -265,7 +265,7 @@ function toContentEntry(entry: z.infer<typeof legacyContentEntrySchema> | z.infe
     };
   }
 
-  if (entry.node.kind === 'directory') {
+  if ('child_directory_count' in entry) {
     return {
       id: entry.node.id,
       kind: 'directory',

@@ -10,6 +10,7 @@ var (
 	ErrNodeNotFound                     = errors.New("node not found")
 	ErrFileContentNotFound              = errors.New("file content not found")
 	ErrNodeIsNotFile                    = errors.New("node is not a file")
+	ErrInvalidContentFormat             = errors.New("invalid content format")
 	ErrPublishedContentFormatChange     = errors.New("published file content_format cannot change")
 	ErrPublishedFileDelete              = errors.New("published file cannot be hard-deleted")
 	ErrDirectoryHasPublishedDescendants = errors.New("directory with published descendants cannot be hard-deleted")

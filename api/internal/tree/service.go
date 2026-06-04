@@ -29,6 +29,9 @@ func NewLifecycleService(repo LifecycleRepository) *LifecycleService {
 }
 
 func (s *LifecycleService) UpsertFileContent(ctx context.Context, nodeID uuid.UUID, input UpsertFileContentInput) (FileContent, error) {
+	if input.ContentFormat != ContentFormatMarkdown && input.ContentFormat != ContentFormatHTMLDocument {
+		return FileContent{}, ErrInvalidContentFormat
+	}
 	node, err := s.repo.GetNode(ctx, nodeID)
 	if err != nil {
 		return FileContent{}, err
