@@ -61,6 +61,26 @@ func TestAdminUpdateNodeRecordsPersistedPathChange(t *testing.T) {
 	}
 }
 
+func TestAdminUpdateNodeDoesNotRecordPathChangeTwiceForAtomicRepository(t *testing.T) {
+	nodeID := uuid.New()
+	repo := &atomicFakeAdminRepository{fakeAdminRepository: newFakeAdminRepository()}
+	repo.nodes[nodeID] = AdminNodeDetail{Node: Node{ID: nodeID, Kind: NodeKindFile, Name: "Post", Slug: "post", Path: "/old/post"}}
+	redirects := &fakePathChangeRecorder{err: errors.New("must not be called")}
+	service := NewAdminService(repo, redirects)
+	newSlug := "renamed"
+
+	detail, err := service.UpdateNode(context.Background(), nodeID, UpdateNodeInput{Slug: &newSlug})
+	if err != nil {
+		t.Fatalf("UpdateNode() error = %v", err)
+	}
+	if detail.Node.Path != "/old/renamed" {
+		t.Fatalf("updated path = %q, want /old/renamed", detail.Node.Path)
+	}
+	if redirects.oldPath != "" || redirects.newPath != "" {
+		t.Fatalf("separate redirect recorder called with %q -> %q", redirects.oldPath, redirects.newPath)
+	}
+}
+
 func TestAdminUpdateNodeRejectsReservedSlugWhenMovedToRoot(t *testing.T) {
 	parentID := uuid.New()
 	nodeID := uuid.New()
@@ -109,6 +129,12 @@ type fakeAdminRepository struct {
 	nodes       map[uuid.UUID]AdminNodeDetail
 	updateCalls int
 }
+
+type atomicFakeAdminRepository struct {
+	*fakeAdminRepository
+}
+
+func (*atomicFakeAdminRepository) recordsPathChangesAtomically() {}
 
 func newFakeAdminRepository() *fakeAdminRepository {
 	return &fakeAdminRepository{nodes: map[uuid.UUID]AdminNodeDetail{}}

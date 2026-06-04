@@ -92,3 +92,28 @@ Fresh independent monitor checks at `97f83d1`:
 | Environment guardrail | PASS | `blogenv` absent and Docker unavailable; neither used |
 
 The remaining terminal condition is Task 1 completion with no later product-code checkpoint. If the leader HEAD changes again, repeat the affected/full checks before completing monitor Task 3.
+
+## Transactional Redirect Corrective Checkpoint — 18:03 CST
+
+The monitor's remaining Packet D consistency risk was confirmed during leader review: the production SQL repository committed a node path update before `AdminService` invoked the separate lifecycle redirect recorder. A redirect write failure could therefore leave the new path committed without its required redirect.
+
+The corrective implementation now:
+
+- locks and reads the current node inside `SQLRepository.UpdateNode`;
+- updates the node and computes the persisted new path in the same transaction;
+- updates existing redirect targets and creates published-file/subtree redirects before commit;
+- rolls the entire transaction back if redirect persistence fails;
+- marks the production repository as atomically redirect-aware so `AdminService` does not repeat the redirect pass outside the transaction;
+- preserves the existing non-SQL/custom-repository redirect-recorder behavior.
+
+Fresh corrective-checkpoint verification:
+
+| Check | Result | Evidence |
+|---|---:|---|
+| Exact Go targeted tree stability | PASS | `go test -count=5 ./internal/tree` |
+| Exact Go full backend tests, uncached | PASS | `go test -count=1 ./...` |
+| Exact Go full backend vet | PASS | `go vet ./...` |
+| Read-only module resolution | PASS | `go list -mod=readonly ./...` |
+| Diff hygiene | PASS | `git diff --check` |
+
+Terminal transition remains held until the corrective checkpoint is committed and the complete backend/frontend/OpenAPI/diff gate passes on the resulting HEAD.

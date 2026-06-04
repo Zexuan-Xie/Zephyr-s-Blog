@@ -86,6 +86,10 @@ type PathChangeRecorder interface {
 	RecordPathChange(ctx context.Context, nodeID uuid.UUID, oldPath, newPath string) error
 }
 
+type atomicPathChangeRepository interface {
+	recordsPathChangesAtomically()
+}
+
 type AdminService struct {
 	repo      AdminRepository
 	redirects PathChangeRecorder
@@ -133,7 +137,8 @@ func (s *AdminService) UpdateNode(ctx context.Context, nodeID uuid.UUID, input U
 	if err != nil {
 		return AdminNodeDetail{}, err
 	}
-	if s.redirects != nil && current.Node.Path != updated.Node.Path {
+	_, redirectsRecordedAtomically := s.repo.(atomicPathChangeRepository)
+	if !redirectsRecordedAtomically && s.redirects != nil && current.Node.Path != updated.Node.Path {
 		if err := s.redirects.RecordPathChange(ctx, nodeID, current.Node.Path, updated.Node.Path); err != nil {
 			return AdminNodeDetail{}, err
 		}
