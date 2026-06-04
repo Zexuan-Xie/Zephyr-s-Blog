@@ -4,27 +4,27 @@ This file is generated for a live OMX team worker run and is disposable.
 
 ## Worker Identity
 - Team: implement-packet-f-ex-1ad13b6b
-- Worker: worker-1
+- Worker: worker-2
 - Role: executor
 - Leader cwd: /home/zephry_xzx/xlab/blog
-- Worktree root: /home/zephry_xzx/xlab/blog/.omx/team/implement-packet-f-ex-1ad13b6b/worktrees/worker-1
+- Worktree root: /home/zephry_xzx/xlab/blog/.omx/team/implement-packet-f-ex-1ad13b6b/worktrees/worker-2
 - Team state root: /home/zephry_xzx/xlab/blog/.omx/state
-- Inbox path: /home/zephry_xzx/xlab/blog/.omx/state/team/implement-packet-f-ex-1ad13b6b/workers/worker-1/inbox.md
-- Mailbox path: /home/zephry_xzx/xlab/blog/.omx/state/team/implement-packet-f-ex-1ad13b6b/mailbox/worker-1.json
+- Inbox path: /home/zephry_xzx/xlab/blog/.omx/state/team/implement-packet-f-ex-1ad13b6b/workers/worker-2/inbox.md
+- Mailbox path: /home/zephry_xzx/xlab/blog/.omx/state/team/implement-packet-f-ex-1ad13b6b/mailbox/worker-2.json
 - Leader mailbox path: /home/zephry_xzx/xlab/blog/.omx/state/team/implement-packet-f-ex-1ad13b6b/mailbox/leader-fixed.json
 - Task directory: /home/zephry_xzx/xlab/blog/.omx/state/team/implement-packet-f-ex-1ad13b6b/tasks
-- Worker status path: /home/zephry_xzx/xlab/blog/.omx/state/team/implement-packet-f-ex-1ad13b6b/workers/worker-1/status.json
-- Worker identity path: /home/zephry_xzx/xlab/blog/.omx/state/team/implement-packet-f-ex-1ad13b6b/workers/worker-1/identity.json
+- Worker status path: /home/zephry_xzx/xlab/blog/.omx/state/team/implement-packet-f-ex-1ad13b6b/workers/worker-2/status.json
+- Worker identity path: /home/zephry_xzx/xlab/blog/.omx/state/team/implement-packet-f-ex-1ad13b6b/workers/worker-2/identity.json
 
 ## Protocol
-1. Read your inbox at `/home/zephry_xzx/xlab/blog/.omx/state/team/implement-packet-f-ex-1ad13b6b/workers/worker-1/inbox.md`.
+1. Read your inbox at `/home/zephry_xzx/xlab/blog/.omx/state/team/implement-packet-f-ex-1ad13b6b/workers/worker-2/inbox.md`.
 2. Load the worker skill from the first existing path:
    - `${CODEX_HOME:-~/.codex}/skills/worker/SKILL.md`
    - `/home/zephry_xzx/xlab/blog/.codex/skills/worker/SKILL.md`
    - `/home/zephry_xzx/xlab/blog/skills/worker/SKILL.md`
 3. Send startup ACK before task work:
 
-   `omx team api send-message --input "{"team_name":"implement-packet-f-ex-1ad13b6b","from_worker":"worker-1","to_worker":"leader-fixed","body":"ACK: worker-1 initialized"}" --json`
+   `omx team api send-message --input "{"team_name":"implement-packet-f-ex-1ad13b6b","from_worker":"worker-2","to_worker":"leader-fixed","body":"ACK: worker-2 initialized"}" --json`
 
 4. Resolve canonical team state root in this order: `OMX_TEAM_STATE_ROOT` env -> worker identity `team_state_root` -> config/manifest `team_state_root` -> local cwd fallback.
 5. Read task files from `/home/zephry_xzx/xlab/blog/.omx/state/team/implement-packet-f-ex-1ad13b6b/tasks/task-<id>.json` using bare `task_id` values in APIs.
@@ -33,13 +33,13 @@ This file is generated for a live OMX team worker run and is disposable.
    - `omx team api transition-task-status --json`
    - `omx team api release-task-claim --json` only for rollback to pending
 7. Use mailbox delivery flow:
-   - `omx team api mailbox-list --input "{"team_name":"implement-packet-f-ex-1ad13b6b","worker":"worker-1"}" --json`
-   - `omx team api mailbox-mark-delivered --input "{"team_name":"implement-packet-f-ex-1ad13b6b","worker":"worker-1","message_id":"<MESSAGE_ID>"}" --json`
+   - `omx team api mailbox-list --input "{"team_name":"implement-packet-f-ex-1ad13b6b","worker":"worker-2"}" --json`
+   - `omx team api mailbox-mark-delivered --input "{"team_name":"implement-packet-f-ex-1ad13b6b","worker":"worker-2","message_id":"<MESSAGE_ID>"}" --json`
 8. Preserve leader steering via inbox/mailbox nudges; task payload stays in inbox/task JSON, not this file.
 9. Do not pass `workingDirectory` to legacy team_* MCP tools; use `omx team api` CLI interop.
 
 ## Message Protocol
-- Always include `from_worker: "worker-1"`
+- Always include `from_worker: "worker-2"`
 - Send leader messages to `to_worker: "leader-fixed"`
 
 ## Scope Rules
