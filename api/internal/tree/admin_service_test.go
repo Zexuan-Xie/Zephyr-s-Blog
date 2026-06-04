@@ -32,3 +32,9 @@ type fakeAdminRepository struct {
 func newFakeAdminRepository() *fakeAdminRepository {
 	return &fakeAdminRepository{nodes: map[uuid.UUID]Node{}}
 }
+
+func (f *fakeAdminRepository) CreateNode(_ context.Context, input CreateNodeInput) (Node, error) {
+	node := Node{ID: uuid.New(), ParentID: input.ParentID, Kind: input.Kind, Name: input.Name, Slug: input.Slug, SortOrder: input.SortOrder}
+	f.nodes[node.ID] = node
+	return node, nil
+}
