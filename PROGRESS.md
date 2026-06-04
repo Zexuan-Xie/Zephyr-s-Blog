@@ -29,16 +29,16 @@ This file is the durable breakpoint/resume log for the xLab Blog implementation.
 
 ## Current Overall State
 
-- Active/last team: `follow-implementation-b973ccd0` (shutdown complete; status now missing)
-- Team mode: OMX team, worktree mode, 4 executor workers; terminal and shut down
-- Latest observed team status (`omx team status follow-implementation-b973ccd0 --json --tail-lines 300`, status timestamp 2026-06-03T14:44:37.930Z / 2026-06-03 22:44 CST):
-  - workers: `total=4`, `dead=4`, `non_reporting=0`
-  - tasks: `total=5`, `completed=5`, `failed=0`, `pending=0`, `in_progress=0`, `blocked=0` after Task 2 reconciliation
-  - task-file reconciliation: `task-2.json` now shows `status: completed` (version 6) with leader-side result and delegation compliance evidence.
-  - dead/idle-or-unknown worker map: `worker-1=idle/dead`, `worker-2=unknown/dead`, `worker-3=idle/dead`, `worker-4=idle/dead`.
+- Active/last team: `resume-xlab-blog-from-38975700` (Packet D terminal reconciliation in progress)
+- Team mode: OMX team, worktree mode, 4 executor workers; 3 original workers dead after power loss, monitor task reconciled by leader because surviving worker-1 did not produce fresh output.
+- Latest observed team status (`omx team status resume-xlab-blog-from-38975700 --json --tail-lines 100`, 2026-06-04 11:48 CST):
+  - workers: `total=4`, `dead=3`, `non_reporting=0`
+  - tasks before final monitor transition: `total=6`, `completed=5`, `in_progress=1`, `pending=0`, `failed=0`, `blocked=0`
+  - tasks 1/2/3/5/6 are completed; task 4 is the final monitor/verification reconciliation.
+  - delayed stale-worker checkpoint `b0e5c05` was neutralized by verified repair commit `cfc01b2`.
 - Current git branch: `main`, ahead of `origin/main` by many local OMX checkpoint commits.
-- Latest observed leader HEAD: `0a0e712 omx(team): auto-checkpoint worker-2 [2]`.
-- Do **not** assume the stale team workers are recoverable; the team has been shut down after all tasks completed. Use `PROGRESS.md` and historical `.omx/reports/team-commit-hygiene/` evidence for resume.
+- Latest observed leader HEAD: `cfc01b2 Neutralize a delayed stale-worker checkpoint`.
+- Do **not** integrate detached worker commits without diffing against the latest verified leader baseline; a delayed dead-worker auto-checkpoint already caused and then exposed a compile regression during this recovery.
 
 ## Completed Tasks
 
@@ -125,6 +125,7 @@ Important: `docs/verification/phase-0-1-acceptance-matrix.md` should be updated 
 
 ## Active Milestone Log
 
+- 2026-06-04 11:49 CST: Final monitor reconciliation prepared by leader because the surviving worker-1 pane produced no fresh task output despite repeated inbox/messages. Fresh post-repair verification remains PASS: exact Go `1.26.4` `go test ./...` and `go vet ./...`; frontend `npm run lint` and `npm run build`; OpenAPI local-ref walk (`paths=22`, `schemas=33`, `refs=100`); `git diff --check`. Evidence is recorded in `docs/verification/packet-d-final-recovery-20260604.md`. Current breakpoint: transition task 4, verify terminal team summary, shut down team, then update this log with shutdown evidence.
 - 2026-06-04 11:47 CST: Delayed checkpoint hazard handled. After tasks 2/3 were marked completed, runtime integrated dead worker-2 commit `9c8c35b` as leader commit `b0e5c05`; it replaced the verified public-tree `SQLRepository` and truncated lifecycle handlers, causing immediate Go compile failures (`Repository redeclared`, `SQLRepository undefined`). Leader restored the two overwritten files from verified commit `dd0f9d7`, and exact Go `1.26.4` `go test ./...` plus `go vet ./...` pass again. Worker-1 monitor was told to hold Task 4 terminal transition until fresh frontend/final verification and a corrective commit are complete. Current breakpoint: finish fresh frontend verification, commit the delayed-checkpoint repair, then authorize final monitor completion.
 - 2026-06-04 11:45 CST: Packet D recovery implementation reached a verified pre-terminal checkpoint. Task 2 leader recovery added lifecycle repository methods on the existing `SQLRepository`, admin lifecycle handlers/routes, publish/unpublish/content/deletion/redirect business-rule tests, and avoided the conflicting alternate repository draft. Task 3 detached frontend checkpoint was integrated; its Zod union narrowing bug was fixed. PASS exact Go `1.26.4` `go test ./...` and `go vet ./...`; PASS `npm ci`, `npm run lint`, and `npm run build`; PASS `git diff --check`. Runtime has reassigned expired task 2/3/4 claims to the surviving worker-1; leader owns task 2/3 terminal reconciliation while worker-1 is instructed to perform task 4 monitoring/final evidence only. Current breakpoint: commit Task 2/3 checkpoint, transition tasks 2/3, receive final monitor evidence, then shut down terminal team.
 - 2026-06-04 11:40 CST: Leader recovery fix is verified. The public-tree `Service`, strict public `NormalizePath`, and `PublicKeywords` overwritten by the worker-2 checkpoint were restored in `api/internal/tree/public_service.go`; lifecycle path cleaning remains isolated in `path.go`. PASS exact Go `1.26.4` full backend tests with `GOCACHE=/tmp/omx-go-cache go test ./...`; PASS `go vet ./...`; PASS `git diff --check`. Current breakpoint: commit this safe baseline, resume the dead team, then complete tasks 2 (lifecycle repository/handlers/tests), 3 (controlled frontend checkpoint integration/verification), and 4 (monitor/final evidence).
