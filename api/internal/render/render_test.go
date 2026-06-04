@@ -73,10 +73,34 @@ func TestVisibleTextFromHTMLExcludesHiddenDescendantsAndImportantStyles(t *testi
 }
 
 func TestVisibleTextFromHTMLNormalizesWhitespace(t *testing.T) {
-	document := "<main><p>  first\n\tline </p><p>second&nbsp;line&#x2003;third</p></main>"
+	tests := []struct {
+		name     string
+		document string
+		want     string
+	}{
+		{
+			name:     "mixed unicode whitespace",
+			document: "<main><p>  first\n\tline </p><p>second&nbsp;line&#x2003;third</p></main>",
+			want:     "first line second line third",
+		},
+		{
+			name:     "boundary and repeated non-breaking spaces",
+			document: "<p>&nbsp;alpha&nbsp;&nbsp;beta&nbsp;</p>",
+			want:     "alpha beta",
+		},
+		{
+			name:     "non-breaking spaces across sibling nodes",
+			document: "<span>alpha&nbsp;</span><span>&nbsp;beta</span>",
+			want:     "alpha beta",
+		},
+	}
 
-	if got := VisibleTextFromHTML(document); got != "first line second line third" {
-		t.Fatalf("VisibleTextFromHTML() = %q, want %q", got, "first line second line third")
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := VisibleTextFromHTML(test.document); got != test.want {
+				t.Fatalf("VisibleTextFromHTML() = %q, want %q", got, test.want)
+			}
+		})
 	}
 }
 
