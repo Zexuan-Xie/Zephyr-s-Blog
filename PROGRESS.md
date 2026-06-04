@@ -1,6 +1,6 @@
 # xLab Blog Implementation Progress
 
-Last updated: 2026-06-04 17:44 CST
+Last updated: 2026-06-04 18:10 CST
 
 This file is the durable breakpoint/resume log for the xLab Blog implementation. Read this before resuming multi-agent work, then read `IMPLEMENTATION_PLAN.md` and active specs as needed.
 
@@ -29,16 +29,15 @@ This file is the durable breakpoint/resume log for the xLab Blog implementation.
 
 ## Current Overall State
 
-- Active/last team: `resume-xlab-blog-from-38975700` (Packet D terminal reconciliation in progress)
-- Team mode: OMX team, worktree mode, 4 executor workers; 3 original workers dead after power loss, monitor task reconciled by leader because surviving worker-1 did not produce fresh output.
-- Latest observed team status (`omx team status resume-xlab-blog-from-38975700 --json --tail-lines 100`, 2026-06-04 11:48 CST):
-  - workers: `total=4`, `dead=3`, `non_reporting=0`
-  - tasks before final monitor transition: `total=6`, `completed=5`, `in_progress=1`, `pending=0`, `failed=0`, `blocked=0`
-  - tasks 1/2/3/5/6 are completed; task 4 is the final monitor/verification reconciliation.
-  - delayed stale-worker checkpoint `b0e5c05` was neutralized by verified repair commit `cfc01b2`.
-- Current git branch: `main`, ahead of `origin/main` by many local OMX checkpoint commits.
-- Latest observed leader HEAD: `cfc01b2 Neutralize a delayed stale-worker checkpoint`.
-- Do **not** integrate detached worker commits without diffing against the latest verified leader baseline; a delayed dead-worker auto-checkpoint already caused and then exposed a compile regression during this recovery.
+- Active team: none. Last team `resume-xlab-blog-exac-1ad13b6b` reached `phase=complete` with tasks `completed=4`, `pending=0`, `in_progress=0`, `failed=0`, then shut down gracefully; `omx team status resume-xlab-blog-exac-1ad13b6b` now returns `status=missing`.
+- Packet D backend admin CRUD/reserved-root/redirect lifecycle, Packet E backend rendering/search text, and the previously verified Packet D/E frontend are integrated.
+- Recovery-risk repairs are integrated:
+  - `3895aef` makes production node path updates and redirect persistence atomic.
+  - `4646cde` makes JWT tamper verification deterministic.
+- Final Packet D/E terminal evidence is recorded in `docs/verification/packet-d-e-recovery-monitor-20260604.md`.
+- Current git branch: `main`, ahead of `origin/main` by local implementation/checkpoint commits; leader tree was clean after shutdown.
+- Next plan-aligned packet: Packet F — Reader Interactions: Comments and Likes. OpenAPI must be updated before shared API implementation.
+- Do **not** integrate detached/stale worker commits without diffing against the latest verified leader baseline.
 
 ## Completed Tasks
 
@@ -125,6 +124,7 @@ Important: `docs/verification/phase-0-1-acceptance-matrix.md` should be updated 
 
 ## Active Milestone Log
 
+- 2026-06-04 18:10 CST: Recovery team `resume-xlab-blog-exac-1ad13b6b` shut down gracefully after terminal reconciliation; subsequent status is `missing`. Shutdown produced historical worker-branch merge-conflict reports, but leader HEAD remained `2c58eb3`, the main working tree stayed clean, and no worker checkpoint was applied after the verified terminal gate. The durable resume sections were refreshed to make Packet F comments/likes the next plan-aligned breakpoint. Current breakpoint: audit Packet F and launch a fresh OpenAPI-first implementation team; do not revive the shut-down Packet D/E worktrees.
 - 2026-06-04 18:09 CST: Recovery team `resume-xlab-blog-exac-1ad13b6b` reached terminal state. `omx team status` reports `phase=complete`, tasks `completed=4`, `pending=0`, `in_progress=0`, `failed=0`, `blocked=0`; all three worker panes remain alive and reporting. Resource-limited monitor Task 3 was reconciled through its existing claim with the final verified evidence and required delegation record; guardrail Task 4 completed from the same terminal gate. Current breakpoint: preserve this terminal task-state milestone, gracefully shut down the team, confirm status becomes `missing`, then record the shutdown breakpoint.
 - 2026-06-04 18:07 CST: Final terminal gate passes on leader HEAD `4646cde` after both recovery-risk repairs. PASS exact Go `1.26.4` uncached full backend tests, race tests for auth/render/tree, full vet, read-only module resolution, and gofmt scan; PASS frontend render-safety contract (3/3), lint, typecheck/build; PASS OpenAPI local-ref walk (`paths=22`, `schemas=33`, `refs=100`), exact iframe sandbox guardrail, `git diff --check`, and clean working tree. `blogenv` remains absent and Docker unavailable; neither was assumed. `go mod tidy -diff` remains intentionally nonzero because the planned direct `pgvector-go` pin is not used yet and the current sum contains harmless historical entries; `go list -mod=readonly ./...` passes. Current breakpoint: reconcile resource-limited monitor Task 3 with this evidence, complete guardrail Task 4, verify terminal team state, and gracefully shut down.
 - 2026-06-04 18:05 CST: The monitor's authentication-test flake is repaired before terminal verification. `TestTokenIssueParseAndRejectTamper` now changes the first encoded signature byte instead of the final base64url character, whose unused pad bits could decode to the original signature. PASS targeted tamper test `-count=1000`, full auth package `-count=200`, uncached full backend tests, full vet, and `git diff --check`. Current breakpoint: commit the deterministic test repair, then run the complete terminal gate and finish monitor Tasks 3/4.
@@ -220,9 +220,10 @@ Observed in verification reports:
 
 - Node local: `v22.22.2`, required `22.22.3`
 - npm local: `10.9.7`, required `10.9.8`
-- Go local: missing, required `1.26.4`
+- Exact temporary Go: `/tmp/omx-go-1.26.4/go/bin/go` reports required `1.26.4`
 - Docker Compose: Docker unavailable in current WSL/Docker Desktop setup
-- Conda: present (`conda 26.1.1` observed)
+- Conda: present (`conda 26.1.1` observed), but `blogenv` is absent
+- `go mod tidy -diff` intentionally proposes removing the planned unused direct `pgvector-go` pin plus historical sums; `go list -mod=readonly ./...` passes
 
 Do not silently substitute versions. If exact Conda/toolchain install fails, report the solver/install error and update specs only after explicit decision.
 
@@ -233,65 +234,32 @@ From repo root `/home/zephry_xzx/xlab/blog`:
 ```bash
 git status --short --branch
 git --no-pager log --oneline --decorate -12
-omx team status follow-implementation-b973ccd0 --json --tail-lines 500
-for f in .omx/state/team/follow-implementation-b973ccd0/tasks/task-*.json; do echo "--- $f"; cat "$f"; done
+omx team status resume-xlab-blog-exac-1ad13b6b --json --tail-lines 300
+tail -n 80 docs/verification/packet-d-e-recovery-monitor-20260604.md
 ```
 
-Then choose one of these paths:
-
-### Path A — Reconcile stale team state, then shut it down
-
-Use this if no worker panes are recoverable and all useful changes are already integrated.
-
-1. Confirm task 2 state and latest backend files.
-2. If task 2 should remain open, record it in a new follow-up task/team before shutdown.
-3. If task 2 is manually completed or intentionally deferred, transition/record it explicitly.
-4. Only when `pending=0`, `in_progress=0`, `failed=0`, run:
+The old team status should be `missing`. Before starting Packet F, verify the preserved terminal baseline:
 
 ```bash
-omx team shutdown follow-implementation-b973ccd0
+cd api
+PATH=/tmp/omx-go-1.26.4/go/bin:$PATH go test -count=1 ./...
+PATH=/tmp/omx-go-1.26.4/go/bin:$PATH go vet ./...
+cd ../web
+node --test tests/render-safety.test.mjs
+npm run lint
+npm run build
 ```
 
-Do not shutdown before preserving task 2's unresolved state.
-
-### Path B — Fresh follow-up team (recommended for continuing multi-agent work)
-
-Launch a smaller fresh team using this file as the handoff:
-
-```bash
-omx team 3:executor "Resume xLab Blog implementation from PROGRESS.md. First reconcile unfinished backend Packet B/C task 2, preserve exact TECH_STACK versions, run/record available verification, update stale verification matrix, then continue IMPLEMENTATION_PLAN.md next packet only after backend foundation is terminal."
-```
-
-Suggested lanes:
-
-1. Backend executor: finish/reconcile Packet B/C, especially `go.mod`/`go.sum`, server/router/health/auth tests, migrations.
-2. Verifier: rerun OpenAPI/static checks, frontend lint/build if deps available, backend Go tests if exact Go available, update verification docs.
-3. Debugger/build-fixer: isolate `go mod tidy` / exact Go toolchain / Docker Compose blockers.
-
-### Path C — Solo reconciliation before relaunch
-
-If avoiding another stale team, do this directly first:
-
-1. Inspect backend files and `api/go.mod`/`api/go.sum`.
-2. Use exact Go `1.26.4` if available; otherwise document blocker.
-3. Run:
-
-```bash
-cd api && go test ./...
-```
-
-4. Fix minimal compile/test issues without broadening to content tree/search/admin.
-5. Update `docs/verification/phase-0-1-acceptance-matrix.md` or supersede it with a newer matrix.
-6. Then launch the next team for Packet D backend/content tree or Packet C auth completion as appropriate.
+Then audit Packet F against `IMPLEMENTATION_PLAN.md`, update `docs/api/openapi.yaml` first, and launch a fresh team rather than reviving shut-down worktrees.
 
 ## Immediate Next Concrete Steps
 
-1. Reconcile task 2 backend foundation. Treat it as the active breakpoint.
-2. Verify whether the current `api/` tree includes handlers/middleware/respond files; if not, recover from worker checkpoints or reimplement minimally.
-3. Run `go mod tidy` only with exact Go `1.26.4` or clearly document why exact Go is unavailable.
-4. Run backend tests once Go is available.
-5. Update stale verification matrix after backend state is known.
-6. Do not proceed to content tree/search/assets/admin until backend foundation/auth state is terminal and verified.
+1. Audit current comments/likes schema, OpenAPI paths, backend packages, and frontend placeholders against Packet F.
+2. Update `docs/api/openapi.yaml` before implementing missing shared API routes or response shapes.
+3. Implement two-level comments with reply normalization and soft-delete ownership/admin rules.
+4. Implement idempotent File/Comment likes and unlikes.
+5. Implement frontend anonymous-read and `/login?return_to=current_path` write-action behavior.
+6. Keep a dedicated monitor lane updating this file after every milestone and run full regression verification before terminal transition.
 
 ## Key Files To Inspect After Reconnect
 
@@ -312,7 +280,7 @@ cd api && go test ./...
 ## Notes For Future Agents
 
 - The previous team launch initially assigned all tasks to worker-1; task owners/manifest were manually repaired. Avoid relying on stale worker identity files from that run.
-- Worker panes are currently reported dead. Treat `.omx/state/team/follow-implementation-b973ccd0` as historical evidence unless explicitly recovered.
+- Packet D/E recovery worker panes were gracefully shut down. Treat old `.omx/team/*/worktrees` and shutdown merge-conflict reports as historical evidence only; leader HEAD remained clean and verified.
 - Keep using Directory/File/Reader/Anonymous Visitor/Content Tree vocabulary from `docs/specs/CONTEXT.md`.
 - API changes must update `docs/api/openapi.yaml` first.
 - Backend SQL belongs in repositories, not handlers.
