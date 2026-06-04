@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -61,9 +62,9 @@ func (input *UpdateNodeInput) UnmarshalJSON(data []byte) error {
 }
 
 type AdminNodeDetail struct {
-	Node             Node          `json:"node"`
-	Content          *FileContent  `json:"content,omitempty"`
-	Assets           []FileAsset   `json:"assets"`
+	Node             Node           `json:"node"`
+	Content          *FileContent   `json:"content,omitempty"`
+	Assets           []FileAsset    `json:"assets"`
 	RedirectsCreated []PathRedirect `json:"redirects_created"`
 }
 
@@ -72,7 +73,7 @@ type PathRedirect struct {
 	OldPath   string    `json:"old_path"`
 	NewPath   string    `json:"new_path"`
 	NodeID    uuid.UUID `json:"node_id"`
-	CreatedAt string    `json:"created_at,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type AdminRepository interface {

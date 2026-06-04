@@ -18,6 +18,7 @@ type Dependencies struct {
 	Tokens           *auth.TokenService
 	TreeService      *tree.Service
 	LifecycleService *tree.LifecycleService
+	AdminService     *tree.AdminService
 }
 
 func NewRouter(deps Dependencies) http.Handler {
@@ -45,17 +46,32 @@ func NewRouter(deps Dependencies) http.Handler {
 			api.With(authMiddleware.RequireAuth).Get("/auth/me", authHandler.Me)
 
 			lifecycleService := deps.LifecycleService
-			if lifecycleService == nil && deps.Pool != nil {
-				lifecycleService = tree.NewLifecycleService(tree.NewSQLRepository(deps.Pool))
+			adminService := deps.AdminService
+			if deps.Pool != nil && (lifecycleService == nil || adminService == nil) {
+				repo := tree.NewSQLRepository(deps.Pool)
+				if lifecycleService == nil {
+					lifecycleService = tree.NewLifecycleService(repo)
+				}
+				if adminService == nil {
+					adminService = tree.NewAdminService(repo, lifecycleService)
+				}
 			}
-			if lifecycleService != nil {
+			if lifecycleService != nil || adminService != nil {
 				lifecycleHandler := handlers.NewTreeLifecycleHandler(lifecycleService)
 				api.Route("/admin", func(admin chi.Router) {
 					admin.Use(authMiddleware.RequireAdmin)
-					admin.Delete("/nodes/{node_id}", lifecycleHandler.DeleteNode)
-					admin.Put("/files/{file_id}/content", lifecycleHandler.UpsertFileContent)
-					admin.Post("/files/{file_id}/publish", lifecycleHandler.PublishFile)
-					admin.Post("/files/{file_id}/unpublish", lifecycleHandler.UnpublishFile)
+					if adminService != nil {
+						adminHandler := handlers.NewAdminNodeHandler(adminService)
+						admin.Post("/nodes", adminHandler.CreateNode)
+						admin.Get("/nodes/{node_id}", adminHandler.GetNode)
+						admin.Patch("/nodes/{node_id}", adminHandler.UpdateNode)
+					}
+					if lifecycleService != nil {
+						admin.Delete("/nodes/{node_id}", lifecycleHandler.DeleteNode)
+						admin.Put("/files/{file_id}/content", lifecycleHandler.UpsertFileContent)
+						admin.Post("/files/{file_id}/publish", lifecycleHandler.PublishFile)
+						admin.Post("/files/{file_id}/unpublish", lifecycleHandler.UnpublishFile)
+					}
 				})
 			}
 		}

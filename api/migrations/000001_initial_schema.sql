@@ -31,6 +31,7 @@ create table if not exists nodes (
 );
 
 create index if not exists nodes_parent_sort_idx on nodes(parent_id, kind, sort_order, name);
+create unique index if not exists nodes_root_slug_unique_idx on nodes(slug) where parent_id is null;
 
 create table if not exists file_contents (
   node_id uuid primary key references nodes(id) on delete cascade,
