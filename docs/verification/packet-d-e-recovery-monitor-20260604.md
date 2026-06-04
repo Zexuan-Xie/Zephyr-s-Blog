@@ -32,3 +32,11 @@ Do not complete the monitor lane until:
 3. frontend render-safety contract test, lint, and build pass;
 4. OpenAPI local-ref walk and `git diff --check` pass;
 5. environment evidence continues to avoid assuming `blogenv` or Docker.
+
+## Integration Checkpoint — 17:52 CST
+
+- Exact Go `1.26.4` was restored at `/tmp/omx-go-1.26.4/go/bin/go`.
+- Render checkpoint `69afa32`, NBSP follow-up `8f38a45`, and admin-service checkpoint `d096a51` landed on the leader.
+- Immediate exact-Go targeted render tests, full tests, and vet do not start because the render dependency change requires a committed `go mod tidy` update.
+- The monitor notified worker-2 and the leader and is validating a temporary archive after `go mod tidy` without mutating product code.
+- Terminal transition remains held until the dependency metadata lands and fresh leader-tree full verification passes.
