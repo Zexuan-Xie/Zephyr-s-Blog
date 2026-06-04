@@ -117,3 +117,17 @@ Fresh corrective-checkpoint verification:
 | Diff hygiene | PASS | `git diff --check` |
 
 Terminal transition remains held until the corrective checkpoint is committed and the complete backend/frontend/OpenAPI/diff gate passes on the resulting HEAD.
+
+## Deterministic Authentication Tamper Regression — 18:05 CST
+
+The monitor's repeated auth probe classified `TestTokenIssueParseAndRejectTamper` as a flaky test rather than a token-validation failure. The prior test replaced the final base64url signature character; for some signatures that changes only unused pad bits and decodes to the original bytes.
+
+The test now changes the first encoded signature character, guaranteeing different signature bytes while preserving valid JWT structure.
+
+| Check | Result | Evidence |
+|---|---:|---|
+| Targeted tamper regression | PASS | `go test -run '^TestTokenIssueParseAndRejectTamper$' -count=1000 ./internal/auth` |
+| Full auth stability | PASS | `go test -count=200 ./internal/auth` |
+| Exact Go full backend tests, uncached | PASS | `go test -count=1 ./...` |
+| Exact Go full backend vet | PASS | `go vet ./...` |
+| Diff hygiene | PASS | `git diff --check` |

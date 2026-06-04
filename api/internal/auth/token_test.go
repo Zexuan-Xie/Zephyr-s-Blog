@@ -42,7 +42,7 @@ func TestTokenIssueParseAndRejectTamper(t *testing.T) {
 		t.Fatalf("claims = %#v, want user claims", claims)
 	}
 
-	tampered := token[:len(token)-1] + replacementLastByte(token)
+	tampered := tamperTokenSignature(t, token)
 	if _, err := tokenService.Parse(tampered); err == nil {
 		t.Fatal("expected tampered token to fail")
 	}
@@ -63,9 +63,16 @@ func TestTokenRejectsExpired(t *testing.T) {
 	}
 }
 
-func replacementLastByte(token string) string {
-	if strings.HasSuffix(token, "a") {
-		return "b"
+func tamperTokenSignature(t *testing.T, token string) string {
+	t.Helper()
+	parts := strings.Split(token, ".")
+	if len(parts) != 3 || parts[2] == "" {
+		t.Fatalf("unexpected token format: %q", token)
 	}
-	return "a"
+	replacement := "A"
+	if strings.HasPrefix(parts[2], replacement) {
+		replacement = "B"
+	}
+	parts[2] = replacement + parts[2][1:]
+	return strings.Join(parts, ".")
 }
