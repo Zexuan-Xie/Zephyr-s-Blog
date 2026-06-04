@@ -2,14 +2,18 @@ package httpapi
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 
+	"xlab-blog/api/internal/auth"
 	"xlab-blog/api/internal/tree"
+	"xlab-blog/api/internal/users"
 )
 
 func TestRouterExposesPublicTreeRoutes(t *testing.T) {
@@ -46,6 +50,49 @@ func TestRouterExposesPublicTreeRoutes(t *testing.T) {
 				t.Fatalf("body = %s, want substring %s", response.Body.String(), tt.wantBody)
 			}
 		})
+	}
+}
+
+func TestRouterExposesAdminNodeRoutes(t *testing.T) {
+	adminUser := users.User{ID: uuid.New(), Email: "admin@example.com", Role: users.RoleAdmin}
+	userRepo := &routerFakeUserRepository{user: adminUser}
+	tokens := auth.NewTokenService("router-test-secret", time.Hour)
+	authService := auth.NewService(userRepo, tokens)
+	token, err := tokens.Issue(adminUser)
+	if err != nil {
+		t.Fatalf("Issue() error = %v", err)
+	}
+	nodeID := uuid.New()
+	adminRepo := &routerFakeAdminRepository{detail: tree.AdminNodeDetail{
+		Node:             tree.Node{ID: nodeID, Kind: tree.NodeKindDirectory, Name: "Notes", Slug: "notes", Path: "/notes"},
+		Assets:           []tree.FileAsset{},
+		RedirectsCreated: []tree.PathRedirect{},
+	}}
+	router := NewRouter(Dependencies{
+		AuthService:  authService,
+		Tokens:       tokens,
+		AdminService: tree.NewAdminService(adminRepo, nil),
+	})
+
+	tests := []struct {
+		method string
+		path   string
+		body   string
+		status int
+	}{
+		{method: http.MethodPost, path: "/api/admin/nodes", body: `{"kind":"directory","name":"Notes","slug":"notes"}`, status: http.StatusCreated},
+		{method: http.MethodGet, path: "/api/admin/nodes/" + nodeID.String(), status: http.StatusOK},
+		{method: http.MethodPatch, path: "/api/admin/nodes/" + nodeID.String(), body: `{"name":"Renamed"}`, status: http.StatusOK},
+	}
+
+	for _, tt := range tests {
+		request := httptest.NewRequest(tt.method, tt.path, strings.NewReader(tt.body))
+		request.Header.Set("Authorization", "Bearer "+token)
+		response := httptest.NewRecorder()
+		router.ServeHTTP(response, request)
+		if response.Code != tt.status {
+			t.Fatalf("%s %s status = %d, want %d; body=%s", tt.method, tt.path, response.Code, tt.status, response.Body.String())
+		}
 	}
 }
 
@@ -96,4 +143,40 @@ func (f *routerFakeTreeRepository) FindNodeByParentAndSlug(_ context.Context, pa
 
 func (f *routerFakeTreeRepository) RedirectPath(_ context.Context, oldPath string) (string, error) {
 	return "", tree.ErrNotFound
+}
+
+type routerFakeAdminRepository struct {
+	detail tree.AdminNodeDetail
+}
+
+func (f *routerFakeAdminRepository) GetAdminNode(context.Context, uuid.UUID) (tree.AdminNodeDetail, error) {
+	return f.detail, nil
+}
+
+func (f *routerFakeAdminRepository) CreateNode(context.Context, tree.CreateNodeInput) (tree.AdminNodeDetail, error) {
+	return f.detail, nil
+}
+
+func (f *routerFakeAdminRepository) UpdateNode(context.Context, uuid.UUID, tree.UpdateNodeInput) (tree.AdminNodeDetail, error) {
+	return f.detail, nil
+}
+
+type routerFakeUserRepository struct {
+	user users.User
+}
+
+func (f *routerFakeUserRepository) CreateReader(context.Context, string, string, *string) (users.User, error) {
+	return users.User{}, errors.New("not implemented")
+}
+
+func (f *routerFakeUserRepository) FindByEmail(context.Context, string) (users.User, error) {
+	return f.user, nil
+}
+
+func (f *routerFakeUserRepository) FindByID(context.Context, uuid.UUID) (users.User, error) {
+	return f.user, nil
+}
+
+func (f *routerFakeUserRepository) UpsertAdmin(context.Context, string, string) (users.User, error) {
+	return f.user, nil
 }

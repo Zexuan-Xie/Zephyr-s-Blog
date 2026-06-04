@@ -113,6 +113,9 @@ func (s *AdminService) UpdateNode(ctx context.Context, nodeID uuid.UUID, input U
 	if err != nil {
 		return AdminNodeDetail{}, err
 	}
+	if input.ParentID != nil {
+		input.ParentIDSet = true
+	}
 
 	if input.Name != nil {
 		trimmed := strings.TrimSpace(*input.Name)
