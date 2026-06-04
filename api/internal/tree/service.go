@@ -105,8 +105,8 @@ func (s *LifecycleService) DeleteNode(ctx context.Context, nodeID uuid.UUID) err
 }
 
 func (s *LifecycleService) RecordPathChange(ctx context.Context, nodeID uuid.UUID, oldPath string, newPath string) error {
-	oldPath = NormalizePath(oldPath)
-	newPath = NormalizePath(newPath)
+	oldPath = normalizePath(oldPath)
+	newPath = normalizePath(newPath)
 	if oldPath == "/" || newPath == "/" || oldPath == newPath {
 		return nil
 	}
@@ -138,7 +138,7 @@ func (s *LifecycleService) RecordPathChange(ctx context.Context, nodeID uuid.UUI
 		return err
 	}
 	for _, file := range files {
-		finalPath := NormalizePath(file.Path)
+		finalPath := normalizePath(file.Path)
 		oldFilePath := replacePathPrefix(finalPath, newPath, oldPath)
 		if oldFilePath == finalPath {
 			continue

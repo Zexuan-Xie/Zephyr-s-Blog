@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func NormalizePath(value string) string {
+func normalizePath(value string) string {
 	value = strings.TrimSpace(value)
 	if value == "" {
 		return "/"
@@ -21,14 +21,14 @@ func NormalizePath(value string) string {
 }
 
 func replacePathPrefix(currentPath, oldPrefix, newPrefix string) string {
-	currentPath = NormalizePath(currentPath)
-	oldPrefix = NormalizePath(oldPrefix)
-	newPrefix = NormalizePath(newPrefix)
+	currentPath = normalizePath(currentPath)
+	oldPrefix = normalizePath(oldPrefix)
+	newPrefix = normalizePath(newPrefix)
 	if oldPrefix == "/" {
 		if currentPath == "/" {
 			return newPrefix
 		}
-		return NormalizePath(path.Join(newPrefix, strings.TrimPrefix(currentPath, "/")))
+		return normalizePath(path.Join(newPrefix, strings.TrimPrefix(currentPath, "/")))
 	}
 	if currentPath == oldPrefix {
 		return newPrefix
@@ -37,5 +37,5 @@ func replacePathPrefix(currentPath, oldPrefix, newPrefix string) string {
 	if suffix == currentPath {
 		return currentPath
 	}
-	return NormalizePath(path.Join(newPrefix, suffix))
+	return normalizePath(path.Join(newPrefix, suffix))
 }
