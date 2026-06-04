@@ -40,3 +40,14 @@ Do not complete the monitor lane until:
 - Immediate exact-Go targeted render tests, full tests, and vet do not start because the render dependency change requires a committed `go mod tidy` update.
 - The monitor notified worker-2 and the leader and is validating a temporary archive after `go mod tidy` without mutating product code.
 - Terminal transition remains held until the dependency metadata lands and fresh leader-tree full verification passes.
+
+### Temporary archive probe after `go mod tidy`
+
+| Check | Result | Evidence |
+|---|---:|---|
+| Render package, including NBSP normalization | PASS | `go test ./internal/render -v`; `TestVisibleTextFromHTMLNormalizesWhitespace` passes |
+| Full backend tests | FAIL | Deterministic compile mismatch: `fakeAdminRepository.CreateNode` returns `Node`, but current `AdminRepository` requires `AdminNodeDetail` |
+| Auth tamper regression | INTERMITTENT | One full-suite run failed `TestTokenIssueParseAndRejectTamper`; five immediate targeted reruns passed |
+| Backend vet | BLOCKED | Tree test compile mismatch prevents a clean full vet gate |
+
+The archive probe did not edit the leader or worker product trees. Worker-1 and the leader were notified of the deterministic tree mismatch. The single auth failure is tracked as a possible flaky test until a later clean full-suite rerun proves the terminal gate.
