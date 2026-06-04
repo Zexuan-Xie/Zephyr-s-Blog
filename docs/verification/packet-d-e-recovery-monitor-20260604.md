@@ -131,3 +131,25 @@ The test now changes the first encoded signature character, guaranteeing differe
 | Exact Go full backend tests, uncached | PASS | `go test -count=1 ./...` |
 | Exact Go full backend vet | PASS | `go vet ./...` |
 | Diff hygiene | PASS | `git diff --check` |
+
+## Final Terminal Gate — 18:07 CST
+
+Leader HEAD `4646cde` includes the recovered Packet D/E implementation, transactional redirect correction, and deterministic authentication tamper regression.
+
+| Check | Result | Evidence |
+|---|---:|---|
+| Exact Go version | PASS | `go1.26.4 linux/amd64` |
+| Full backend tests, uncached | PASS | `go test -count=1 ./...` |
+| Backend race checks | PASS | `go test -race -count=1 ./internal/auth ./internal/render ./internal/tree` |
+| Full backend vet | PASS | `go vet ./...` |
+| Read-only module resolution | PASS | `go list -mod=readonly ./...` |
+| Go formatting | PASS | `gofmt -l internal cmd` returned no files |
+| Frontend render-safety contract | PASS | 3/3 tests |
+| Frontend lint | PASS | `npm run lint` |
+| Frontend typecheck/build | PASS | `npm run build` |
+| OpenAPI local-ref walk | PASS | `paths=22 schemas=33 refs=100` |
+| Exact iframe sandbox guardrail | PASS | `sandbox="allow-scripts"` present; no `allow-same-origin` |
+| Diff/working-tree hygiene | PASS | `git diff --check`; clean working tree |
+| Environment guardrail | PASS | `blogenv` absent and Docker unavailable; neither assumed |
+
+`go mod tidy -diff` remains nonzero because it would remove the planned direct `pgvector-go` pin plus harmless historical sum entries. The terminal module correctness gate is `go list -mod=readonly ./...`, which passes.
