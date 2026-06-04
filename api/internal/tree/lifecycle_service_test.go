@@ -78,6 +78,40 @@ func TestLifecycleRecordDirectoryPathChangeCreatesRedirects(t *testing.T) {
 	}
 }
 
+func TestLifecycleRecordPublishedFilePathChangeCreatesRedirect(t *testing.T) {
+	fileID := uuid.New()
+	repo := newFakeLifecycleRepository()
+	repo.nodes[fileID] = Node{ID: fileID, Kind: NodeKindFile}
+	repo.contents[fileID] = FileContent{NodeID: fileID, Status: PublishStatusPublished}
+	repo.redirects["/first/post"] = "/old/post"
+
+	err := NewLifecycleService(repo).RecordPathChange(context.Background(), fileID, "/old/post", "/new/post")
+	if err != nil {
+		t.Fatalf("RecordPathChange() error = %v", err)
+	}
+	if got := repo.redirects["/old/post"]; got != "/new/post" {
+		t.Fatalf("new redirect target = %q, want /new/post", got)
+	}
+	if got := repo.redirects["/first/post"]; got != "/new/post" {
+		t.Fatalf("existing redirect target = %q, want final path /new/post", got)
+	}
+}
+
+func TestLifecycleRecordDraftFilePathChangeDoesNotCreateRedirect(t *testing.T) {
+	fileID := uuid.New()
+	repo := newFakeLifecycleRepository()
+	repo.nodes[fileID] = Node{ID: fileID, Kind: NodeKindFile}
+	repo.contents[fileID] = FileContent{NodeID: fileID, Status: PublishStatusDraft}
+
+	err := NewLifecycleService(repo).RecordPathChange(context.Background(), fileID, "/old/post", "/new/post")
+	if err != nil {
+		t.Fatalf("RecordPathChange() error = %v", err)
+	}
+	if len(repo.redirects) != 0 {
+		t.Fatalf("redirects = %#v, want none", repo.redirects)
+	}
+}
+
 type fakeLifecycleRepository struct {
 	nodes           map[uuid.UUID]Node
 	contents        map[uuid.UUID]FileContent
