@@ -12,6 +12,7 @@ import (
 	"xlab-blog/api/internal/http/handlers"
 	"xlab-blog/api/internal/http/middleware"
 	"xlab-blog/api/internal/likes"
+	"xlab-blog/api/internal/search"
 	"xlab-blog/api/internal/tree"
 )
 
@@ -25,6 +26,7 @@ type Dependencies struct {
 	CommentService   *comments.Service
 	LikeService      *likes.Service
 	AssetService     *assets.Service
+	SearchService    handlers.SearchService
 }
 
 func NewRouter(deps Dependencies) http.Handler {
@@ -48,6 +50,15 @@ func NewRouter(deps Dependencies) http.Handler {
 		if assetService != nil {
 			assetHandler := handlers.NewAssetHandler(assetService)
 			api.Get("/assets/{asset_id}/{filename}", assetHandler.ServePublished)
+		}
+
+		searchService := deps.SearchService
+		if searchService == nil && deps.Pool != nil {
+			searchService = search.NewService(search.NewSQLRepository(deps.Pool), nil, "text-embedding-v4", 1024)
+		}
+		if searchService != nil {
+			searchHandler := handlers.NewSearchHandler(searchService)
+			api.Get("/search", searchHandler.Search)
 		}
 
 		var authMiddleware *middleware.Authenticator
@@ -99,11 +110,15 @@ func NewRouter(deps Dependencies) http.Handler {
 					adminService = tree.NewAdminService(repo, lifecycleService)
 				}
 			}
-			if lifecycleService != nil || adminService != nil || assetService != nil {
+			if lifecycleService != nil || adminService != nil || assetService != nil || searchService != nil {
 				lifecycleHandler := handlers.NewTreeLifecycleHandler(lifecycleService)
 				var assetHandler *handlers.AssetHandler
 				if assetService != nil {
 					assetHandler = handlers.NewAssetHandler(assetService)
+				}
+				var searchHandler *handlers.SearchHandler
+				if searchService != nil {
+					searchHandler = handlers.NewSearchHandler(searchService)
 				}
 				api.Route("/admin", func(admin chi.Router) {
 					admin.Use(authMiddleware.RequireAdmin)
@@ -122,6 +137,10 @@ func NewRouter(deps Dependencies) http.Handler {
 					if assetHandler != nil {
 						admin.Post("/files/{file_id}/assets", assetHandler.Upload)
 						admin.Delete("/assets/{asset_id}", assetHandler.Delete)
+					}
+					if searchHandler != nil {
+						admin.Post("/files/{file_id}/refresh-embedding", searchHandler.RefreshEmbedding)
+						admin.Post("/search-index/rebuild", searchHandler.Rebuild)
 					}
 				})
 			}

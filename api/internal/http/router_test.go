@@ -20,6 +20,7 @@ import (
 	"xlab-blog/api/internal/auth"
 	"xlab-blog/api/internal/comments"
 	"xlab-blog/api/internal/likes"
+	"xlab-blog/api/internal/search"
 	"xlab-blog/api/internal/tree"
 	"xlab-blog/api/internal/users"
 )
@@ -441,4 +442,64 @@ func (s *routerFakeAssetStorage) Open(key string) (assets.StoredObject, error) {
 func (s *routerFakeAssetStorage) Delete(key string) error {
 	delete(s.objects, key)
 	return nil
+}
+
+func TestRouterExposesSearchRoutes(t *testing.T) {
+	adminUser := users.User{ID: uuid.New(), Email: "admin@example.com", Role: users.RoleAdmin}
+	userRepo := &routerFakeUserRepository{user: adminUser}
+	tokens := auth.NewTokenService("router-search-secret", time.Hour)
+	authService := auth.NewService(userRepo, tokens)
+	token, err := tokens.Issue(adminUser)
+	if err != nil {
+		t.Fatalf("Issue() error = %v", err)
+	}
+	fileID := uuid.New()
+	router := NewRouter(Dependencies{AuthService: authService, Tokens: tokens, SearchService: &routerFakeSearchService{fileID: fileID}})
+
+	tests := []struct {
+		method string
+		path   string
+		token  string
+		status int
+		want   string
+	}{
+		{method: http.MethodGet, path: "/api/search?q=go", status: http.StatusOK, want: `"query":"go"`},
+		{method: http.MethodPost, path: "/api/admin/files/" + fileID.String() + "/refresh-embedding", token: token, status: http.StatusAccepted, want: `"dimensions":1024`},
+		{method: http.MethodPost, path: "/api/admin/search-index/rebuild", token: token, status: http.StatusAccepted, want: `"status":"accepted"`},
+		{method: http.MethodPost, path: "/api/admin/search-index/rebuild", status: http.StatusUnauthorized, want: `"error":"authentication required"`},
+	}
+	for _, tt := range tests {
+		req := httptest.NewRequest(tt.method, tt.path, nil)
+		if tt.token != "" {
+			req.Header.Set("Authorization", "Bearer "+tt.token)
+		}
+		res := httptest.NewRecorder()
+		router.ServeHTTP(res, req)
+		if res.Code != tt.status {
+			t.Fatalf("%s %s status = %d, want %d; body=%s", tt.method, tt.path, res.Code, tt.status, res.Body.String())
+		}
+		if !strings.Contains(res.Body.String(), tt.want) {
+			t.Fatalf("body = %s, want %s", res.Body.String(), tt.want)
+		}
+	}
+}
+
+type routerFakeSearchService struct {
+	fileID uuid.UUID
+}
+
+func (s *routerFakeSearchService) Search(_ context.Context, query string, _ search.Options) (search.Response, error) {
+	reading := 1
+	return search.Response{Query: strings.TrimSpace(query), Items: []search.Result{{
+		File: tree.FileEntry{Node: tree.Node{ID: s.fileID, Kind: tree.NodeKindFile, Name: "Search", Path: "/search-file"}, ContentFormat: tree.ContentFormatMarkdown, Status: tree.PublishStatusPublished, ReadingTimeMinutes: &reading},
+		Path: "/search-file", Snippet: "Search", Score: 1, MatchSources: []string{search.SourceText},
+	}}}, nil
+}
+
+func (s *routerFakeSearchService) RefreshFileEmbedding(context.Context, uuid.UUID) (search.EmbeddingState, error) {
+	return search.EmbeddingState{FileID: s.fileID, Provider: search.ProviderQwen, Model: "text-embedding-v4", Dimensions: 1024, Status: tree.EmbeddingStatusReady}, nil
+}
+
+func (s *routerFakeSearchService) Rebuild(context.Context) (search.RebuildState, error) {
+	return search.RebuildState{Status: "accepted"}, nil
 }

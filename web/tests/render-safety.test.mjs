@@ -63,3 +63,17 @@ test('Packet G assets use public URLs and admin upload/delete helpers', () => {
   assert.match(adminPageSource, /uploadAsset\(fileId\.trim\(\), file\)/);
   assert.match(adminPageSource, /deleteAsset\(assetId\)/);
 });
+
+
+test('Packet H search page calls search API and renders source badges', () => {
+  const apiSource = readFileSync(new URL('../src/lib/api.ts', import.meta.url), 'utf8');
+  const searchPageSource = readFileSync(new URL('../src/pages/SearchPage.tsx', import.meta.url), 'utf8');
+
+  assert.match(apiSource, /\/search\?q=\$\{encodeURIComponent\(query\)\}/);
+  assert.match(apiSource, /match_sources/);
+  assert.match(apiSource, /semantic/);
+  assert.match(searchPageSource, /searchFiles\(query\)/);
+  assert.match(searchPageSource, /result\.path/);
+  assert.match(searchPageSource, /result\.snippet/);
+  assert.match(searchPageSource, /result\.sources\.map/);
+});

@@ -15,6 +15,7 @@ import (
 	"xlab-blog/api/internal/config"
 	"xlab-blog/api/internal/db"
 	httpapi "xlab-blog/api/internal/http"
+	"xlab-blog/api/internal/search"
 	"xlab-blog/api/internal/users"
 )
 
@@ -56,9 +57,15 @@ func main() {
 	assetStorage := assets.NewLocalStorage(cfg.AssetsDir)
 	assetService := assets.NewService(assetRepo, assetStorage)
 
+	var embeddingProvider search.EmbeddingProvider
+	if cfg.DashScopeAPIKey != "" {
+		embeddingProvider = search.NewQwenProvider(cfg.EmbeddingBaseURL, cfg.DashScopeAPIKey, cfg.EmbeddingModel, cfg.EmbeddingDimensions, nil)
+	}
+	searchService := search.NewService(search.NewSQLRepository(pool), embeddingProvider, cfg.EmbeddingModel, cfg.EmbeddingDimensions)
+
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,
-		Handler:           httpapi.NewRouter(httpapi.Dependencies{Pool: pool, AuthService: authService, Tokens: tokens, AssetService: assetService}),
+		Handler:           httpapi.NewRouter(httpapi.Dependencies{Pool: pool, AuthService: authService, Tokens: tokens, AssetService: assetService, SearchService: searchService}),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
