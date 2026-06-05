@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"xlab-blog/api/internal/assets"
 	"xlab-blog/api/internal/auth"
 	"xlab-blog/api/internal/config"
 	"xlab-blog/api/internal/db"
@@ -51,9 +52,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	assetRepo := assets.NewSQLRepository(pool, cfg.AssetPublicBaseURL)
+	assetStorage := assets.NewLocalStorage(cfg.AssetsDir)
+	assetService := assets.NewService(assetRepo, assetStorage)
+
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,
-		Handler:           httpapi.NewRouter(httpapi.Dependencies{Pool: pool, AuthService: authService, Tokens: tokens}),
+		Handler:           httpapi.NewRouter(httpapi.Dependencies{Pool: pool, AuthService: authService, Tokens: tokens, AssetService: assetService}),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

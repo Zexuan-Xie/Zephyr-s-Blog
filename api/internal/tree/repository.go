@@ -105,6 +105,10 @@ func (r *SQLRepository) FilePage(ctx context.Context, node Node) (FilePage, erro
 		}
 		return FilePage{}, err
 	}
+	assets, err := r.listFileAssets(ctx, node.ID)
+	if err != nil {
+		return FilePage{}, err
+	}
 	return FilePage{
 		Node:           node,
 		Content:        content,
@@ -112,7 +116,7 @@ func (r *SQLRepository) FilePage(ctx context.Context, node Node) (FilePage, erro
 		LikeCount:      likeCount,
 		ViewerHasLiked: false,
 		CommentCount:   commentCount,
-		Assets:         []FileAsset{},
+		Assets:         assets,
 	}, nil
 }
 
@@ -317,4 +321,44 @@ func readingTimeMinutes(text string) int {
 		return 1
 	}
 	return minutes
+}
+
+func (r *SQLRepository) listFileAssets(ctx context.Context, fileID uuid.UUID) ([]FileAsset, error) {
+	const query = `
+		select id, file_node_id, filename, mime_type, size_bytes, storage_provider, storage_key, created_at
+		from file_assets
+		where file_node_id = $1
+		order by created_at, filename`
+	rows, err := r.pool.Query(ctx, query, fileID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	assets := make([]FileAsset, 0)
+	for rows.Next() {
+		asset, err := scanFileAsset(rows)
+		if err != nil {
+			return nil, err
+		}
+		assets = append(assets, asset)
+	}
+	return assets, rows.Err()
+}
+
+func scanFileAsset(row rowScanner) (FileAsset, error) {
+	var asset FileAsset
+	if err := row.Scan(
+		&asset.ID,
+		&asset.FileID,
+		&asset.Filename,
+		&asset.MIMEType,
+		&asset.SizeBytes,
+		&asset.StorageProvider,
+		&asset.StorageKey,
+		&asset.CreatedAt,
+	); err != nil {
+		return FileAsset{}, err
+	}
+	asset.PublicURL = "/api/assets/" + asset.ID.String() + "/" + asset.Filename
+	return asset, nil
 }

@@ -88,13 +88,15 @@ type FileContent struct {
 }
 
 type FileAsset struct {
-	ID        uuid.UUID `json:"id"`
-	FileID    uuid.UUID `json:"file_node_id"`
-	Filename  string    `json:"filename"`
-	MimeType  string    `json:"mime_type"`
-	SizeBytes int64     `json:"size_bytes"`
-	URL       string    `json:"url"`
-	CreatedAt time.Time `json:"created_at"`
+	ID              uuid.UUID `json:"id"`
+	FileID          uuid.UUID `json:"file_node_id"`
+	Filename        string    `json:"filename"`
+	MIMEType        string    `json:"mime_type"`
+	SizeBytes       int64     `json:"size_bytes"`
+	StorageProvider string    `json:"storage_provider"`
+	StorageKey      string    `json:"storage_key"`
+	PublicURL       string    `json:"public_url"`
+	CreatedAt       time.Time `json:"created_at"`
 }
 
 type FilePage struct {

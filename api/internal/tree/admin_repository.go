@@ -27,6 +27,11 @@ func (r *SQLRepository) GetAdminNode(ctx context.Context, nodeID uuid.UUID) (Adm
 			return AdminNodeDetail{}, err
 		}
 		detail.Content = &content
+		assets, err := r.listFileAssets(ctx, nodeID)
+		if err != nil {
+			return AdminNodeDetail{}, err
+		}
+		detail.Assets = assets
 	}
 	return detail, nil
 }

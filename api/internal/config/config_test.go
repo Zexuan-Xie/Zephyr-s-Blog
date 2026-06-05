@@ -54,6 +54,8 @@ func clearEnv(t *testing.T) {
 		"ADMIN_PASSWORD",
 		"HTTP_ADDR",
 		"ASSETS_DIR",
+		"ASSET_UPLOAD_DIR",
+		"ASSET_PUBLIC_BASE_URL",
 		"EMBEDDING_PROVIDER",
 		"DASHSCOPE_API_KEY",
 		"EMBEDDING_BASE_URL",
@@ -61,5 +63,24 @@ func clearEnv(t *testing.T) {
 		"EMBEDDING_DIMENSIONS",
 	} {
 		t.Setenv(key, "")
+	}
+}
+
+func TestLoadAssetStorageSettings(t *testing.T) {
+	clearEnv(t)
+	t.Setenv("DATABASE_URL", "postgres://user:pass@localhost:5432/blog")
+	t.Setenv("JWT_SECRET", "test-secret")
+	t.Setenv("ASSET_UPLOAD_DIR", "/tmp/blog-assets")
+	t.Setenv("ASSET_PUBLIC_BASE_URL", "/custom-assets")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if cfg.AssetsDir != "/tmp/blog-assets" {
+		t.Fatalf("AssetsDir = %q", cfg.AssetsDir)
+	}
+	if cfg.AssetPublicBaseURL != "/custom-assets" {
+		t.Fatalf("AssetPublicBaseURL = %q", cfg.AssetPublicBaseURL)
 	}
 }

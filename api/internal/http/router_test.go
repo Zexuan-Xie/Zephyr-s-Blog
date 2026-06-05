@@ -1,16 +1,22 @@
 package httpapi
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"net/textproto"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 
+	"xlab-blog/api/internal/assets"
 	"xlab-blog/api/internal/auth"
 	"xlab-blog/api/internal/comments"
 	"xlab-blog/api/internal/likes"
@@ -296,4 +302,143 @@ func (r *routerFakeLikeRepository) LikeState(context.Context, uuid.UUID, likes.T
 		count = 1
 	}
 	return likes.State{Liked: r.liked, LikeCount: count}, nil
+}
+
+func TestRouterExposesAssetRoutes(t *testing.T) {
+	adminUser := users.User{ID: uuid.New(), Email: "admin@example.com", Role: users.RoleAdmin}
+	userRepo := &routerFakeUserRepository{user: adminUser}
+	tokens := auth.NewTokenService("router-asset-secret", time.Hour)
+	authService := auth.NewService(userRepo, tokens)
+	token, err := tokens.Issue(adminUser)
+	if err != nil {
+		t.Fatalf("Issue() error = %v", err)
+	}
+	fileID := uuid.New()
+	assetService := assets.NewService(&routerFakeAssetRepository{files: map[uuid.UUID]bool{fileID: true}}, &routerFakeAssetStorage{objects: map[string][]byte{}})
+	router := NewRouter(Dependencies{AuthService: authService, Tokens: tokens, AssetService: assetService})
+
+	body, contentType := routerMultipartBody(t, "file", "demo.txt", "text/plain", "demo")
+	request := httptest.NewRequest(http.MethodPost, "/api/admin/files/"+fileID.String()+"/assets", body)
+	request.Header.Set("Content-Type", contentType)
+	request.Header.Set("Authorization", "Bearer "+token)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusCreated {
+		t.Fatalf("upload status = %d, want %d; body=%s", response.Code, http.StatusCreated, response.Body.String())
+	}
+	if !strings.Contains(response.Body.String(), `"storage_key"`) || strings.Contains(response.Body.String(), "/tmp/") {
+		t.Fatalf("upload body leaked or missed storage key: %s", response.Body.String())
+	}
+
+	assetID := assetServiceTestLastID(response.Body.String())
+	request = httptest.NewRequest(http.MethodGet, "/api/assets/"+assetID+"/demo.txt", nil)
+	response = httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusOK {
+		t.Fatalf("serve status = %d, want %d; body=%s", response.Code, http.StatusOK, response.Body.String())
+	}
+	if got := response.Header().Get("Cache-Control"); got != "public, max-age=31536000, immutable" {
+		t.Fatalf("Cache-Control = %q", got)
+	}
+
+	request = httptest.NewRequest(http.MethodDelete, "/api/admin/assets/"+assetID, nil)
+	request.Header.Set("Authorization", "Bearer "+token)
+	response = httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusNoContent {
+		t.Fatalf("delete status = %d, want %d; body=%s", response.Code, http.StatusNoContent, response.Body.String())
+	}
+}
+
+func routerMultipartBody(t *testing.T, field, filename, contentType, value string) (*bytes.Buffer, string) {
+	t.Helper()
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	header := make(textproto.MIMEHeader)
+	header.Set("Content-Disposition", `form-data; name="`+field+`"; filename="`+filename+`"`)
+	header.Set("Content-Type", contentType)
+	part, err := writer.CreatePart(header)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := part.Write([]byte(value)); err != nil {
+		t.Fatal(err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return body, writer.FormDataContentType()
+}
+
+func assetServiceTestLastID(body string) string {
+	var payload struct {
+		ID string `json:"id"`
+	}
+	_ = json.Unmarshal([]byte(body), &payload)
+	return payload.ID
+}
+
+type routerFakeAssetRepository struct {
+	files  map[uuid.UUID]bool
+	assets map[uuid.UUID]assets.FileAsset
+}
+
+func (r *routerFakeAssetRepository) FileTargetExists(_ context.Context, fileID uuid.UUID) (bool, error) {
+	return r.files[fileID], nil
+}
+
+func (r *routerFakeAssetRepository) FileAssetTotalBytes(context.Context, uuid.UUID) (int64, error) {
+	return 0, nil
+}
+
+func (r *routerFakeAssetRepository) CreateAsset(_ context.Context, asset assets.FileAsset) (assets.FileAsset, error) {
+	asset.PublicURL = "/api/assets/" + asset.ID.String() + "/" + asset.Filename
+	if r.assets == nil {
+		r.assets = map[uuid.UUID]assets.FileAsset{}
+	}
+	r.assets[asset.ID] = asset
+	return asset, nil
+}
+
+func (r *routerFakeAssetRepository) FindPublishedAsset(_ context.Context, assetID uuid.UUID, filename string) (assets.FileAsset, error) {
+	asset, ok := r.assets[assetID]
+	if !ok || asset.Filename != filename {
+		return assets.FileAsset{}, assets.ErrAssetNotFound
+	}
+	return asset, nil
+}
+
+func (r *routerFakeAssetRepository) DeleteAsset(_ context.Context, assetID uuid.UUID) (assets.FileAsset, error) {
+	asset, ok := r.assets[assetID]
+	if !ok {
+		return assets.FileAsset{}, assets.ErrAssetNotFound
+	}
+	delete(r.assets, assetID)
+	return asset, nil
+}
+
+type routerFakeAssetStorage struct {
+	objects map[string][]byte
+}
+
+func (s *routerFakeAssetStorage) Put(key string, reader io.Reader) error {
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		return err
+	}
+	s.objects[key] = data
+	return nil
+}
+
+func (s *routerFakeAssetStorage) Open(key string) (assets.StoredObject, error) {
+	data, ok := s.objects[key]
+	if !ok {
+		return assets.StoredObject{}, assets.ErrAssetNotFound
+	}
+	return assets.StoredObject{Reader: io.NopCloser(bytes.NewReader(data)), Size: int64(len(data)), ContentType: "text/plain"}, nil
+}
+
+func (s *routerFakeAssetStorage) Delete(key string) error {
+	delete(s.objects, key)
+	return nil
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"xlab-blog/api/internal/assets"
 	"xlab-blog/api/internal/auth"
 	"xlab-blog/api/internal/comments"
 	"xlab-blog/api/internal/http/handlers"
@@ -23,6 +24,7 @@ type Dependencies struct {
 	AdminService     *tree.AdminService
 	CommentService   *comments.Service
 	LikeService      *likes.Service
+	AssetService     *assets.Service
 }
 
 func NewRouter(deps Dependencies) http.Handler {
@@ -40,6 +42,12 @@ func NewRouter(deps Dependencies) http.Handler {
 			api.Get("/tree", treeHandler.Root)
 			api.Get("/tree/resolve", treeHandler.Resolve)
 			api.Get("/tree/{node_id}/children", treeHandler.Children)
+		}
+
+		assetService := deps.AssetService
+		if assetService != nil {
+			assetHandler := handlers.NewAssetHandler(assetService)
+			api.Get("/assets/{asset_id}/{filename}", assetHandler.ServePublished)
 		}
 
 		var authMiddleware *middleware.Authenticator
@@ -91,8 +99,12 @@ func NewRouter(deps Dependencies) http.Handler {
 					adminService = tree.NewAdminService(repo, lifecycleService)
 				}
 			}
-			if lifecycleService != nil || adminService != nil {
+			if lifecycleService != nil || adminService != nil || assetService != nil {
 				lifecycleHandler := handlers.NewTreeLifecycleHandler(lifecycleService)
+				var assetHandler *handlers.AssetHandler
+				if assetService != nil {
+					assetHandler = handlers.NewAssetHandler(assetService)
+				}
 				api.Route("/admin", func(admin chi.Router) {
 					admin.Use(authMiddleware.RequireAdmin)
 					if adminService != nil {
@@ -106,6 +118,10 @@ func NewRouter(deps Dependencies) http.Handler {
 						admin.Put("/files/{file_id}/content", lifecycleHandler.UpsertFileContent)
 						admin.Post("/files/{file_id}/publish", lifecycleHandler.PublishFile)
 						admin.Post("/files/{file_id}/unpublish", lifecycleHandler.UnpublishFile)
+					}
+					if assetHandler != nil {
+						admin.Post("/files/{file_id}/assets", assetHandler.Upload)
+						admin.Delete("/assets/{asset_id}", assetHandler.Delete)
 					}
 				})
 			}

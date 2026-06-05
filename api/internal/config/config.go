@@ -12,6 +12,7 @@ import (
 const (
 	DefaultHTTPAddr            = ":8080"
 	DefaultAssetsDir           = "/app/uploads"
+	DefaultAssetPublicBaseURL  = "/api/assets"
 	DefaultEmbeddingProvider   = "qwen"
 	DefaultEmbeddingBaseURL    = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 	DefaultEmbeddingModel      = "text-embedding-v4"
@@ -25,6 +26,7 @@ type Config struct {
 	AdminEmail          string
 	AdminPassword       string
 	AssetsDir           string
+	AssetPublicBaseURL  string
 	EmbeddingProvider   string
 	DashScopeAPIKey     string
 	EmbeddingBaseURL    string
@@ -41,7 +43,8 @@ func Load() (Config, error) {
 		JWTSecret:           os.Getenv("JWT_SECRET"),
 		AdminEmail:          os.Getenv("ADMIN_EMAIL"),
 		AdminPassword:       os.Getenv("ADMIN_PASSWORD"),
-		AssetsDir:           getEnv("ASSETS_DIR", DefaultAssetsDir),
+		AssetsDir:           getEnv("ASSET_UPLOAD_DIR", getEnv("ASSETS_DIR", DefaultAssetsDir)),
+		AssetPublicBaseURL:  getEnv("ASSET_PUBLIC_BASE_URL", DefaultAssetPublicBaseURL),
 		EmbeddingProvider:   getEnv("EMBEDDING_PROVIDER", DefaultEmbeddingProvider),
 		DashScopeAPIKey:     os.Getenv("DASHSCOPE_API_KEY"),
 		EmbeddingBaseURL:    getEnv("EMBEDDING_BASE_URL", DefaultEmbeddingBaseURL),
