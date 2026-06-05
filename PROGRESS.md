@@ -1,6 +1,6 @@
 # xLab Blog Implementation Progress
 
-Last updated: 2026-06-05 22:44 CST
+Last updated: 2026-06-05 22:47 CST
 
 This file is the durable breakpoint/resume log for the xLab Blog implementation. Read this before resuming multi-agent work, then read `IMPLEMENTATION_PLAN.md` and active specs as needed.
 
@@ -36,7 +36,7 @@ This file is the durable breakpoint/resume log for the xLab Blog implementation.
   - `4646cde` makes JWT tamper verification deterministic.
 - Final Packet D/E terminal evidence is recorded in `docs/verification/packet-d-e-recovery-monitor-20260604.md`.
 - Current git branch: `main`, ahead of `origin/main` by local implementation/checkpoint commits; leader tree was clean after shutdown.
-- Next plan-aligned packet: Packet I — Admin Tree Manager. Packets G and H are locally complete and terminally verified.
+- Next plan-aligned packet: Packet I — Admin Tree Manager is in progress. Packets G and H are locally complete and terminally verified.
 - Do **not** integrate detached/stale worker commits without diffing against the latest verified leader baseline.
 ## Completed Tasks
 
@@ -123,6 +123,7 @@ Important: `docs/verification/phase-0-1-acceptance-matrix.md` should be updated 
 
 ## Active Milestone Log
 
+- 2026-06-05 22:47 CST: Packet I Admin Tree Manager started after Packet H terminal evidence commit `a0b46c6`. Audit found backend admin CRUD/lifecycle/assets/search endpoints already available, while frontend `/admin` is still the Packet G Asset Manager foundation. Current breakpoint: expand `web/src/lib/types.ts`, `web/src/lib/api.ts`, and `web/src/pages/AdminPage.tsx` into a protected admin tree/content manager with create/edit/move/delete, file content save, publish/unpublish, assets, and embedding controls; then run frontend render-safety/lint/build plus backend route regression.
 - 2026-06-05 22:44 CST: Packet H terminal verification completed. Evidence recorded in `docs/verification/packet-h-search-monitor-20260605.md`; terminal gate passed with exact Go `1.26.4` full backend tests, vet, gofmt scan; frontend render-safety/static tests (6/6), lint, and build; OpenAPI local ref walk (`paths=22 schemas=33 refs=100`); static guards for `websearch_to_tsquery('simple')`, Qwen `dimensions`/`encoding_format`, RRF `k=60`, iframe sandbox, and `git diff --check`; clean pre-documentation status (`main...origin/main [ahead 104]`). Known gaps: no live Postgres/pgvector, live DashScope, Docker, or browser/backend E2E smoke in this runtime. Current breakpoint: commit Packet H terminal evidence, then begin Packet I — Admin Tree Manager.
 - 2026-06-05 22:41 CST: Packet H backend search milestone completed. Added `api/internal/search` service/repository/Qwen provider with `websearch_to_tsquery('simple', q)` full-text SQL, pgvector semantic query via `vector(1024)` literal cast, RRF fusion default `k=60`, Qwen/DashScope OpenAI-compatible request body (`dimensions: 1024`, `encoding_format: "float"`), refresh/rebuild embedding state handling, and public/admin search handlers/routes/server wiring. Targeted verification passes: `cd api && PATH=/tmp/omx-go-1.26.4/go/bin:$PATH GOCACHE=/tmp/omx-go-cache go test -count=1 ./internal/search ./internal/http/handlers ./internal/http`. Current breakpoint: commit backend search milestone, then run broader backend tests/vet and frontend static/build gate before Packet H terminal evidence.
 - 2026-06-05 22:34 CST: Packet H Hybrid Search started after Packet G evidence commit `698241b`. Contract/code audit found OpenAPI search and admin-search paths already defined, migration already has `search_vector`, `embedding vector(1024)`, and pgvector extension, frontend `/search` scaffold/API parsing already exists, but backend `api/internal/search`, public `/api/search`, admin refresh/rebuild handlers, Qwen provider, SQL retrieval/RRF fusion, and router/server wiring are missing. Current breakpoint: implement backend search package/provider/handlers with tests first, then wire router/server and refresh frontend badges only if API shape changes.
