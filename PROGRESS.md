@@ -1,6 +1,6 @@
 # xLab Blog Implementation Progress
 
-Last updated: 2026-06-05 22:17 CST
+Last updated: 2026-06-05 22:25 CST
 
 This file is the durable breakpoint/resume log for the xLab Blog implementation. Read this before resuming multi-agent work, then read `IMPLEMENTATION_PLAN.md` and active specs as needed.
 
@@ -124,6 +124,7 @@ Important: `docs/verification/phase-0-1-acceptance-matrix.md` should be updated 
 
 ## Active Milestone Log
 
+- 2026-06-05 22:25 CST: Packet G backend asset core milestone completed. Added `api/internal/assets` storage/service/repository/validation foundation with provider-neutral local keys, MIME/size allowlist, per-file total limit, local storage path safety, public immutable serve model, and SVG rejection checks for script/event/javascript/external/foreignObject. Added `api/internal/http/handlers/assets.go` for public serve, admin upload, and admin delete. Targeted verification passes: `cd api && PATH=/tmp/omx-go-1.26.4/go/bin:$PATH GOCACHE=/tmp/omx-go-cache go test -count=1 ./internal/assets ./internal/http/handlers`. Current breakpoint: commit backend asset core, then wire routes/config/tree asset lists.
 - 2026-06-05 22:17 CST: Packet F team `implement-packet-f-ex-1ad13b6b` shut down gracefully after terminal completion. Post-shutdown status is `missing`; task state before shutdown was `phase=complete` with 5/5 tasks completed and 0 pending/in_progress/failed. Shutdown reports: worker-1 noop; worker-2/worker-3 historical `AGENT.md` conflicts did not change leader HEAD; worker-4 produced merge commit `20e8899`, but `git diff --stat 2d96da1..HEAD` and `git diff --name-status 2d96da1..HEAD` are empty. Current git status is clean on `main...origin/main [ahead 97]`. Durable breakpoint: Packet F is complete locally; next plan packet is Packet G — Per-File Assets, after optional commit-history hygiene for runtime scaffold commits.
 - 2026-06-05 22:15 CST: Packet F Task 5 terminal guardrail passed on HEAD after Task 4 and Task 5 start commits. PASS exact-Go full backend tests, vet, gofmt scan; PASS frontend render-safety/Packet-F static contract (4/4), lint, build; PASS OpenAPI refs (`paths=22 schemas=33 refs=100`), iframe sandbox guardrail, `git diff --check`, and clean pre-completion git status (`main...origin/main [ahead 94]`). Evidence appended to `docs/verification/packet-f-monitor-20260604.md`. Current breakpoint: commit terminal evidence, transition OMX Task 5 completed, confirm team terminal status, then gracefully shut down `implement-packet-f-ex-1ad13b6b` and record shutdown.
 - 2026-06-05 22:14 CST: Packet F Task 5 terminal guardrail started under worker-4 claim after OMX Tasks 1-4 all reached `completed`. Claim succeeded with token `0243fd5d-4e6a-44cd-8866-517566d72da9`; Task 5 still carries historical `blocked_by` metadata, but API allowed the claim because dependencies are terminal. Current breakpoint: repeat full backend/frontend/OpenAPI/sandbox/diff gate on HEAD after Task 4 commit, complete Task 5, then gracefully shut down team `implement-packet-f-ex-1ad13b6b`.
