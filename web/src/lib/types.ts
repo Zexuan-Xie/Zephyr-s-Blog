@@ -15,6 +15,7 @@ export interface ContentEntry {
   updated_at?: string;
   child_directory_count?: number;
   child_file_count?: number;
+  like_count?: number;
   comment_count?: number;
   content_format?: ContentFormat;
   read_time_minutes?: number;
@@ -46,6 +47,38 @@ export interface FilePayload {
   read_time_minutes?: number;
   like_count?: number;
   comment_count?: number;
+  viewer_has_liked?: boolean;
+}
+
+export interface PublicUser {
+  id: string;
+  display_name: string;
+}
+
+export interface CommentItem {
+  id: string;
+  file_node_id: string;
+  parent_id?: string | null;
+  reply_to_user_id?: string | null;
+  user: PublicUser;
+  body: string;
+  created_at: string;
+  updated_at?: string;
+  deleted_at?: string | null;
+  deleted: boolean;
+  like_count: number;
+  viewer_has_liked?: boolean;
+  replies: CommentItem[];
+}
+
+export interface CommentThread {
+  file_id: string;
+  comments: CommentItem[];
+}
+
+export interface LikeState {
+  liked: boolean;
+  like_count: number;
 }
 
 export interface RedirectPayload {

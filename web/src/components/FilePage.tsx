@@ -1,20 +1,120 @@
-import { Heart, MessageCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { FormEvent, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Heart, MessageCircle, Reply, Trash2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  createComment,
+  deleteComment,
+  fetchCommentThread,
+  likeComment,
+  likeFile,
+  unlikeComment,
+  unlikeFile,
+} from '../lib/api';
+import { getToken } from '../lib/auth';
 import { renderSafeMarkdown, sanitizeServerHtml } from '../lib/renderMarkdown';
-import type { FilePayload } from '../lib/types';
+import type { CommentItem, FilePayload, LikeState } from '../lib/types';
 import { Breadcrumb } from './Breadcrumb';
 
 interface FilePageProps {
   file: FilePayload;
 }
 
+interface ReplyTarget {
+  parentId: string;
+  replyToUserId: string;
+  displayName: string;
+}
+
 export function FilePage({ file }: FilePageProps) {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const [fileLikeState, setFileLikeState] = useState<LikeState>({
+    liked: Boolean(file.viewer_has_liked),
+    like_count: file.like_count ?? 0,
+  });
+  const [replyTarget, setReplyTarget] = useState<ReplyTarget | null>(null);
+  const [commentBody, setCommentBody] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
+  const token = getToken();
+  const isAuthenticated = Boolean(token);
+  const commentsQuery = useQuery({
+    queryKey: ['comments', file.id],
+    queryFn: () => fetchCommentThread(file.id),
+    staleTime: 30_000,
+  });
+
+  const createCommentMutation = useMutation({
+    mutationFn: () => createComment(file.id, commentBody, replyTarget?.parentId, replyTarget?.replyToUserId),
+    onSuccess: async () => {
+      setCommentBody('');
+      setReplyTarget(null);
+      setFormError(null);
+      await queryClient.invalidateQueries({ queryKey: ['comments', file.id] });
+    },
+    onError: () => setFormError('Unable to post this comment. Please check the text and try again.'),
+  });
+
+  const deleteCommentMutation = useMutation({
+    mutationFn: (commentId: string) => deleteComment(commentId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comments', file.id] }),
+  });
+
+  const commentLikeMutation = useMutation({
+    mutationFn: ({ commentId, liked }: { commentId: string; liked: boolean }) => (
+      liked ? unlikeComment(commentId) : likeComment(commentId)
+    ),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comments', file.id] }),
+  });
+
+  const fileLikeMutation = useMutation({
+    mutationFn: () => (fileLikeState.liked ? unlikeFile(file.id) : likeFile(file.id)),
+    onSuccess: setFileLikeState,
+  });
+
   const keywords = file.keywords?.slice(0, 3) ?? [];
   const markdownHtml = file.content_format === 'markdown'
     ? file.body_html
       ? sanitizeServerHtml(file.body_html)
       : renderSafeMarkdown(file.body_markdown ?? '')
     : '';
+
+  function redirectToLogin() {
+    navigate(`/login?return_to=${encodeURIComponent(file.path)}`);
+  }
+
+  function requireAuth(action: () => void) {
+    if (!isAuthenticated) {
+      redirectToLogin();
+      return;
+    }
+    action();
+  }
+
+  function submitComment(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    requireAuth(() => {
+      if (!commentBody.trim()) {
+        setFormError('Comment body cannot be empty.');
+        return;
+      }
+      createCommentMutation.mutate();
+    });
+  }
+
+  function startReply(comment: CommentItem) {
+    requireAuth(() => {
+      setReplyTarget({
+        parentId: comment.id,
+        replyToUserId: comment.user.id,
+        displayName: comment.user.display_name,
+      });
+    });
+  }
+
+  function toggleCommentLike(comment: CommentItem) {
+    requireAuth(() => commentLikeMutation.mutate({ commentId: comment.id, liked: Boolean(comment.viewer_has_liked) }));
+  }
 
   return (
     <article className="file-page">
@@ -48,15 +148,124 @@ export function FilePage({ file }: FilePageProps) {
       )}
 
       <footer className="glass interaction-bar" aria-label="File interactions">
-        <button className="glass-button" type="button">
+        <button
+          className="glass-button"
+          type="button"
+          aria-pressed={fileLikeState.liked}
+          onClick={() => requireAuth(() => fileLikeMutation.mutate())}
+        >
           <Heart size={17} aria-hidden="true" />
-          <span>{file.like_count ?? 0}</span>
+          <span>{fileLikeState.liked ? 'Liked' : 'Like'} · {fileLikeState.like_count}</span>
         </button>
-        <button className="glass-button" type="button">
+        <button className="glass-button" type="button" onClick={() => requireAuth(() => document.getElementById('comment-composer')?.focus())}>
           <MessageCircle size={17} aria-hidden="true" />
-          <span>Log in to comment</span>
+          <span>{isAuthenticated ? 'Comment' : 'Log in to comment'} · {file.comment_count ?? commentsQuery.data?.comments.length ?? 0}</span>
         </button>
       </footer>
+
+      <section className="glass comments-panel" aria-label="Comments">
+        <div className="comments-heading">
+          <div>
+            <p className="eyebrow">COMMENTS</p>
+            <h2>Reader discussion</h2>
+          </div>
+          {!isAuthenticated ? <Link className="glass-button" to={`/login?return_to=${encodeURIComponent(file.path)}`}>Log in to comment</Link> : null}
+        </div>
+
+        {isAuthenticated ? (
+          <form className="comment-form" onSubmit={submitComment}>
+            {replyTarget ? (
+              <p className="muted">
+                Replying to {replyTarget.displayName}{' '}
+                <button className="text-button" type="button" onClick={() => setReplyTarget(null)}>Cancel</button>
+              </p>
+            ) : null}
+            <textarea
+              id="comment-composer"
+              name="body"
+              maxLength={5000}
+              placeholder="Write a plain-text comment…"
+              value={commentBody}
+              onChange={(event) => setCommentBody(event.target.value)}
+            />
+            {formError ? <p className="form-error">{formError}</p> : null}
+            <button className="primary-button" type="submit" disabled={createCommentMutation.isPending}>
+              {createCommentMutation.isPending ? 'Posting…' : replyTarget ? 'Post reply' : 'Post comment'}
+            </button>
+          </form>
+        ) : (
+          <p className="muted">Comments are public to read. Log in to join the conversation.</p>
+        )}
+
+        <div className="comment-thread">
+          {commentsQuery.isLoading ? <p className="muted">Loading comments…</p> : null}
+          {commentsQuery.isError ? <p className="form-error">Unable to load comments.</p> : null}
+          {commentsQuery.data?.comments.length === 0 ? <p className="muted">No comments yet.</p> : null}
+          {commentsQuery.data?.comments.map((comment) => (
+            <CommentCard
+              key={comment.id}
+              comment={comment}
+              canWrite={isAuthenticated}
+              onReply={startReply}
+              onDelete={(commentId) => requireAuth(() => deleteCommentMutation.mutate(commentId))}
+              onToggleLike={toggleCommentLike}
+            />
+          ))}
+        </div>
+      </section>
+    </article>
+  );
+}
+
+interface CommentCardProps {
+  comment: CommentItem;
+  canWrite: boolean;
+  onReply: (comment: CommentItem) => void;
+  onDelete: (commentId: string) => void;
+  onToggleLike: (comment: CommentItem) => void;
+}
+
+function CommentCard({ comment, canWrite, onReply, onDelete, onToggleLike }: CommentCardProps) {
+  const deleted = comment.deleted;
+  return (
+    <article className={`comment-card${comment.parent_id ? ' is-reply' : ''}`}>
+      <header className="comment-meta">
+        <strong>{comment.user.display_name}</strong>
+        <span>{new Date(comment.created_at).toLocaleDateString()}</span>
+      </header>
+      <p className={deleted ? 'muted deleted-comment' : undefined}>{deleted ? 'This comment has been deleted.' : comment.body}</p>
+      {!deleted ? (
+        <div className="comment-actions">
+          <button className="glass-button" type="button" aria-pressed={Boolean(comment.viewer_has_liked)} onClick={() => onToggleLike(comment)}>
+            <Heart size={15} aria-hidden="true" />
+            <span>{comment.viewer_has_liked ? 'Liked' : 'Like'} · {comment.like_count}</span>
+          </button>
+          <button className="glass-button" type="button" onClick={() => onReply(comment)}>
+            <Reply size={15} aria-hidden="true" />
+            <span>{canWrite ? 'Reply' : 'Log in to reply'}</span>
+          </button>
+          {canWrite ? (
+            <button className="glass-button" type="button" onClick={() => onDelete(comment.id)}>
+              <Trash2 size={15} aria-hidden="true" />
+              <span>Delete</span>
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+      {comment.replies.length > 0 ? (
+        <div className="comment-replies">
+          {comment.replies.map((reply) => (
+            <CommentCard
+              key={reply.id}
+              comment={reply}
+              canWrite={canWrite}
+              onReply={onReply}
+              onDelete={onDelete}
+              onToggleLike={onToggleLike}
+            />
+          ))}
+        </div>
+      ) : null}
     </article>
   );
 }

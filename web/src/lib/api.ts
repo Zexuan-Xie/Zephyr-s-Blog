@@ -1,11 +1,13 @@
 import { z } from 'zod';
-import type { BreadcrumbItem, ContentEntry, DirectoryPayload, FilePayload, ResolvePayload, SearchResult } from './types';
+import { getToken } from './auth';
+import type { BreadcrumbItem, CommentItem, CommentThread, ContentEntry, DirectoryPayload, FilePayload, LikeState, ResolvePayload, SearchResult } from './types';
 
 const apiBase = '/api';
 
-async function requestJson<T>(path: string, schema: z.ZodType<T>): Promise<T> {
+async function requestJson<T>(path: string, schema: z.ZodType<T>, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`${apiBase}${path}`, {
-    headers: { Accept: 'application/json' },
+    ...init,
+    headers: { Accept: 'application/json', ...init.headers },
   });
 
   if (!response.ok) {
@@ -18,6 +20,37 @@ async function requestJson<T>(path: string, schema: z.ZodType<T>): Promise<T> {
 
 const nullableStringSchema = z.string().nullable().optional();
 const nullableNumberSchema = z.number().nullable().optional();
+
+const publicUserSchema = z.object({
+  id: z.string(),
+  display_name: z.string(),
+});
+
+const commentSchema: z.ZodType<CommentItem> = z.lazy(() => z.object({
+  id: z.string(),
+  file_node_id: z.string(),
+  parent_id: z.string().nullable().optional(),
+  reply_to_user_id: z.string().nullable().optional(),
+  user: publicUserSchema,
+  body: z.string(),
+  created_at: z.string(),
+  updated_at: z.string().optional(),
+  deleted_at: z.string().nullable().optional(),
+  deleted: z.boolean(),
+  like_count: z.number(),
+  viewer_has_liked: z.boolean().optional(),
+  replies: z.array(commentSchema).default([]),
+}));
+
+const commentThreadSchema: z.ZodType<CommentThread> = z.object({
+  file_id: z.string(),
+  comments: z.array(commentSchema),
+});
+
+const likeStateSchema: z.ZodType<LikeState> = z.object({
+  liked: z.boolean(),
+  like_count: z.number(),
+});
 
 const breadcrumbSchema = z.object({
   name: z.string(),
@@ -178,6 +211,7 @@ const fileSchema: z.ZodType<FilePayload> = z.union([legacyFileSchema, openApiFil
     read_time_minutes: file.content.reading_time_minutes ?? undefined,
     like_count: file.like_count,
     comment_count: file.comment_count,
+    viewer_has_liked: file.viewer_has_liked,
   };
 });
 
@@ -288,6 +322,7 @@ function toContentEntry(entry: z.infer<typeof legacyContentEntrySchema> | z.infe
     content_format: entry.content_format,
     read_time_minutes: entry.reading_time_minutes ?? undefined,
     keywords: entry.keywords ?? [],
+    like_count: entry.like_count,
     comment_count: entry.comment_count,
   };
 }
@@ -322,4 +357,56 @@ function buildBreadcrumb(path: string): BreadcrumbItem[] {
   }
 
   return crumbs;
+}
+
+
+export function fetchCommentThread(fileId: string): Promise<CommentThread> {
+  return requestJson(`/files/${encodeURIComponent(fileId)}/comments`, commentThreadSchema, authInit());
+}
+
+export function createComment(fileId: string, body: string, parentId?: string | null, replyToUserId?: string | null): Promise<CommentItem> {
+  return requestJson(`/files/${encodeURIComponent(fileId)}/comments`, commentSchema, jsonAuthInit('POST', {
+    body,
+    parent_id: parentId ?? null,
+    reply_to_user_id: replyToUserId ?? null,
+  }));
+}
+
+export async function deleteComment(commentId: string): Promise<void> {
+  const response = await fetch(`${apiBase}/comments/${encodeURIComponent(commentId)}`, jsonAuthInit('DELETE'));
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+  }
+}
+
+export function likeFile(fileId: string): Promise<LikeState> {
+  return requestJson(`/files/${encodeURIComponent(fileId)}/like`, likeStateSchema, jsonAuthInit('PUT'));
+}
+
+export function unlikeFile(fileId: string): Promise<LikeState> {
+  return requestJson(`/files/${encodeURIComponent(fileId)}/like`, likeStateSchema, jsonAuthInit('DELETE'));
+}
+
+export function likeComment(commentId: string): Promise<LikeState> {
+  return requestJson(`/comments/${encodeURIComponent(commentId)}/like`, likeStateSchema, jsonAuthInit('PUT'));
+}
+
+export function unlikeComment(commentId: string): Promise<LikeState> {
+  return requestJson(`/comments/${encodeURIComponent(commentId)}/like`, likeStateSchema, jsonAuthInit('DELETE'));
+}
+
+function authInit(init: RequestInit = {}): RequestInit {
+  const token = getToken();
+  return token ? {
+    ...init,
+    headers: { ...init.headers, Authorization: `Bearer ${token}` },
+  } : init;
+}
+
+function jsonAuthInit(method: string, body?: unknown): RequestInit {
+  return authInit({
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
 }

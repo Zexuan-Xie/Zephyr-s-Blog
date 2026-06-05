@@ -37,3 +37,15 @@ test('both Markdown render paths use the hardened DOMPurify config', () => {
     assert.match(renderMarkdownSource, new RegExp(`['"]${forbiddenTag}['"]`));
   }
 });
+
+test('Packet F reader interactions use API endpoints and login return target', () => {
+  const apiSource = readFileSync(new URL('../src/lib/api.ts', import.meta.url), 'utf8');
+
+  assert.match(filePageSource, /fetchCommentThread\(file\.id\)/);
+  assert.match(filePageSource, /createComment\(file\.id, commentBody, replyTarget\?\.parentId, replyTarget\?\.replyToUserId\)/);
+  assert.match(filePageSource, /navigate\(`\/login\?return_to=\$\{encodeURIComponent\(file\.path\)\}`\)/);
+  assert.match(apiSource, /\/files\/\$\{encodeURIComponent\(fileId\)\}\/comments/);
+  assert.match(apiSource, /\/files\/\$\{encodeURIComponent\(fileId\)\}\/like/);
+  assert.match(apiSource, /\/comments\/\$\{encodeURIComponent\(commentId\)\}\/like/);
+  assert.match(apiSource, /Authorization: `Bearer \$\{token\}`/);
+});
