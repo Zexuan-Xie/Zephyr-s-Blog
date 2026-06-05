@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { getToken } from './auth';
-import type { BreadcrumbItem, CommentItem, CommentThread, ContentEntry, DirectoryPayload, FileAsset, FilePayload, LikeState, ResolvePayload, SearchResult } from './types';
+import type { BreadcrumbItem, CommentItem, CommentThread, ContentEntry, DirectoryPayload, FileAsset, FilePayload, LikeState, ResolvePayload, SearchResult, AdminNodeDetail, ContentFormat, EmbeddingState, NodeKind } from './types';
 
 const apiBase = '/api';
 
@@ -187,6 +187,46 @@ const openApiFileSchema = z.object({
   viewer_has_liked: z.boolean().optional(),
   comment_count: z.number().optional(),
   assets: z.array(fileAssetSchema).optional(),
+});
+
+const adminFileContentSchema = z.object({
+  node_id: z.string(),
+  content_format: z.enum(['markdown', 'html_document']),
+  keywords: z.array(z.string()).default([]),
+  body_raw: z.string().default(''),
+  body_html: z.string().nullable().optional(),
+  search_text: z.string().default(''),
+  status: z.enum(['draft', 'published']),
+  published_at: nullableStringSchema,
+  embedding_model: nullableStringSchema,
+  embedding_status: z.enum(['pending', 'ready', 'failed']),
+  embedding_error: nullableStringSchema,
+  embedding_updated_at: nullableStringSchema,
+});
+
+const pathRedirectSchema = z.object({
+  id: z.string(),
+  old_path: z.string(),
+  new_path: z.string(),
+  node_id: z.string(),
+  created_at: z.string(),
+});
+
+const adminNodeDetailSchema: z.ZodType<AdminNodeDetail> = z.object({
+  node: nodeSchema.extend({ slug: z.string(), sort_order: z.number(), parent_id: z.string().nullable().optional() }),
+  content: adminFileContentSchema.nullable().optional(),
+  assets: z.array(fileAssetSchema).default([]),
+  redirects_created: z.array(pathRedirectSchema).default([]),
+});
+
+const embeddingStateSchema: z.ZodType<EmbeddingState> = z.object({
+  file_id: z.string(),
+  provider: z.literal('qwen'),
+  model: z.literal('text-embedding-v4'),
+  dimensions: z.literal(1024),
+  status: z.enum(['pending', 'ready', 'failed']),
+  error: nullableStringSchema,
+  updated_at: nullableStringSchema,
 });
 
 const fileSchema: z.ZodType<FilePayload> = z.union([legacyFileSchema, openApiFileSchema]).transform((file) => {
@@ -423,6 +463,71 @@ function jsonAuthInit(method: string, body?: unknown): RequestInit {
     headers: { 'Content-Type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
+}
+
+export interface CreateAdminNodeInput {
+  parent_id?: string | null;
+  kind: NodeKind;
+  name: string;
+  slug: string;
+  sort_order?: number;
+  content_format?: ContentFormat;
+}
+
+export interface UpdateAdminNodeInput {
+  parent_id?: string | null;
+  name?: string;
+  slug?: string;
+  sort_order?: number;
+}
+
+export interface UpsertFileContentInput {
+  content_format: ContentFormat;
+  body_raw: string;
+  body_html?: string | null;
+  keywords: string[];
+}
+
+export function fetchAdminNode(nodeId: string): Promise<AdminNodeDetail> {
+  return requestJson(`/admin/nodes/${encodeURIComponent(nodeId)}`, adminNodeDetailSchema, authInit());
+}
+
+export function createAdminNode(input: CreateAdminNodeInput): Promise<AdminNodeDetail> {
+  return requestJson('/admin/nodes', adminNodeDetailSchema, jsonAuthInit('POST', input));
+}
+
+export function updateAdminNode(nodeId: string, input: UpdateAdminNodeInput): Promise<AdminNodeDetail> {
+  return requestJson(`/admin/nodes/${encodeURIComponent(nodeId)}`, adminNodeDetailSchema, jsonAuthInit('PATCH', input));
+}
+
+export async function deleteAdminNode(nodeId: string): Promise<void> {
+  const response = await fetch(`${apiBase}/admin/nodes/${encodeURIComponent(nodeId)}`, jsonAuthInit('DELETE'));
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+  }
+}
+
+export function upsertFileContent(fileId: string, input: UpsertFileContentInput): Promise<AdminNodeDetail['content']> {
+  return requestJson(`/admin/files/${encodeURIComponent(fileId)}/content`, adminFileContentSchema, jsonAuthInit('PUT', input));
+}
+
+export function publishFile(fileId: string): Promise<AdminNodeDetail['content']> {
+  return requestJson(`/admin/files/${encodeURIComponent(fileId)}/publish`, adminFileContentSchema, jsonAuthInit('POST'));
+}
+
+export function unpublishFile(fileId: string): Promise<AdminNodeDetail['content']> {
+  return requestJson(`/admin/files/${encodeURIComponent(fileId)}/unpublish`, adminFileContentSchema, jsonAuthInit('POST'));
+}
+
+export function refreshEmbedding(fileId: string): Promise<EmbeddingState> {
+  return requestJson(`/admin/files/${encodeURIComponent(fileId)}/refresh-embedding`, embeddingStateSchema, jsonAuthInit('POST'));
+}
+
+export async function rebuildSearchIndex(): Promise<void> {
+  const response = await fetch(`${apiBase}/admin/search-index/rebuild`, jsonAuthInit('POST'));
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+  }
 }
 
 

@@ -59,8 +59,8 @@ test('Packet G assets use public URLs and admin upload/delete helpers', () => {
   assert.match(apiSource, /\/admin\/files\/\$\{encodeURIComponent\(fileId\)\}\/assets/);
   assert.match(apiSource, /\/admin\/assets\/\$\{encodeURIComponent\(assetId\)\}/);
   assert.match(apiSource, /FormData\(\)/);
-  assert.match(adminPageSource, /Asset Manager foundation/);
-  assert.match(adminPageSource, /uploadAsset\(fileId\.trim\(\), file\)/);
+  assert.match(adminPageSource, /AssetPanel/);
+  assert.match(adminPageSource, /uploadAsset\(selectedFileId, file\)/);
   assert.match(adminPageSource, /deleteAsset\(assetId\)/);
 });
 
@@ -76,4 +76,23 @@ test('Packet H search page calls search API and renders source badges', () => {
   assert.match(searchPageSource, /result\.path/);
   assert.match(searchPageSource, /result\.snippet/);
   assert.match(searchPageSource, /result\.sources\.map/);
+});
+
+
+test('Packet I admin manager wires tree, lifecycle, asset, and embedding controls', () => {
+  const apiSource = readFileSync(new URL('../src/lib/api.ts', import.meta.url), 'utf8');
+  const adminPageSource = readFileSync(new URL('../src/pages/AdminPage.tsx', import.meta.url), 'utf8');
+
+  assert.match(apiSource, /fetchAdminNode/);
+  assert.match(apiSource, /createAdminNode/);
+  assert.match(apiSource, /updateAdminNode/);
+  assert.match(apiSource, /upsertFileContent/);
+  assert.match(apiSource, /publishFile/);
+  assert.match(apiSource, /unpublishFile/);
+  assert.match(apiSource, /refreshEmbedding/);
+  assert.match(apiSource, /rebuildSearchIndex/);
+  assert.match(adminPageSource, /Tree Manager/);
+  assert.match(adminPageSource, /window\.confirm/);
+  assert.match(adminPageSource, /Published files cannot directly change content_format/);
+  assert.match(adminPageSource, /sandbox="allow-scripts"/);
 });

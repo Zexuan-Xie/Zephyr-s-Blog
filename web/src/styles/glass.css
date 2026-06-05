@@ -718,3 +718,124 @@ h3 {
 .admin-asset-list .asset-link {
   grid-template-columns: minmax(0, 1fr) auto auto;
 }
+
+.admin-manager-page {
+  gap: 22px;
+}
+
+.admin-hero,
+.admin-panel,
+.admin-sidebar {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.admin-workspace {
+  display: grid;
+  gap: 18px;
+}
+
+.admin-tree-list {
+  display: grid;
+  gap: 8px;
+}
+
+.tree-row {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--hairline-warm);
+  border-radius: var(--radius-md);
+  background: rgba(255, 253, 247, 0.28);
+  color: var(--ink);
+  text-align: left;
+}
+
+.tree-row small {
+  color: var(--ink-60);
+}
+
+.compact-form,
+.admin-form {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-form label,
+.compact-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--ink-60);
+  font-size: 0.86rem;
+}
+
+.admin-form input,
+.admin-form select,
+.admin-form textarea,
+.compact-form input {
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--hairline-warm);
+  border-radius: var(--radius-md);
+  background: rgba(255, 253, 247, 0.34);
+  color: var(--ink);
+  font: inherit;
+}
+
+.admin-form textarea,
+.admin-form .button-row,
+.admin-preview-frame,
+.markdown-preview {
+  grid-column: 1 / -1;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.danger-button {
+  color: #8a2f16;
+}
+
+.admin-preview-frame {
+  width: 100%;
+  min-height: 320px;
+  border: 1px solid var(--hairline-warm);
+  border-radius: var(--radius-lg);
+  background: white;
+}
+
+.markdown-preview {
+  max-height: 340px;
+  overflow: auto;
+  padding: 16px;
+  border: 1px solid var(--hairline-warm);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 253, 247, 0.26);
+  white-space: pre-wrap;
+}
+
+.admin-asset-list .asset-link {
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+}
+
+@media (max-width: 900px) {
+  .admin-grid,
+  .admin-form {
+    grid-template-columns: 1fr;
+  }
+}

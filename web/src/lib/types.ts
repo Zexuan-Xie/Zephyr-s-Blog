@@ -108,3 +108,43 @@ export interface SearchResult {
   snippet: string;
   sources: Array<'text' | 'semantic' | 'keyword'>;
 }
+
+export interface AdminNodeDetail {
+  node: {
+    id: string;
+    parent_id?: string | null;
+    kind: NodeKind;
+    name: string;
+    slug: string;
+    path: string;
+    sort_order: number;
+    created_at?: string;
+    updated_at?: string;
+  };
+  content?: {
+    node_id: string;
+    content_format: ContentFormat;
+    keywords: string[];
+    body_raw: string;
+    body_html?: string | null;
+    search_text: string;
+    status: 'draft' | 'published';
+    published_at?: string | null;
+    embedding_model?: string | null;
+    embedding_status: 'pending' | 'ready' | 'failed';
+    embedding_error?: string | null;
+    embedding_updated_at?: string | null;
+  } | null;
+  assets: FileAsset[];
+  redirects_created: Array<{ id: string; old_path: string; new_path: string; node_id: string; created_at: string }>;
+}
+
+export interface EmbeddingState {
+  file_id: string;
+  provider: 'qwen';
+  model: 'text-embedding-v4';
+  dimensions: 1024;
+  status: 'pending' | 'ready' | 'failed';
+  error?: string | null;
+  updated_at?: string | null;
+}
