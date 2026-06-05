@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { getToken } from './auth';
-import type { BreadcrumbItem, CommentItem, CommentThread, ContentEntry, DirectoryPayload, FilePayload, LikeState, ResolvePayload, SearchResult } from './types';
+import type { BreadcrumbItem, CommentItem, CommentThread, ContentEntry, DirectoryPayload, FileAsset, FilePayload, LikeState, ResolvePayload, SearchResult } from './types';
 
 const apiBase = '/api';
 
@@ -50,6 +50,18 @@ const commentThreadSchema: z.ZodType<CommentThread> = z.object({
 const likeStateSchema: z.ZodType<LikeState> = z.object({
   liked: z.boolean(),
   like_count: z.number(),
+});
+
+const fileAssetSchema: z.ZodType<FileAsset> = z.object({
+  id: z.string(),
+  file_node_id: z.string(),
+  filename: z.string(),
+  mime_type: z.string(),
+  size_bytes: z.number(),
+  storage_provider: z.string(),
+  storage_key: z.string().optional(),
+  public_url: z.string(),
+  created_at: z.string(),
 });
 
 const breadcrumbSchema = z.object({
@@ -174,7 +186,7 @@ const openApiFileSchema = z.object({
   like_count: z.number().optional(),
   viewer_has_liked: z.boolean().optional(),
   comment_count: z.number().optional(),
-  assets: z.array(z.unknown()).optional(),
+  assets: z.array(fileAssetSchema).optional(),
 });
 
 const fileSchema: z.ZodType<FilePayload> = z.union([legacyFileSchema, openApiFileSchema]).transform((file) => {
@@ -188,6 +200,7 @@ const fileSchema: z.ZodType<FilePayload> = z.union([legacyFileSchema, openApiFil
       body_html: file.body_html ?? undefined,
       published_at: file.published_at ?? undefined,
       read_time_minutes: file.read_time_minutes ?? undefined,
+      assets: [],
     };
   }
 
@@ -212,6 +225,7 @@ const fileSchema: z.ZodType<FilePayload> = z.union([legacyFileSchema, openApiFil
     like_count: file.like_count,
     comment_count: file.comment_count,
     viewer_has_liked: file.viewer_has_liked,
+    assets: file.assets ?? [],
   };
 });
 
@@ -409,4 +423,21 @@ function jsonAuthInit(method: string, body?: unknown): RequestInit {
     headers: { 'Content-Type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
+}
+
+
+export function uploadAsset(fileId: string, file: File): Promise<FileAsset> {
+  const form = new FormData();
+  form.append('file', file);
+  return requestJson(`/admin/files/${encodeURIComponent(fileId)}/assets`, fileAssetSchema, authInit({
+    method: 'POST',
+    body: form,
+  }));
+}
+
+export async function deleteAsset(assetId: string): Promise<void> {
+  const response = await fetch(`${apiBase}/admin/assets/${encodeURIComponent(assetId)}`, jsonAuthInit('DELETE'));
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+  }
 }

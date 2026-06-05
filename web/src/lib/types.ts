@@ -48,6 +48,19 @@ export interface FilePayload {
   like_count?: number;
   comment_count?: number;
   viewer_has_liked?: boolean;
+  assets: FileAsset[];
+}
+
+export interface FileAsset {
+  id: string;
+  file_node_id: string;
+  filename: string;
+  mime_type: string;
+  size_bytes: number;
+  storage_provider: string;
+  storage_key?: string;
+  public_url: string;
+  created_at: string;
 }
 
 export interface PublicUser {

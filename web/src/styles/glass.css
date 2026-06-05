@@ -667,3 +667,54 @@ h3 {
     height: 72vh;
   }
 }
+
+.asset-panel {
+  display: grid;
+  width: min(100%, var(--reading-width));
+  gap: 14px;
+  padding: clamp(20px, 4vw, 30px);
+}
+
+.asset-list {
+  display: grid;
+  gap: 10px;
+}
+
+.asset-link {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--hairline-warm);
+  border-radius: var(--radius-md);
+  background: rgba(255, 253, 247, 0.24);
+  color: var(--ink);
+}
+
+.asset-link span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.asset-link small {
+  color: var(--ink-60);
+}
+
+.admin-assets-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.asset-upload-form input[type="file"] {
+  min-height: 46px;
+  padding: 10px 16px;
+  border: 1px solid var(--hairline-warm);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 253, 247, 0.32);
+}
+
+.admin-asset-list .asset-link {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}

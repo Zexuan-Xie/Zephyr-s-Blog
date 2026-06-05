@@ -49,3 +49,17 @@ test('Packet F reader interactions use API endpoints and login return target', (
   assert.match(apiSource, /\/comments\/\$\{encodeURIComponent\(commentId\)\}\/like/);
   assert.match(apiSource, /Authorization: `Bearer \$\{token\}`/);
 });
+
+test('Packet G assets use public URLs and admin upload/delete helpers', () => {
+  const apiSource = readFileSync(new URL('../src/lib/api.ts', import.meta.url), 'utf8');
+  const adminPageSource = readFileSync(new URL('../src/pages/AdminPage.tsx', import.meta.url), 'utf8');
+
+  assert.match(filePageSource, /file\.assets\.map/);
+  assert.match(filePageSource, /href=\{asset\.public_url\}/);
+  assert.match(apiSource, /\/admin\/files\/\$\{encodeURIComponent\(fileId\)\}\/assets/);
+  assert.match(apiSource, /\/admin\/assets\/\$\{encodeURIComponent\(assetId\)\}/);
+  assert.match(apiSource, /FormData\(\)/);
+  assert.match(adminPageSource, /Asset Manager foundation/);
+  assert.match(adminPageSource, /uploadAsset\(fileId\.trim\(\), file\)/);
+  assert.match(adminPageSource, /deleteAsset\(assetId\)/);
+});

@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Heart, MessageCircle, Reply, Trash2 } from 'lucide-react';
+import { Download, Heart, MessageCircle, Reply, Trash2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   createComment,
@@ -147,6 +147,23 @@ export function FilePage({ file }: FilePageProps) {
         </section>
       )}
 
+
+      {file.assets.length > 0 ? (
+        <section className="glass asset-panel" aria-label="File assets">
+          <p className="eyebrow">ASSETS</p>
+          <h2>Files attached to this page</h2>
+          <div className="asset-list">
+            {file.assets.map((asset) => (
+              <a className="asset-link" key={asset.id} href={asset.public_url} target="_blank" rel="noreferrer">
+                <Download size={16} aria-hidden="true" />
+                <span>{asset.filename}</span>
+                <small>{asset.mime_type} · {formatBytes(asset.size_bytes)}</small>
+              </a>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       <footer className="glass interaction-bar" aria-label="File interactions">
         <button
           className="glass-button"
@@ -268,4 +285,14 @@ function CommentCard({ comment, canWrite, onReply, onDelete, onToggleLike }: Com
       ) : null}
     </article>
   );
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+  if (bytes < 1024 * 1024) {
+    return `${Math.round(bytes / 102.4) / 10} KB`;
+  }
+  return `${Math.round(bytes / 1024 / 102.4) / 10} MB`;
 }
