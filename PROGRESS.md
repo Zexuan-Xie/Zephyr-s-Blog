@@ -1,6 +1,6 @@
 # xLab Blog Implementation Progress
 
-Last updated: 2026-06-05 22:30 CST
+Last updated: 2026-06-05 22:32 CST
 
 This file is the durable breakpoint/resume log for the xLab Blog implementation. Read this before resuming multi-agent work, then read `IMPLEMENTATION_PLAN.md` and active specs as needed.
 
@@ -36,9 +36,8 @@ This file is the durable breakpoint/resume log for the xLab Blog implementation.
   - `4646cde` makes JWT tamper verification deterministic.
 - Final Packet D/E terminal evidence is recorded in `docs/verification/packet-d-e-recovery-monitor-20260604.md`.
 - Current git branch: `main`, ahead of `origin/main` by local implementation/checkpoint commits; leader tree was clean after shutdown.
-- Next plan-aligned packet: Packet F — Reader Interactions: Comments and Likes. OpenAPI must be updated before shared API implementation.
+- Next plan-aligned packet: Packet H — Hybrid Search. Packet G — Per-File Assets is locally complete and terminally verified.
 - Do **not** integrate detached/stale worker commits without diffing against the latest verified leader baseline.
-
 ## Completed Tasks
 
 ### Task 1 — Packet A / Root foundation
@@ -124,6 +123,7 @@ Important: `docs/verification/phase-0-1-acceptance-matrix.md` should be updated 
 
 ## Active Milestone Log
 
+- 2026-06-05 22:32 CST: Packet G terminal verification completed. Evidence recorded in `docs/verification/packet-g-assets-monitor-20260605.md`; terminal gate passed with exact Go `1.26.4` full backend tests, vet, gofmt scan; frontend render-safety/static tests (5/5), lint, and build; OpenAPI local ref walk (`paths=22 schemas=33 refs=100`); immutable asset cache and SVG rejection static guards; iframe sandbox guardrail; `git diff --check`; and clean pre-documentation status (`main...origin/main [ahead 101]`). Known gaps: no Docker or live browser/backend E2E smoke in this runtime; non-default `ASSET_PUBLIC_BASE_URL` should be revisited for tree payload public URLs if required. Current breakpoint: commit Packet G terminal evidence, then begin Packet H — Hybrid Search (OpenAPI/contract audit first, then backend search package/provider/index routes, then frontend `/search`).
 - 2026-06-05 22:30 CST: Packet G frontend asset milestone completed. Added `FileAsset` types and API helpers for admin upload/delete, preserved `assets` in file payload transforms, rendered public asset links on `FilePage`, and replaced the `/admin` placeholder with an Asset Manager foundation that uploads by File node id and deletes uploaded assets. Frontend verification passes: `node --test web/tests/render-safety.test.mjs` (5/5), `cd web && npm run lint`, and `cd web && npm run build`. Current breakpoint: commit frontend asset milestone, then run full backend/frontend/OpenAPI/sandbox/diff Packet G gate.
 - 2026-06-05 22:27 CST: Packet G backend route/config/tree integration milestone completed. `tree.FileAsset` now aligns with OpenAPI `public_url`/storage metadata and public/admin file payloads list assets; router exposes public `GET /api/assets/{asset_id}/{filename}` plus admin `POST /api/admin/files/{file_id}/assets` and `DELETE /api/admin/assets/{asset_id}`; server wires `AssetService` with `LocalStorage`; config supports `ASSET_UPLOAD_DIR` and `ASSET_PUBLIC_BASE_URL`. Targeted verification passes: `cd api && PATH=/tmp/omx-go-1.26.4/go/bin:$PATH GOCACHE=/tmp/omx-go-cache go test -count=1 ./internal/config ./internal/http ./internal/assets ./internal/http/handlers ./internal/tree`. Current breakpoint: commit backend integration, then implement frontend asset types/display and admin upload helper UI.
 - 2026-06-05 22:25 CST: Packet G backend asset core milestone completed. Added `api/internal/assets` storage/service/repository/validation foundation with provider-neutral local keys, MIME/size allowlist, per-file total limit, local storage path safety, public immutable serve model, and SVG rejection checks for script/event/javascript/external/foreignObject. Added `api/internal/http/handlers/assets.go` for public serve, admin upload, and admin delete. Targeted verification passes: `cd api && PATH=/tmp/omx-go-1.26.4/go/bin:$PATH GOCACHE=/tmp/omx-go-cache go test -count=1 ./internal/assets ./internal/http/handlers`. Current breakpoint: commit backend asset core, then wire routes/config/tree asset lists.
