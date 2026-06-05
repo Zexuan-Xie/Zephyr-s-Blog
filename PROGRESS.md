@@ -1,6 +1,6 @@
 # xLab Blog Implementation Progress
 
-Last updated: 2026-06-05 22:54 CST
+Last updated: 2026-06-05 22:52 CST
 
 This file is the durable breakpoint/resume log for the xLab Blog implementation. Read this before resuming multi-agent work, then read `IMPLEMENTATION_PLAN.md` and active specs as needed.
 
@@ -36,7 +36,7 @@ This file is the durable breakpoint/resume log for the xLab Blog implementation.
   - `4646cde` makes JWT tamper verification deterministic.
 - Final Packet D/E terminal evidence is recorded in `docs/verification/packet-d-e-recovery-monitor-20260604.md`.
 - Current git branch: `main`, ahead of `origin/main` by local implementation/checkpoint commits; leader tree was clean after shutdown.
-- Next plan-aligned packet: Packet J — Deployment and Smoke is in progress. Packets G, H, and I are locally complete and terminally verified.
+- Plan packets A–J are implemented locally. Packet J live Docker smoke remains blocked by missing Docker in this WSL distro; static deployment validation and full code gates pass.
 - Do **not** integrate detached/stale worker commits without diffing against the latest verified leader baseline.
 ## Completed Tasks
 
@@ -123,6 +123,7 @@ Important: `docs/verification/phase-0-1-acceptance-matrix.md` should be updated 
 
 ## Active Milestone Log
 
+- 2026-06-05 22:52 CST: Packet J deployment/local terminal verification completed with live Docker smoke blocked by environment. Evidence recorded in `docs/verification/packet-j-deployment-monitor-20260605.md`; PASS exact Go `1.26.4` full backend tests, vet, gofmt scan; PASS frontend render-safety/static tests (7/7), lint, build; PASS OpenAPI local ref walk (`paths=22 schemas=33 refs=100`); PASS Ruby/YAML Compose/Caddy static validation (`services=db,api,web,caddy`, required volumes present, Caddy `try_files` SPA fallback and `file_server`); PASS Dockerfile/Caddy static guards and `git diff --check`. BLOCKED `docker compose config`/`up`/curl smoke because `docker` command is unavailable in this WSL distro. Current breakpoint: commit Packet J evidence; if Docker becomes available, run live Compose config/up + API health + SPA fallback curl and append evidence.
 - 2026-06-05 22:54 CST: Packet J deployment foundation milestone completed. Added `api/Dockerfile`, `web/Dockerfile`, Docker ignores, switched Compose API env to `HTTP_ADDR`, added API/web healthchecks, `web_dist` volume, and changed Caddy to serve SPA static files from `/srv` with `try_files {path} /index.html` while reverse-proxying `/api/*`. Static Compose/Caddy validation passes via Ruby/YAML (`services=db,api,web,caddy`, volumes include `postgres_data`, `uploads`, `web_dist`, `caddy_data`, `caddy_config`); backend full tests, frontend render-safety (7/7), frontend build, and `git diff --check` pass. `docker compose config` is still blocked because Docker is unavailable in this WSL distro (`docker: command not found`). Current breakpoint: commit Packet J deployment foundation, then run final full gate and record Packet J evidence with Docker smoke marked unavailable unless Docker appears.
 - 2026-06-05 22:49 CST: Packet I terminal verification completed. Evidence recorded in `docs/verification/packet-i-admin-manager-monitor-20260605.md`; terminal gate passed with exact Go `1.26.4` full backend tests, vet, gofmt scan; frontend render-safety/static tests (7/7), lint, and build; OpenAPI local ref walk (`paths=22 schemas=33 refs=100`); static guards for admin API helpers, impact prompts, iframe sandbox, no `allow-same-origin`, and `git diff --check`; clean pre-documentation status (`main...origin/main [ahead 107]`). Known gaps: no live admin browser/backend E2E or Docker smoke; tree browser uses public root entries plus manual node-id load for draft/admin-only nodes because no admin children-list endpoint exists. Current breakpoint: commit Packet I terminal evidence, then begin Packet J — Deployment and Smoke.
 - 2026-06-05 22:55 CST: Packet I frontend Admin Tree Manager milestone completed. Replaced the asset-only `/admin` foundation with a Tree Manager workspace backed by typed admin APIs for load/create/update/move/delete nodes, file content save, publish/unpublish, asset upload/delete, embedding refresh, and search rebuild; added impact prompts for published path changes, unpublish, delete, and rebuild; preserved iframe sandbox `allow-scripts` for HTML preview. Targeted verification passes: `node --test web/tests/render-safety.test.mjs` (7/7), `cd web && npm run lint`, `cd web && npm run build`, and backend route regression `cd api && PATH=/tmp/omx-go-1.26.4/go/bin:$PATH GOCACHE=/tmp/omx-go-cache go test -count=1 ./internal/http ./internal/http/handlers ./internal/tree`. Current breakpoint: commit Packet I frontend milestone, then run full terminal backend/frontend/OpenAPI/sandbox/diff gate and record Packet I evidence.
