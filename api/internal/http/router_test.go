@@ -12,6 +12,8 @@ import (
 	"github.com/google/uuid"
 
 	"xlab-blog/api/internal/auth"
+	"xlab-blog/api/internal/comments"
+	"xlab-blog/api/internal/likes"
 	"xlab-blog/api/internal/tree"
 	"xlab-blog/api/internal/users"
 )
@@ -179,4 +181,119 @@ func (f *routerFakeUserRepository) FindByID(context.Context, uuid.UUID) (users.U
 
 func (f *routerFakeUserRepository) UpsertAdmin(context.Context, string, string) (users.User, error) {
 	return f.user, nil
+}
+
+func TestRouterExposesCommentAndLikeRoutes(t *testing.T) {
+	reader := users.User{ID: uuid.New(), Email: "reader@example.com", Role: users.RoleReader}
+	userRepo := &routerFakeUserRepository{user: reader}
+	tokens := auth.NewTokenService("router-comment-like-secret", time.Hour)
+	authService := auth.NewService(userRepo, tokens)
+	token, err := tokens.Issue(reader)
+	if err != nil {
+		t.Fatalf("Issue() error = %v", err)
+	}
+	fileID := uuid.New()
+	commentID := uuid.New()
+	router := NewRouter(Dependencies{
+		AuthService:    authService,
+		Tokens:         tokens,
+		CommentService: comments.NewService(&routerFakeCommentRepository{fileID: fileID, commentID: commentID, user: reader}),
+		LikeService:    likes.NewService(&routerFakeLikeRepository{fileID: fileID, comments: map[uuid.UUID]bool{commentID: false}}),
+	})
+
+	tests := []struct {
+		method string
+		path   string
+		body   string
+		token  string
+		status int
+		want   string
+	}{
+		{method: http.MethodGet, path: "/api/files/" + fileID.String() + "/comments", status: http.StatusOK, want: `"comments"`},
+		{method: http.MethodPost, path: "/api/files/" + fileID.String() + "/comments", body: `{"body":"hello"}`, token: token, status: http.StatusCreated, want: `"body":"hello"`},
+		{method: http.MethodPost, path: "/api/files/" + fileID.String() + "/comments", body: `{"body":"hello"}`, status: http.StatusUnauthorized, want: `"error":"authentication required"`},
+		{method: http.MethodPut, path: "/api/files/" + fileID.String() + "/like", token: token, status: http.StatusOK, want: `"liked":true`},
+		{method: http.MethodDelete, path: "/api/files/" + fileID.String() + "/like", token: token, status: http.StatusOK, want: `"liked":false`},
+		{method: http.MethodPut, path: "/api/comments/" + commentID.String() + "/like", token: token, status: http.StatusOK, want: `"like_count"`},
+		{method: http.MethodPut, path: "/api/comments/" + commentID.String() + "/like", status: http.StatusUnauthorized, want: `"error":"authentication required"`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.method+" "+tt.path, func(t *testing.T) {
+			request := httptest.NewRequest(tt.method, tt.path, strings.NewReader(tt.body))
+			if tt.token != "" {
+				request.Header.Set("Authorization", "Bearer "+tt.token)
+			}
+			response := httptest.NewRecorder()
+			router.ServeHTTP(response, request)
+			if response.Code != tt.status {
+				t.Fatalf("status = %d, want %d; body=%s", response.Code, tt.status, response.Body.String())
+			}
+			if tt.want != "" && !strings.Contains(response.Body.String(), tt.want) {
+				t.Fatalf("body = %s, want substring %s", response.Body.String(), tt.want)
+			}
+		})
+	}
+}
+
+type routerFakeCommentRepository struct {
+	fileID    uuid.UUID
+	commentID uuid.UUID
+	user      users.User
+}
+
+func (r *routerFakeCommentRepository) PublishedFileExists(_ context.Context, fileID uuid.UUID) (bool, error) {
+	return fileID == r.fileID, nil
+}
+
+func (r *routerFakeCommentRepository) ListThread(_ context.Context, fileID uuid.UUID, _ *uuid.UUID) (comments.Thread, error) {
+	return comments.Thread{FileID: fileID, Comments: []comments.Comment{}}, nil
+}
+
+func (r *routerFakeCommentRepository) FindComment(_ context.Context, commentID uuid.UUID) (comments.Comment, error) {
+	if commentID != r.commentID {
+		return comments.Comment{}, comments.ErrCommentNotFound
+	}
+	return comments.Comment{ID: commentID, FileNodeID: r.fileID, User: comments.PublicUser{ID: r.user.ID, DisplayName: "Reader"}, Replies: []comments.Comment{}}, nil
+}
+
+func (r *routerFakeCommentRepository) InsertComment(_ context.Context, fileID uuid.UUID, userID uuid.UUID, input comments.CreateInput) (comments.Comment, error) {
+	return comments.Comment{ID: r.commentID, FileNodeID: fileID, User: comments.PublicUser{ID: userID, DisplayName: "Reader"}, Body: input.Body, Replies: []comments.Comment{}}, nil
+}
+
+func (r *routerFakeCommentRepository) SoftDeleteComment(_ context.Context, commentID uuid.UUID, deletedBy uuid.UUID) (comments.Comment, error) {
+	return comments.Comment{ID: commentID, FileNodeID: r.fileID, User: comments.PublicUser{ID: deletedBy, DisplayName: "Reader"}, Deleted: true, Replies: []comments.Comment{}}, nil
+}
+
+type routerFakeLikeRepository struct {
+	fileID   uuid.UUID
+	comments map[uuid.UUID]bool
+	liked    bool
+}
+
+func (r *routerFakeLikeRepository) FileTargetExists(_ context.Context, fileID uuid.UUID) (bool, error) {
+	return fileID == r.fileID, nil
+}
+
+func (r *routerFakeLikeRepository) CommentTargetState(_ context.Context, commentID uuid.UUID) (bool, bool, error) {
+	deleted, ok := r.comments[commentID]
+	return ok, deleted, nil
+}
+
+func (r *routerFakeLikeRepository) UpsertLike(context.Context, uuid.UUID, likes.Target) error {
+	r.liked = true
+	return nil
+}
+
+func (r *routerFakeLikeRepository) DeleteLike(context.Context, uuid.UUID, likes.Target) error {
+	r.liked = false
+	return nil
+}
+
+func (r *routerFakeLikeRepository) LikeState(context.Context, uuid.UUID, likes.Target) (likes.State, error) {
+	count := 0
+	if r.liked {
+		count = 1
+	}
+	return likes.State{Liked: r.liked, LikeCount: count}, nil
 }

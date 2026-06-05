@@ -7,8 +7,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"xlab-blog/api/internal/auth"
+	"xlab-blog/api/internal/comments"
 	"xlab-blog/api/internal/http/handlers"
 	"xlab-blog/api/internal/http/middleware"
+	"xlab-blog/api/internal/likes"
 	"xlab-blog/api/internal/tree"
 )
 
@@ -19,6 +21,8 @@ type Dependencies struct {
 	TreeService      *tree.Service
 	LifecycleService *tree.LifecycleService
 	AdminService     *tree.AdminService
+	CommentService   *comments.Service
+	LikeService      *likes.Service
 }
 
 func NewRouter(deps Dependencies) http.Handler {
@@ -38,13 +42,44 @@ func NewRouter(deps Dependencies) http.Handler {
 			api.Get("/tree/{node_id}/children", treeHandler.Children)
 		}
 
+		var authMiddleware *middleware.Authenticator
 		if deps.AuthService != nil && deps.Tokens != nil {
 			authHandler := handlers.NewAuthHandler(deps.AuthService)
-			authMiddleware := middleware.NewAuthenticator(deps.Tokens, deps.AuthService)
+			authMiddleware = middleware.NewAuthenticator(deps.Tokens, deps.AuthService)
 			api.Post("/auth/register", authHandler.Register)
 			api.Post("/auth/login", authHandler.Login)
 			api.With(authMiddleware.RequireAuth).Get("/auth/me", authHandler.Me)
+		}
 
+		commentService := deps.CommentService
+		likeService := deps.LikeService
+		if deps.Pool != nil && (commentService == nil || likeService == nil) {
+			if commentService == nil {
+				commentService = comments.NewService(comments.NewSQLRepository(deps.Pool))
+			}
+			if likeService == nil {
+				likeService = likes.NewService(likes.NewSQLRepository(deps.Pool))
+			}
+		}
+		if commentService != nil {
+			commentHandler := handlers.NewCommentHandler(commentService)
+			if authMiddleware != nil {
+				api.With(authMiddleware.OptionalAuth).Get("/files/{file_id}/comments", commentHandler.Thread)
+				api.With(authMiddleware.RequireAuth).Post("/files/{file_id}/comments", commentHandler.Create)
+				api.With(authMiddleware.RequireAuth).Delete("/comments/{comment_id}", commentHandler.Delete)
+			} else {
+				api.Get("/files/{file_id}/comments", commentHandler.Thread)
+			}
+		}
+		if likeService != nil && authMiddleware != nil {
+			likeHandler := handlers.NewLikeHandler(likeService)
+			api.With(authMiddleware.RequireAuth).Put("/files/{file_id}/like", likeHandler.LikeFile)
+			api.With(authMiddleware.RequireAuth).Delete("/files/{file_id}/like", likeHandler.UnlikeFile)
+			api.With(authMiddleware.RequireAuth).Put("/comments/{comment_id}/like", likeHandler.LikeComment)
+			api.With(authMiddleware.RequireAuth).Delete("/comments/{comment_id}/like", likeHandler.UnlikeComment)
+		}
+
+		if authMiddleware != nil {
 			lifecycleService := deps.LifecycleService
 			adminService := deps.AdminService
 			if deps.Pool != nil && (lifecycleService == nil || adminService == nil) {
