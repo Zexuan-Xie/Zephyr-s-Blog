@@ -44,3 +44,20 @@ Final gate run from repo root on 2026-06-05 22:13 CST:
 - No browser E2E was run against a live backend/database in this environment.
 - Docker remains unavailable/not exercised in this Packet F gate.
 - Final Task 5 should repeat the same gate after Task 4 is committed and marked completed.
+
+## Terminal Guardrail — Task 5
+
+Repeated after Task 4 commit and Task 5 start checkpoint (`896a54d`) on 2026-06-05 22:15 CST:
+
+- PASS backend full tests: `cd api && PATH=/tmp/omx-go-1.26.4/go/bin:$PATH GOCACHE=/tmp/omx-go-cache go test -count=1 ./...`.
+- PASS backend vet: `cd api && PATH=/tmp/omx-go-1.26.4/go/bin:$PATH GOCACHE=/tmp/omx-go-cache go vet ./...`.
+- PASS gofmt scan: no unformatted Go files.
+- PASS frontend render-safety + Packet F static contract: `node --test web/tests/render-safety.test.mjs` (4/4).
+- PASS frontend lint: `cd web && npm run lint`.
+- PASS frontend build/typecheck: `cd web && npm run build`.
+- PASS OpenAPI refs: `paths=22 schemas=33 refs=100`.
+- PASS iframe sandbox guardrail: `sandbox="allow-scripts"`; no `allow-same-origin` under `web/src`.
+- PASS `git diff --check`.
+- PASS final pre-completion status: `## main...origin/main [ahead 94]` with no uncommitted files.
+
+Task 5 conclusion: Packet F comments/likes are implemented and verified at the local terminal gate. Remaining non-terminal gaps are environment-level only: no Docker smoke and no live browser/backend E2E in this runtime.
