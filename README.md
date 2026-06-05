@@ -69,7 +69,7 @@ cp .env.example .env
 # edit .env secrets before running the API or Docker Compose
 ```
 
-`docker-compose.yml` uses the required pgvector, Caddy, `postgres_data`, and `uploads` foundations. The `api/` and `web/` build contexts are filled by the backend/frontend implementation packets.
+`docker-compose.yml` uses pgvector, the Go API image, the Vite static-build image, Caddy SPA fallback, `postgres_data`, `uploads`, and `web_dist` foundations.
 
 ## Planned verification
 
