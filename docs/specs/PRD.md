@@ -83,6 +83,8 @@
 - 创建、编辑、发布内容。
 - 上传 assets。
 - 管理内容树。
+- 访问 `/admin` 时不退出登录；页面明确提示需要 Author 权限并提供返回 `/recent`。
+- Reader 访问 `/admin/preview/{file_id}` 时同样显示 Author 权限提示，不能查看 Draft。
 
 ### 3.3 Admin / Author
 
@@ -139,6 +141,7 @@
 
 - 搜索对象：published File。
 - 搜索范围：File name + keywords + extracted search_text + path。
+- 搜索只返回 Published File；Draft 即使对 Author 可见，也只在 Admin Content Tree 中定位，不进入搜索。
 - Markdown search_text：从 Markdown 原文提取纯文本。
 - HTML search_text：只提取可见文本，排除 CSS/JS/meta/link/noscript/hidden。
 - Retrieval：Postgres full-text + Qwen/DashScope embedding + pgvector semantic search。
@@ -184,7 +187,8 @@
 - SSR / Next.js / Server Components。
 - HTTP 301 redirect。
 - Object storage 实现；只保留接口。
-- Drag-and-drop admin tree。
+- 跨 Directory 的 drag-and-drop reparenting；首版只支持同一 parent 内的桌面拖拽排序，移动端使用上移/下移。
+- 同级 Directory/File 使用统一混合顺序，不强制 Directory 优先。
 - LLM query expansion、rerank、cross-language query translation。
 - HTML iframe auto-resize。
 - Immersive full-screen HTML mode。

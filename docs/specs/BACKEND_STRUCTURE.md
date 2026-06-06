@@ -158,6 +158,7 @@ Rules:
 - published File cannot directly switch `content_format`。
 - File save must update `search_text` and set embedding pending/ready/failed.
 - Qwen failure never rolls back content save。
+- File autosave uses optimistic concurrency: the client submits the loaded content version and stale writes are rejected rather than silently overwriting newer content.
 
 ### 2.5 path_redirects
 
@@ -335,6 +336,23 @@ DELETE /api/admin/assets/{asset_id}
 POST   /api/admin/files/{file_id}/refresh-embedding
 POST   /api/admin/search-index/rebuild
 ```
+
+Admin Content Tree requires a protected children-list/read model that includes all Directories and both Draft and Published Files. Public tree endpoints remain publication-filtered and must not serve as the Admin tree source.
+
+Node creation owns slug generation and conflict resolution on the server. It normalizes the submitted Name and selects the final same-parent unique slug transactionally; client path previews are advisory only.
+
+Changing a Directory URL path rewrites its descendant paths and records redirects for formerly public paths in one transaction. Any destination conflict aborts the entire subtree change; Draft-only paths do not create public redirects.
+
+Moving a Directory to another parent uses the same atomic subtree rewrite and redirect rules and rejects self/descendant destinations.
+
+Redirects are retained, resolved directly to the current target without chains/loops, exposed read-only for system inspection, and cease resolving when their target node is deleted.
+
+The content-version migration is lossless and transactional:
+
+- Existing Published Files initialize Current and Published Content from the existing content; Previous is empty.
+- Existing Draft Files initialize Current only; Previous and Published Content are empty.
+- Existing Assets migrate to Draft/Published state from the File publication state and actual Published Content references.
+- Back up the database before running the migration.
 
 ## 5. Tree path resolution
 

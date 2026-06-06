@@ -292,7 +292,7 @@ There is exactly one elevation idea: **glass floating over paper.** Lift comes f
 
 ## Components
 
-- **`glass-nav`** — sticky pill at top, frosted glass, brand left + quiet links right (active link in `{colors.ink}` 600, rest in `{colors.ink-60}`). Includes a **ZH / EN UI language toggle**: render as a small pill segment or text toggle in the right cluster, active locale in `{colors.ink}` 600, inactive in `{colors.ink-40}`. Switching locale changes UI chrome only; Directory/File content remains exactly as authored.
+- **`glass-nav`** — sticky pill at top, frosted glass, brand left + quiet links right (active link in `{colors.ink}` 600, rest in `{colors.ink-60}`). The nav search is the only search input in the application; do not add a separate Search link or duplicate input on the results page. Includes a **ZH / EN UI language toggle**: render as a small pill segment or text toggle in the right cluster, active locale in `{colors.ink}` 600, inactive in `{colors.ink-40}`. Switching locale changes UI chrome only; Directory/File content remains exactly as authored.
 - **`file-reading-card`** — the Markdown file reading panel. Stack: `keyword-chip` keywords (max 3) → `hero-display` title → `meta` path/time line → `lead`/body paragraphs / `code-block` → interaction bar (`button-primary` like + `glass-pill-button` comment/share).
 - **`content-entry-card`** — floating glass card for one next-level content tree entry, either Directory or File. Stack: small `label` (`DIRECTORY` / `FILE`, or localized equivalent) → `heading-sm` display `name` → `caption` path/keywords/meta. Directory caption shows child directory/file counts; File caption shows path plus updated time / read time / weak render meta when useful. Markdown vs HTML is not a public category; it only determines the file renderer after opening. Directory cards enter the next directory; File cards open the file. Use the same glass recipe and avoid nested glass inside the card.
 - **`directory-sidebar`** — callable directory tree drawer. It overlays the page instead of pushing content. Desktop width ~320px; mobile width `min(88vw, 360px)`. It is a single frosted glass sheet over paper with a warm lightweight scrim. Close via scrim, Esc, or close pill. Use quiet indentation, `caption` text for nested paths, Action Blue only for active/current path and primary controls.
@@ -344,8 +344,27 @@ There is exactly one elevation idea: **glass floating over paper.** Lift comes f
 ## Known Gaps (to design later)
 
 - **Comment thread** layout is specified as a glass recipe but not yet visually prototyped (nesting, reply indentation, input box).
-- **Admin / Markdown editor** UI is undesigned.
-- **Form & validation states** (login, register, errors) not yet surfaced.
+- **Admin / Markdown editor** must use a graphical, context-aware creation flow rather than exposing raw Node IDs as the primary interaction. Directory/File creation starts from the selected Content Tree location, visually distinguishes the two node types, and reveals advanced metadata only when needed. Detailed Admin composition remains to be resolved.
+- **Admin New workspace** replaces the right workspace while keeping the Content Tree visible on desktop. It is not a modal. Mobile uses a full-width create view with a return path to the tree.
+- **Admin Content Tree ordering** uses desktop drag-and-drop only within the current parent. Mobile exposes explicit `Move up` / `Move down` actions; neither interaction reparents a node.
+- **Ordering feedback** is inline and transient: `Saving…` during persistence and a lightweight success notice afterward. Failure restores the previous visual order rather than leaving an uncertain state.
+- **Directory Picker** is the only cross-Directory move control. It reuses the readable Content Tree model, highlights the current parent, previews the destination path, and never exposes raw Parent IDs.
+- **Node Advanced settings** replaces the right-side node workspace temporarily. It opens from the selected tree node's `···` menu, never as a modal or separate page, and returns to the prior node workspace on save or cancel.
+- **Node Advanced settings boundaries** include rename, URL path, location, sort position, a collapsed read-only technical-details section, and a clearly separated delete danger zone. File content, keywords, and publication controls remain in the File editor.
+- **Author-facing URL language** is always `URL path`; never expose the implementation term `slug` in labels, errors, help text, or confirmations.
+- **Delete danger zone** uses an inline second confirmation, not a modal or typed-name challenge. Protected Published Files and non-empty Directories explain the blocking condition instead of exposing a destructive action.
+- **Form & validation states** use concise actionable language near the relevant field or action. Raw server errors and HTTP status belong in a collapsed technical-details disclosure, not the primary message.
+- **Success feedback** is one transient Toast plus the resulting UI state change. Do not duplicate success messages in the page header or stack multiple notices.
+- **File editor status** remains fixed in the editor header. Autosave state and version access must not use recurring Toasts while the Author writes.
+- **File editor workspace** is a resizable 55/45 Editor/Preview split on desktop with Editor-only and Preview-only modes. Mobile uses an Edit/Preview segmented switch and never squeezes both panes side by side.
+- **File workspace navigation** uses three restrained tabs: Content, Assets, and Settings. Content is the default; Assets never form a long panel below the writing surface, and Settings opens the node-level advanced view.
+- **Publication control** is the single primary action in the File editor header. Unpublish is a secondary overflow action, and an already-current Published File shows status rather than a redundant button.
+- **Search indexing state** is progressive disclosure. Normal editor chrome does not expose embedding jargon; per-File status is in overflow details and global rebuild belongs to Admin-level tools.
+- **Admin shell** starts with the working interface, not an introductory hero card. A compact top toolbar carries context on the left and `View site` plus infrequent system actions on the right.
+- **Tree publication state** uses restrained dots and short labels rather than filled badges: hollow gray Draft, green Published, amber Changes, and red Save failed. Every state has text or an accessible label and never depends on color alone.
+- **Collapsed Directory attention** shows only the highest-priority descendant issue: red for Save failed, otherwise amber for unpublished Changes. It never displays counts or summarizes ordinary Draft/Published descendants.
+- **Admin empty workspace** is instructional only at the moment of need: one short prompt and one `＋ New` action, with no dashboard, statistics, or tutorial chrome.
+- **Identity loading** reserves the final control's space with a quiet skeleton. Never flash `Login` before resolving a stored session, and never present a network failure as an authenticated-state decision.
 - **Dark mode** is intentionally **out of scope** — this is a light-only, rice-paper system by decision.
 - Empty/loading/skeleton states for the content tree card grid and directory sidebar not yet designed.
 
