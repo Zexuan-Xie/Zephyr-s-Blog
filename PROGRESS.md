@@ -1,6 +1,6 @@
 # xLab Blog Implementation Progress
 
-Last updated: 2026-06-06 14:18 CST
+Last updated: 2026-06-06 14:17 CST
 
 This file is the durable breakpoint/resume log for the xLab Blog implementation. Read this before resuming multi-agent work, then read `IMPLEMENTATION_PLAN.md` and active specs as needed.
 
@@ -44,6 +44,8 @@ This file is the durable breakpoint/resume log for the xLab Blog implementation.
 - User acceptance URL: `http://127.0.0.1:5173`
 - API health: `http://127.0.0.1:8080/api/health`
 - PostgreSQL: `127.0.0.1:55432`, database `xlab_blog`
+- Durable local state: `~/.local/share/xlab-blog` (`postgres`, `uploads`, and `logs`).
+- Recovery launcher: `~/.local/share/xlab-blog/start-local.sh` (mode `700`, outside Git).
 - Exact environment: Conda `blogenv` with Node `22.22.3`, npm `10.9.8`, Go `1.26.4`, PostgreSQL `17.10`, and pgvector `0.8.1`.
 - Final evidence: `docs/verification/native-local-full-stack-smoke-20260606.md`
 - Fresh disposable-database API smoke: `SMOKE_OK checks=21`.
@@ -136,7 +138,8 @@ Important: `docs/verification/phase-0-1-acceptance-matrix.md` should be updated 
 
 ## Active Milestone Log
 
-- 2026-06-06 14:18 CST: Native local acceptance reached its terminal pre-user checkpoint. Re-ran exact Conda toolchain verification; full Go tests, vet, and formatting pass; frontend static tests 7/7, lint, and build pass; desktop Playwright acceptance reports `BROWSER_ACCEPTANCE_OK`; mobile `390x844` reports `MOBILE_SMOKE_OK`. A disposable fresh PostgreSQL database and temporary API reran all 21 business checks successfully, then were removed without touching the main acceptance data. Evidence is recorded in `docs/verification/native-local-full-stack-smoke-20260606.md`. Main PostgreSQL/API/Vite remain live at ports `55432`/`8080`/`5173` for user acceptance. Current breakpoint: wait for user acceptance findings, repair any reproduced issue natively, then enable Docker and perform live Compose smoke.
+- 2026-06-06 14:17 CST: Power-loss recovery was hardened before user acceptance. Stopped the main API/PostgreSQL cleanly, moved the live PostgreSQL cluster from `/tmp/xlab-blog-local-pg` to `~/.local/share/xlab-blog/postgres`, moved uploads to `~/.local/share/xlab-blog/uploads`, restarted PostgreSQL/API, and verified retained node/asset/comment data. Added a mode-`700`, repository-external recovery launcher at `~/.local/share/xlab-blog/start-local.sh`; no local credential was committed. Post-move API health plus desktop/mobile browser acceptance pass again. Current breakpoint: main services remain live for user acceptance; after a reboot run the recovery launcher, then verify ports `8080` and `5173`.
+- 2026-06-06 14:16 CST: Native local acceptance reached its terminal pre-user checkpoint. Re-ran exact Conda toolchain verification; full Go tests, vet, and formatting pass; frontend static tests 7/7, lint, and build pass; desktop Playwright acceptance reports `BROWSER_ACCEPTANCE_OK`; mobile `390x844` reports `MOBILE_SMOKE_OK`. A disposable fresh PostgreSQL database and temporary API reran all 21 business checks successfully, then were removed without touching the main acceptance data. Evidence is recorded in `docs/verification/native-local-full-stack-smoke-20260606.md`. Main PostgreSQL/API/Vite remain live at ports `55432`/`8080`/`5173` for user acceptance. Current breakpoint: wait for user acceptance findings, repair any reproduced issue natively, then enable Docker and perform live Compose smoke.
 - 2026-06-06 14:11 CST: Native local full-stack smoke reached a working acceptance candidate. Created persistent Conda `blogenv` with exact Node `22.22.3`, npm `10.9.8`, Go `1.26.4`, PostgreSQL `17.10`, and native pgvector `0.8.1`; PostgreSQL runs on `127.0.0.1:55432`, API on `127.0.0.1:8080`, and Vite on `127.0.0.1:5173`. Real startup found and fixed: PostgreSQL 17 immutable generated-column migration failure (replaced with trigger-maintained `search_vector`), comment insert/delete pgx argument-count failure, missing `/api/recent`, missing frontend admin authentication guard, and Admin card title clipping. Real API smoke passed 21 checks covering admin auth, tree/file creation, content save/publish, public resolve, full-text fallback, asset immutable serving, embedding failure state, reader registration, comments, file/comment likes, redirect lifecycle, unpublish isolation, draft asset isolation, and search exclusion. Headless Chromium desktop/mobile acceptance passes for admin guard/login return, recent, search, file assets/comments/likes, responsive rendering, and zero relevant console errors. Current breakpoint: commit the local-smoke fixes, run final regression/evidence capture, keep local services running for user acceptance at `http://127.0.0.1:5173`.
 - 2026-06-06 13:51 CST: Non-container local full-stack smoke started using newly created Conda `blogenv` with exact Node `22.22.3`, npm `10.9.8`, Go `1.26.4`, PostgreSQL `17.10`, and pgvector `0.8.1`. Local PostgreSQL is running on `127.0.0.1:55432`. First real API startup exposed a migration blocker: PostgreSQL rejected the generated `search_vector` expression because `array_to_string` is not immutable (`SQLSTATE 42P17`). Migration was changed to a normal `tsvector` column maintained by a before insert/update trigger. Current breakpoint: recreate the local smoke database, rerun migrations/API startup, then exercise auth/admin/tree/assets/search and rendered frontend flows.
 - 2026-06-05 22:52 CST: Packet J deployment/local terminal verification completed with live Docker smoke blocked by environment. Evidence recorded in `docs/verification/packet-j-deployment-monitor-20260605.md`; PASS exact Go `1.26.4` full backend tests, vet, gofmt scan; PASS frontend render-safety/static tests (7/7), lint, build; PASS OpenAPI local ref walk (`paths=22 schemas=33 refs=100`); PASS Ruby/YAML Compose/Caddy static validation (`services=db,api,web,caddy`, required volumes present, Caddy `try_files` SPA fallback and `file_server`); PASS Dockerfile/Caddy static guards and `git diff --check`. BLOCKED `docker compose config`/`up`/curl smoke because `docker` command is unavailable in this WSL distro. Current breakpoint: commit Packet J evidence; if Docker becomes available, run live Compose config/up + API health + SPA fallback curl and append evidence.
@@ -279,7 +282,13 @@ curl -fsS http://127.0.0.1:5173/ >/dev/null
 tail -n 120 docs/verification/native-local-full-stack-smoke-20260606.md
 ```
 
-If services were lost after a reboot, restore PostgreSQL first from `/tmp/xlab-blog-local-pg`, then start the API and Vite with `blogenv`. Before deployment changes, verify the preserved terminal baseline:
+If services were lost after a reboot, run the repository-external mode-`700` launcher:
+
+```bash
+~/.local/share/xlab-blog/start-local.sh
+```
+
+Then repeat the health curls above. Before deployment changes, verify the preserved terminal baseline:
 
 ```bash
 cd api

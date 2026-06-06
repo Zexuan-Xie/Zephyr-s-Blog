@@ -1,6 +1,6 @@
 # Native Local Full-Stack Acceptance Verification
 
-Date: 2026-06-06 14:18 CST
+Date: 2026-06-06 14:17 CST
 
 Scope: Native Conda/PostgreSQL/API/Vite validation before Docker or server deployment.
 
@@ -15,6 +15,8 @@ Scope: Native Conda/PostgreSQL/API/Vite validation before Docker or server deplo
 - Main PostgreSQL: `127.0.0.1:55432`, database `xlab_blog`
 - Main API: `http://127.0.0.1:8080`
 - Main frontend: `http://127.0.0.1:5173`
+- Durable local state: `~/.local/share/xlab-blog`
+- Recovery launcher: `~/.local/share/xlab-blog/start-local.sh` (mode `700`, stored outside the repository)
 
 The main services were intentionally left running for user acceptance.
 
@@ -111,6 +113,22 @@ Observed results:
 - Frontend typecheck/build: pass.
 - Desktop and mobile browser acceptance: pass.
 - Main health endpoint after temporary smoke cleanup: `{"status":"ok","database":"ok"}`.
+
+## Power-loss recovery
+
+The PostgreSQL cluster and uploaded assets were moved out of `/tmp`:
+
+- PostgreSQL cluster: `~/.local/share/xlab-blog/postgres`
+- Uploaded assets: `~/.local/share/xlab-blog/uploads`
+- Service logs: `~/.local/share/xlab-blog/logs`
+
+The repository does not contain local credentials. A mode-`700` launcher with the local-only acceptance configuration is stored outside the repository:
+
+```bash
+~/.local/share/xlab-blog/start-local.sh
+```
+
+After moving the live data, PostgreSQL reported ready, the database retained its nodes/assets/comments, the API health check passed, and desktop/mobile browser acceptance passed again.
 
 ## Remaining boundaries
 
