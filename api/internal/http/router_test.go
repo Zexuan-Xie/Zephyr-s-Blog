@@ -32,7 +32,10 @@ func TestRouterExposesPublicTreeRoutes(t *testing.T) {
 	repo.directoryPages[dirID] = tree.DirectoryPage{Node: &tree.Node{ID: dirID, Kind: tree.NodeKindDirectory, Path: "/notes"}, Path: "/notes", Entries: []any{}}
 	repo.nodes[routerParentSlugKey{slug: "notes"}] = tree.Node{ID: dirID, Kind: tree.NodeKindDirectory, Slug: "notes", Path: "/notes"}
 
-	router := NewRouter(Dependencies{TreeService: tree.NewService(repo)})
+	router := NewRouter(Dependencies{
+		TreeService:   tree.NewService(repo),
+		RecentService: tree.NewRecentService(&routerFakeRecentRepository{}),
+	})
 
 	tests := []struct {
 		name       string
@@ -43,6 +46,7 @@ func TestRouterExposesPublicTreeRoutes(t *testing.T) {
 		{name: "root", path: "/api/tree", wantStatus: http.StatusOK, wantBody: `"path":"/"`},
 		{name: "resolve directory", path: "/api/tree/resolve?path=/notes", wantStatus: http.StatusOK, wantBody: `"type":"directory"`},
 		{name: "children", path: "/api/tree/" + dirID.String() + "/children", wantStatus: http.StatusOK, wantBody: `"path":"/notes"`},
+		{name: "recent", path: "/api/recent?limit=24&offset=0", wantStatus: http.StatusOK, wantBody: `"items":[]`},
 		{name: "invalid child id", path: "/api/tree/not-a-uuid/children", wantStatus: http.StatusBadRequest, wantBody: `"error":"invalid node_id"`},
 	}
 
@@ -60,6 +64,12 @@ func TestRouterExposesPublicTreeRoutes(t *testing.T) {
 			}
 		})
 	}
+}
+
+type routerFakeRecentRepository struct{}
+
+func (*routerFakeRecentRepository) RecentFiles(context.Context, int, int) ([]tree.FileEntry, error) {
+	return []tree.FileEntry{}, nil
 }
 
 func TestRouterExposesAdminNodeRoutes(t *testing.T) {

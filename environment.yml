@@ -6,6 +6,10 @@ dependencies:
   # Do not loosen these pins without updating the spec first.
   - nodejs=22.22.3
   - go=1.26.4
+  - postgresql=17.10
+  # Conda currently provides pgvector 0.8.1 for native local smoke.
+  # Container deployment remains pinned to pgvector 0.8.2 in Compose.
+  - pgvector=0.8.1
 
   # npm 10.9.8 is required by TECH_STACK.md, but the standalone
   # `npm=10.9.8` Conda package is not available from the current

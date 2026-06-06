@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -13,6 +15,10 @@ import (
 
 type TreeHandler struct {
 	service *tree.Service
+}
+
+type RecentTreeService interface {
+	Recent(context.Context, int, int) (tree.FileEntryList, error)
 }
 
 func NewTreeHandler(service *tree.Service) *TreeHandler {
@@ -49,6 +55,39 @@ func (h *TreeHandler) Children(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respond.JSON(w, http.StatusOK, page)
+}
+
+func RecentFiles(service RecentTreeService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		limit, err := optionalNonNegativeInt(r, "limit")
+		if err != nil {
+			respond.Error(w, http.StatusBadRequest, "invalid limit")
+			return
+		}
+		offset, err := optionalNonNegativeInt(r, "offset")
+		if err != nil {
+			respond.Error(w, http.StatusBadRequest, "invalid offset")
+			return
+		}
+		items, err := service.Recent(r.Context(), limit, offset)
+		if err != nil {
+			respond.Error(w, http.StatusInternalServerError, "recent files request failed")
+			return
+		}
+		respond.JSON(w, http.StatusOK, items)
+	}
+}
+
+func optionalNonNegativeInt(r *http.Request, key string) (int, error) {
+	raw := r.URL.Query().Get(key)
+	if raw == "" {
+		return 0, nil
+	}
+	value, err := strconv.Atoi(raw)
+	if err != nil || value < 0 {
+		return 0, errors.New("invalid pagination")
+	}
+	return value, nil
 }
 
 func (h *TreeHandler) respondError(w http.ResponseWriter, err error) {

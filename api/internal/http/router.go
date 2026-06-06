@@ -21,6 +21,7 @@ type Dependencies struct {
 	AuthService      *auth.Service
 	Tokens           *auth.TokenService
 	TreeService      *tree.Service
+	RecentService    handlers.RecentTreeService
 	LifecycleService *tree.LifecycleService
 	AdminService     *tree.AdminService
 	CommentService   *comments.Service
@@ -44,6 +45,13 @@ func NewRouter(deps Dependencies) http.Handler {
 			api.Get("/tree", treeHandler.Root)
 			api.Get("/tree/resolve", treeHandler.Resolve)
 			api.Get("/tree/{node_id}/children", treeHandler.Children)
+		}
+		recentService := deps.RecentService
+		if recentService == nil && deps.Pool != nil {
+			recentService = tree.NewRecentService(tree.NewSQLRepository(deps.Pool))
+		}
+		if recentService != nil {
+			api.Get("/recent", handlers.RecentFiles(recentService))
 		}
 
 		assetService := deps.AssetService

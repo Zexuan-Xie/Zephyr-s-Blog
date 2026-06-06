@@ -88,7 +88,7 @@ func (r *SQLRepository) FindComment(ctx context.Context, commentID uuid.UUID) (C
 }
 
 func (r *SQLRepository) InsertComment(ctx context.Context, fileID uuid.UUID, userID uuid.UUID, input CreateInput) (Comment, error) {
-	comment, err := scanComment(r.pool.QueryRow(ctx, insertCommentQuery, fileID, userID, input.ParentID, input.ReplyToUserID, input.Body, userID))
+	comment, err := scanComment(r.pool.QueryRow(ctx, insertCommentQuery, fileID, userID, input.ParentID, input.ReplyToUserID, input.Body))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Comment{}, ErrCommentNotFound
 	}
@@ -96,7 +96,7 @@ func (r *SQLRepository) InsertComment(ctx context.Context, fileID uuid.UUID, use
 }
 
 func (r *SQLRepository) SoftDeleteComment(ctx context.Context, commentID uuid.UUID, deletedBy uuid.UUID) (Comment, error) {
-	comment, err := scanComment(r.pool.QueryRow(ctx, softDeleteCommentQuery, commentID, deletedBy, deletedBy))
+	comment, err := scanComment(r.pool.QueryRow(ctx, softDeleteCommentQuery, commentID, deletedBy))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Comment{}, ErrCommentNotFound
 	}

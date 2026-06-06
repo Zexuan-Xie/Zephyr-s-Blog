@@ -730,6 +730,11 @@ h3 {
   gap: 16px;
 }
 
+.admin-panel,
+.admin-sidebar {
+  padding: clamp(20px, 3vw, 28px);
+}
+
 .admin-grid {
   display: grid;
   grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);

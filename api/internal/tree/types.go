@@ -66,6 +66,10 @@ type FileEntry struct {
 	ReadingTimeMinutes *int          `json:"reading_time_minutes"`
 }
 
+type FileEntryList struct {
+	Items []FileEntry `json:"items"`
+}
+
 type DirectoryPage struct {
 	Node    *Node  `json:"node"`
 	Path    string `json:"path,omitempty"`

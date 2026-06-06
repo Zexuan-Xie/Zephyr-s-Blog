@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { getToken } from './auth';
-import type { BreadcrumbItem, CommentItem, CommentThread, ContentEntry, DirectoryPayload, FileAsset, FilePayload, LikeState, ResolvePayload, SearchResult, AdminNodeDetail, ContentFormat, EmbeddingState, NodeKind } from './types';
+import type { BreadcrumbItem, CommentItem, CommentThread, ContentEntry, CurrentUser, DirectoryPayload, FileAsset, FilePayload, LikeState, ResolvePayload, SearchResult, AdminNodeDetail, ContentFormat, EmbeddingState, NodeKind } from './types';
 
 const apiBase = '/api';
 
@@ -24,6 +24,15 @@ const nullableNumberSchema = z.number().nullable().optional();
 const publicUserSchema = z.object({
   id: z.string(),
   display_name: z.string(),
+});
+
+const currentUserSchema: z.ZodType<CurrentUser> = z.object({
+  id: z.string(),
+  email: z.string(),
+  role: z.enum(['admin', 'reader']),
+  display_name: z.string().nullable().optional(),
+  provider: z.string(),
+  created_at: z.string(),
 });
 
 const commentSchema: z.ZodType<CommentItem> = z.lazy(() => z.object({
@@ -343,6 +352,10 @@ export async function fetchRecentFiles(): Promise<ContentEntry[]> {
 export async function searchFiles(query: string): Promise<SearchResult[]> {
   const payload = await requestJson(`/search?q=${encodeURIComponent(query)}`, searchSchema);
   return payload.items;
+}
+
+export function fetchCurrentUser(): Promise<CurrentUser> {
+  return requestJson('/auth/me', currentUserSchema, authInit());
 }
 
 function toContentEntry(entry: z.infer<typeof legacyContentEntrySchema> | z.infer<typeof directoryEntrySchema> | z.infer<typeof fileEntrySchema>): ContentEntry {

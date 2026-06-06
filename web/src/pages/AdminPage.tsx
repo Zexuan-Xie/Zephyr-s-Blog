@@ -1,9 +1,11 @@
 import { FormEvent, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Navigate } from 'react-router-dom';
 import {
   createAdminNode,
   deleteAdminNode,
   deleteAsset,
+  fetchCurrentUser,
   fetchAdminNode,
   fetchRootDirectory,
   publishFile,
@@ -15,15 +17,33 @@ import {
   upsertFileContent,
   type CreateAdminNodeInput,
 } from '../lib/api';
+import { getToken } from '../lib/auth';
 import type { AdminNodeDetail, ContentEntry, ContentFormat, FileAsset, NodeKind } from '../lib/types';
 
 export function AdminPage() {
+  const token = getToken();
+  const viewerQuery = useQuery({
+    queryKey: ['auth', 'me', 'admin'],
+    queryFn: fetchCurrentUser,
+    enabled: Boolean(token),
+    retry: false,
+  });
   const rootQuery = useQuery({ queryKey: ['admin-root-tree'], queryFn: fetchRootDirectory });
   const [selectedId, setSelectedId] = useState('');
   const [detail, setDetail] = useState<AdminNodeDetail | null>(null);
   const [status, setStatus] = useState<string | null>(null);
 
   const selectedFileId = detail?.node.kind === 'file' ? detail.node.id : selectedId.trim();
+
+  if (!token) {
+    return <Navigate to="/login?return_to=%2Fadmin" replace />;
+  }
+  if (viewerQuery.isLoading) {
+    return <section className="glass status-panel">Checking administrator access…</section>;
+  }
+  if (viewerQuery.isError || viewerQuery.data?.role !== 'admin') {
+    return <Navigate to="/login?return_to=%2Fadmin" replace />;
+  }
 
   async function loadNode(nodeId = selectedId.trim()) {
     if (!nodeId) {

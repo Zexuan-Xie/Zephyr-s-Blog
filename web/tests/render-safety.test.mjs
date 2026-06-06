@@ -91,7 +91,9 @@ test('Packet I admin manager wires tree, lifecycle, asset, and embedding control
   assert.match(apiSource, /unpublishFile/);
   assert.match(apiSource, /refreshEmbedding/);
   assert.match(apiSource, /rebuildSearchIndex/);
+  assert.match(apiSource, /fetchCurrentUser/);
   assert.match(adminPageSource, /Tree Manager/);
+  assert.match(adminPageSource, /Navigate to="\/login\?return_to=%2Fadmin"/);
   assert.match(adminPageSource, /window\.confirm/);
   assert.match(adminPageSource, /Published files cannot directly change content_format/);
   assert.match(adminPageSource, /sandbox="allow-scripts"/);

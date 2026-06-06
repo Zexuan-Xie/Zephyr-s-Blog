@@ -148,3 +148,12 @@ export interface EmbeddingState {
   error?: string | null;
   updated_at?: string | null;
 }
+
+export interface CurrentUser {
+  id: string;
+  email: string;
+  role: 'admin' | 'reader';
+  display_name?: string | null;
+  provider: string;
+  created_at: string;
+}

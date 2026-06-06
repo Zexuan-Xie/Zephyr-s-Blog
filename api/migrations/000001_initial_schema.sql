@@ -47,15 +47,29 @@ create table if not exists file_contents (
   embedding_status text not null default 'pending' check (embedding_status in ('pending','ready','failed')),
   embedding_error text,
   embedding_updated_at timestamptz,
-  search_vector tsvector generated always as (
-    setweight(to_tsvector('simple', coalesce(array_to_string(keywords, ' '), '')), 'A') ||
-    setweight(to_tsvector('simple', coalesce(search_text, '')), 'B')
-  ) stored
+  search_vector tsvector not null default ''::tsvector
 );
 
 create index if not exists file_contents_status_idx on file_contents(status);
 create index if not exists file_contents_keywords_gin_idx on file_contents using gin(keywords);
 create index if not exists file_contents_search_vector_idx on file_contents using gin(search_vector);
+
+create or replace function update_file_contents_search_vector()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.search_vector :=
+    setweight(to_tsvector('simple', coalesce(array_to_string(new.keywords, ' '), '')), 'A') ||
+    setweight(to_tsvector('simple', coalesce(new.search_text, '')), 'B');
+  return new;
+end;
+$$;
+
+drop trigger if exists file_contents_search_vector_trigger on file_contents;
+create trigger file_contents_search_vector_trigger
+before insert or update of keywords, search_text on file_contents
+for each row execute function update_file_contents_search_vector();
 
 create table if not exists path_redirects (
   id uuid primary key default gen_random_uuid(),

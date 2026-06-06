@@ -53,6 +53,7 @@ conda activate blogenv
 node --version   # expected 22.22.3
 npm --version    # expected 10.9.8
 go version       # expected 1.26.4
+postgres --version  # expected 17.10 in the current local environment
 ```
 
 `environment.yml` pins Node.js and Go through Conda. The exact npm version is
@@ -94,4 +95,26 @@ Full stack:
 docker compose config
 docker compose up -d --build
 curl -fsS http://localhost:8080/api/health
+```
+
+For a native pre-container smoke run, `blogenv` also contains PostgreSQL and
+pgvector. Initialize a disposable cluster outside the repo, run the API with
+`CGO_ENABLED=0`, then start Vite:
+
+```bash
+conda run -n blogenv initdb -D /tmp/xlab-blog-local-pg --auth-local=trust --auth-host=trust --no-locale
+conda run -n blogenv pg_ctl -D /tmp/xlab-blog-local-pg -l /tmp/xlab-blog-postgres.log \
+  -o "-p 55432 -h 127.0.0.1 -k /tmp" start
+conda run -n blogenv createdb -h 127.0.0.1 -p 55432 xlab_blog
+
+cd api
+CGO_ENABLED=0 HTTP_ADDR=127.0.0.1:8080 \
+DATABASE_URL='postgres://YOUR_LOCAL_USER@127.0.0.1:55432/xlab_blog?sslmode=disable' \
+JWT_SECRET='replace-with-at-least-32-bytes' \
+ADMIN_EMAIL='admin@example.com' ADMIN_PASSWORD='replace-me' \
+ASSET_UPLOAD_DIR='/tmp/xlab-blog-uploads' \
+conda run -n blogenv go run ./cmd/server
+
+cd ../web
+conda run -n blogenv npm run dev -- --host 127.0.0.1
 ```
