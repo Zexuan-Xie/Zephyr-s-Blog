@@ -1,6 +1,6 @@
 # xLab Blog Implementation Progress
 
-Last updated: 2026-06-06 14:11 CST
+Last updated: 2026-06-06 14:18 CST
 
 This file is the durable breakpoint/resume log for the xLab Blog implementation. Read this before resuming multi-agent work, then read `IMPLEMENTATION_PLAN.md` and active specs as needed.
 
@@ -36,8 +36,21 @@ This file is the durable breakpoint/resume log for the xLab Blog implementation.
   - `4646cde` makes JWT tamper verification deterministic.
 - Final Packet D/E terminal evidence is recorded in `docs/verification/packet-d-e-recovery-monitor-20260604.md`.
 - Current git branch: `main`, ahead of `origin/main` by local implementation/checkpoint commits; leader tree was clean after shutdown.
-- Plan packets A–J are implemented locally. Packet J live Docker smoke remains blocked by missing Docker in this WSL distro; static deployment validation and full code gates pass.
+- Plan packets A–J are implemented locally. Native PostgreSQL/API/Vite full-stack acceptance passes and is deliberately running for user acceptance. Packet J live Docker smoke remains blocked by missing Docker in this WSL distro; static deployment validation and full code gates pass.
 - Do **not** integrate detached/stale worker commits without diffing against the latest verified leader baseline.
+
+## Current Acceptance Breakpoint
+
+- User acceptance URL: `http://127.0.0.1:5173`
+- API health: `http://127.0.0.1:8080/api/health`
+- PostgreSQL: `127.0.0.1:55432`, database `xlab_blog`
+- Exact environment: Conda `blogenv` with Node `22.22.3`, npm `10.9.8`, Go `1.26.4`, PostgreSQL `17.10`, and pgvector `0.8.1`.
+- Final evidence: `docs/verification/native-local-full-stack-smoke-20260606.md`
+- Fresh disposable-database API smoke: `SMOKE_OK checks=21`.
+- Desktop browser acceptance: `BROWSER_ACCEPTANCE_OK`.
+- Mobile `390x844` browser acceptance: `MOBILE_SMOKE_OK`.
+- Current breakpoint: services remain running for the user's real acceptance. Do not containerize or deploy to the server until acceptance feedback is resolved.
+- Remaining known boundary: real DashScope embeddings require an API key; missing-provider behavior and text/keyword search fallback pass.
 ## Completed Tasks
 
 ### Task 1 — Packet A / Root foundation
@@ -123,6 +136,7 @@ Important: `docs/verification/phase-0-1-acceptance-matrix.md` should be updated 
 
 ## Active Milestone Log
 
+- 2026-06-06 14:18 CST: Native local acceptance reached its terminal pre-user checkpoint. Re-ran exact Conda toolchain verification; full Go tests, vet, and formatting pass; frontend static tests 7/7, lint, and build pass; desktop Playwright acceptance reports `BROWSER_ACCEPTANCE_OK`; mobile `390x844` reports `MOBILE_SMOKE_OK`. A disposable fresh PostgreSQL database and temporary API reran all 21 business checks successfully, then were removed without touching the main acceptance data. Evidence is recorded in `docs/verification/native-local-full-stack-smoke-20260606.md`. Main PostgreSQL/API/Vite remain live at ports `55432`/`8080`/`5173` for user acceptance. Current breakpoint: wait for user acceptance findings, repair any reproduced issue natively, then enable Docker and perform live Compose smoke.
 - 2026-06-06 14:11 CST: Native local full-stack smoke reached a working acceptance candidate. Created persistent Conda `blogenv` with exact Node `22.22.3`, npm `10.9.8`, Go `1.26.4`, PostgreSQL `17.10`, and native pgvector `0.8.1`; PostgreSQL runs on `127.0.0.1:55432`, API on `127.0.0.1:8080`, and Vite on `127.0.0.1:5173`. Real startup found and fixed: PostgreSQL 17 immutable generated-column migration failure (replaced with trigger-maintained `search_vector`), comment insert/delete pgx argument-count failure, missing `/api/recent`, missing frontend admin authentication guard, and Admin card title clipping. Real API smoke passed 21 checks covering admin auth, tree/file creation, content save/publish, public resolve, full-text fallback, asset immutable serving, embedding failure state, reader registration, comments, file/comment likes, redirect lifecycle, unpublish isolation, draft asset isolation, and search exclusion. Headless Chromium desktop/mobile acceptance passes for admin guard/login return, recent, search, file assets/comments/likes, responsive rendering, and zero relevant console errors. Current breakpoint: commit the local-smoke fixes, run final regression/evidence capture, keep local services running for user acceptance at `http://127.0.0.1:5173`.
 - 2026-06-06 13:51 CST: Non-container local full-stack smoke started using newly created Conda `blogenv` with exact Node `22.22.3`, npm `10.9.8`, Go `1.26.4`, PostgreSQL `17.10`, and pgvector `0.8.1`. Local PostgreSQL is running on `127.0.0.1:55432`. First real API startup exposed a migration blocker: PostgreSQL rejected the generated `search_vector` expression because `array_to_string` is not immutable (`SQLSTATE 42P17`). Migration was changed to a normal `tsvector` column maintained by a before insert/update trigger. Current breakpoint: recreate the local smoke database, rerun migrations/API startup, then exercise auth/admin/tree/assets/search and rendered frontend flows.
 - 2026-06-05 22:52 CST: Packet J deployment/local terminal verification completed with live Docker smoke blocked by environment. Evidence recorded in `docs/verification/packet-j-deployment-monitor-20260605.md`; PASS exact Go `1.26.4` full backend tests, vet, gofmt scan; PASS frontend render-safety/static tests (7/7), lint, build; PASS OpenAPI local ref walk (`paths=22 schemas=33 refs=100`); PASS Ruby/YAML Compose/Caddy static validation (`services=db,api,web,caddy`, required volumes present, Caddy `try_files` SPA fallback and `file_server`); PASS Dockerfile/Caddy static guards and `git diff --check`. BLOCKED `docker compose config`/`up`/curl smoke because `docker` command is unavailable in this WSL distro. Current breakpoint: commit Packet J evidence; if Docker becomes available, run live Compose config/up + API health + SPA fallback curl and append evidence.
@@ -241,16 +255,18 @@ Latest observed worker-2 pane evidence before disconnect:
 
 ## Current Toolchain / Environment Gaps
 
-Observed in verification reports:
+Current verified state:
 
-- Node local: `v22.22.2`, required `22.22.3`
-- npm local: `10.9.7`, required `10.9.8`
-- Exact temporary Go: `/tmp/omx-go-1.26.4/go/bin/go` reports required `1.26.4`
+- Conda environment `blogenv` exists.
+- Node: required `22.22.3`
+- npm: required `10.9.8`
+- Go: required `1.26.4`
+- PostgreSQL: `17.10`
+- pgvector: `0.8.1`
 - Docker Compose: Docker unavailable in current WSL/Docker Desktop setup
-- Conda: present (`conda 26.1.1` observed), but `blogenv` is absent
-- `go mod tidy -diff` intentionally proposes removing the planned unused direct `pgvector-go` pin plus historical sums; `go list -mod=readonly ./...` passes
+- DashScope: no API key configured, so real remote embedding generation is not tested
 
-Do not silently substitute versions. If exact Conda/toolchain install fails, report the solver/install error and update specs only after explicit decision.
+Do not silently substitute versions. Use `conda run -n blogenv ...` for verification.
 
 ## Recommended Resume Procedure
 
@@ -258,33 +274,29 @@ From repo root `/home/zephry_xzx/xlab/blog`:
 
 ```bash
 git status --short --branch
-git --no-pager log --oneline --decorate -12
-omx team status resume-xlab-blog-exac-1ad13b6b --json --tail-lines 300
-tail -n 80 docs/verification/packet-d-e-recovery-monitor-20260604.md
+curl -fsS http://127.0.0.1:8080/api/health
+curl -fsS http://127.0.0.1:5173/ >/dev/null
+tail -n 120 docs/verification/native-local-full-stack-smoke-20260606.md
 ```
 
-The old team status should be `missing`. Before starting Packet F, verify the preserved terminal baseline:
+If services were lost after a reboot, restore PostgreSQL first from `/tmp/xlab-blog-local-pg`, then start the API and Vite with `blogenv`. Before deployment changes, verify the preserved terminal baseline:
 
 ```bash
 cd api
-PATH=/tmp/omx-go-1.26.4/go/bin:$PATH go test -count=1 ./...
-PATH=/tmp/omx-go-1.26.4/go/bin:$PATH go vet ./...
+conda run -n blogenv bash -lc 'export CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache; go test -count=1 ./... && go vet ./...'
 cd ../web
-node --test tests/render-safety.test.mjs
-npm run lint
-npm run build
+conda run -n blogenv bash -lc 'node --test tests/render-safety.test.mjs && npm run lint && npm run build'
 ```
 
-Then audit Packet F against `IMPLEMENTATION_PLAN.md`, update `docs/api/openapi.yaml` first, and launch a fresh team rather than reviving shut-down worktrees.
+Do not revive shut-down OMX worktrees. Address user acceptance feedback on current `main`; after native acceptance, enable Docker/WSL integration and run the Packet J live Compose smoke.
 
 ## Immediate Next Concrete Steps
 
-1. Audit current comments/likes schema, OpenAPI paths, backend packages, and frontend placeholders against Packet F.
-2. Update `docs/api/openapi.yaml` before implementing missing shared API routes or response shapes.
-3. Implement two-level comments with reply normalization and soft-delete ownership/admin rules.
-4. Implement idempotent File/Comment likes and unlikes.
-5. Implement frontend anonymous-read and `/login?return_to=current_path` write-action behavior.
-6. Keep a dedicated monitor lane updating this file after every milestone and run full regression verification before terminal transition.
+1. Let the user perform real acceptance at `http://127.0.0.1:5173`.
+2. Reproduce and repair any reported acceptance defect in the native stack.
+3. Re-run the affected tests plus the full backend/frontend/browser gate.
+4. Update this file after each acceptance milestone.
+5. After native acceptance, enable Docker/WSL integration and run live Compose/API/SPA smoke before server deployment.
 
 ## Key Files To Inspect After Reconnect
 
