@@ -10,6 +10,7 @@ This is the durable resume point. Keep it concise and update it after every key 
 - Initial Packets A–J are complete and natively verified.
 - Active plan: `docs/plans/SECOND_DEVELOPMENT.md`.
 - Current breakpoint: clean, verified Stage 1-ready baseline; Stage 1 implementation has not started.
+- Cleanup checkpoint: `453515d`.
 - No active OMX team. Do not revive old team state or detached worker commits.
 - Product code and acceptance data have not yet been changed for Stage 1.
 
@@ -67,12 +68,12 @@ Current acceptance services are running in tmux session `xlab-blog-local`.
 
 ## Immediate next steps
 
-1. Commit the clean Stage 1-ready baseline.
-2. Begin Stage 1 with failing regression tests for the successful-create/false-error bug.
-3. Preserve the current local database until the Stage 2 pre-stage backup/fixture cleanup step.
+1. Begin Stage 1 with failing regression tests for the successful-create/false-error bug.
+2. Preserve the current local database until the Stage 2 pre-stage backup/fixture cleanup step.
 
 ## Recent milestones
 
+- **2026-06-06 21:13 CST** — clean Stage 1-ready repository baseline committed as `453515d`.
 - **2026-06-06 21:12 CST** — repository cleanup completed: stale agent/runtime/doc artifacts removed, unused dependencies removed, active documentation reorganized and compacted, all local quality gates passed, and the native acceptance stack was restored in `xlab-blog-local`.
 - **2026-06-06 20:58 CST** — requirements interview reached ~95% shared understanding; three-stage plan and ADR 0007 committed as `075d2f3`.
 - **2026-06-06 17:00–20:58 CST** — navigation, identity, graphical Admin, autosave/version/publication, Draft Preview, Asset lifecycle, migration, and stage-gate decisions recorded in active specs.
