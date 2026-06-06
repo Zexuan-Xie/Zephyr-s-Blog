@@ -1,1 +1,0 @@
-../../../adr/0003-unix-like-content-tree.md

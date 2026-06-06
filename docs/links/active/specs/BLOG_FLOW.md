@@ -1,1 +1,0 @@
-../../../specs/BLOG_FLOW.md

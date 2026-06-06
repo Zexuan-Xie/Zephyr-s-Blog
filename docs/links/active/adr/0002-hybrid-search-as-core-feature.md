@@ -1,1 +1,0 @@
-../../../adr/0002-hybrid-search-as-core-feature.md

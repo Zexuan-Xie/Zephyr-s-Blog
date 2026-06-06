@@ -35,12 +35,12 @@ postgres_data/
 *.db
 
 # OMX / local agent runtime
+.agents/
+.codex/
 .superpowers/
-.omx/cache/
-.omx/logs/
-.omx/runtime/
-.omx/state/
+.omx/
 .code-review-graph/
+.claude/
 
 # OS / editor
 .DS_Store

@@ -1,165 +1,107 @@
-# TECH_STACK.md — 精确技术栈与版本锁
+# Technical Stack
 
-> 版本：2026-06-03
-> 原则：实现必须使用本文件列出的确切版本。不要自行替换框架、包或 major version。若安装失败，先报告原因并更新本文件，而不是静默换依赖。
+Last synchronized with manifests: 2026-06-06.
 
-## 1. Runtime / Tooling
+Use exact versions. Update this file and the relevant manifest together; do not silently substitute packages or major versions.
 
-| 用途 | 版本 |
-|---|---|
-| Node.js 本地开发 | `22.22.3` |
+## Runtime and local tooling
+
+| Component | Version |
+|---|---:|
+| Node.js | `22.22.3` |
 | npm | `10.9.8` |
-| create-vite | `9.0.7` |
 | Go | `1.26.4` |
-| Docker Compose | Compose v2 CLI：`docker compose` |
+| PostgreSQL local | `17.10` |
+| pgvector local | `0.8.1` |
 | OpenAPI | `3.2.0` |
 
-说明：当前环境未安装 Go CLI，但实现目标版本锁为 Go `1.26.4`，Docker build 使用 `golang:1.26.4-alpine3.23`。
+The Conda environment is `blogenv` and is declared in `environment.yml`. Install exact npm separately after creating the environment:
 
-## 2. Frontend
-
-本项目是 Vite React SPA，不使用 Next.js / SSR。
-
-### 2.1 npm dependencies
-
-```json
-{
-  "@vitejs/plugin-react": "6.0.2",
-  "vite": "8.0.16",
-  "react": "19.2.7",
-  "react-dom": "19.2.7",
-  "typescript": "6.0.3",
-  "react-router-dom": "7.16.0",
-  "@tanstack/react-query": "5.101.0",
-  "dompurify": "3.4.7",
-  "marked": "18.0.4",
-  "lucide-react": "1.17.0",
-  "zod": "4.4.3"
-}
+```bash
+conda env create -f environment.yml
+conda run -n blogenv npm install -g npm@10.9.8
 ```
 
-### 2.2 npm devDependencies
+## Frontend
 
-```json
-{
-  "@types/react": "19.2.16",
-  "@types/react-dom": "19.2.3",
-  "@types/dompurify": "3.2.0",
-  "eslint": "10.4.1",
-  "typescript-eslint": "8.60.1",
-  "eslint-plugin-react-hooks": "7.1.1",
-  "eslint-plugin-react-refresh": "0.5.2",
-  "prettier": "3.8.3"
-}
-```
+React/Vite SPA; no SSR framework.
 
-### 2.3 Frontend constraints
+Runtime dependencies:
 
-- React function components + hooks only。
-- React Router v7 route objects / `<Routes>` API；禁止 v5 `<Switch>`。
-- No Redux。
-- Request state may use TanStack Query `5.101.0`。
-- Markdown rendering：`marked@18.0.4` → `dompurify@3.4.7`。
-- HTML Document rendering：iframe only, `sandbox="allow-scripts"` without `allow-same-origin`。
-- UI must follow `docs/specs/DESIGN.md` tokens; no dark mode。
+| Package | Version |
+|---|---:|
+| `react` / `react-dom` | `19.2.7` |
+| `react-router-dom` | `7.16.0` |
+| `@tanstack/react-query` | `5.101.0` |
+| `dompurify` | `3.4.7` |
+| `marked` | `18.0.4` |
+| `lucide-react` | `1.17.0` |
+| `zod` | `4.4.3` |
 
+Development dependencies:
 
-### 2.4 package.json template
+| Package | Version |
+|---|---:|
+| `typescript` | `6.0.3` |
+| `vite` | `8.0.16` |
+| `@vitejs/plugin-react` | `6.0.2` |
+| `@types/react` | `19.2.16` |
+| `@types/react-dom` | `19.2.3` |
+| `eslint` | `10.4.1` |
+| `typescript-eslint` | `8.60.1` |
+| `eslint-plugin-react-hooks` | `7.1.1` |
+| `eslint-plugin-react-refresh` | `0.5.2` |
 
-`web/package.json` dependencies must use exact versions, not ranges. Example:
+Notes:
 
-```json
-{
-  "dependencies": {
-    "@tanstack/react-query": "5.101.0",
-    "dompurify": "3.4.7",
-    "lucide-react": "1.17.0",
-    "marked": "18.0.4",
-    "react": "19.2.7",
-    "react-dom": "19.2.7",
-    "react-router-dom": "7.16.0",
-    "zod": "4.4.3"
-  },
-  "devDependencies": {
-    "@types/dompurify": "3.2.0",
-    "@types/react": "19.2.16",
-    "@types/react-dom": "19.2.3",
-    "@vitejs/plugin-react": "6.0.2",
-    "eslint": "10.4.1",
-    "eslint-plugin-react-hooks": "7.1.1",
-    "eslint-plugin-react-refresh": "0.5.2",
-    "prettier": "3.8.3",
-    "typescript": "6.0.3",
-    "typescript-eslint": "8.60.1",
-    "vite": "8.0.16"
-  }
-}
-```
+- DOMPurify ships its own types; do not add `@types/dompurify`.
+- No Prettier workflow is configured; ESLint and TypeScript are the active frontend gates.
+- Markdown: Marked → DOMPurify.
+- Full HTML Documents: iframe only with `sandbox="allow-scripts"`, never `allow-same-origin`.
+- No Redux or dark mode.
 
-## 3. Backend Go modules
+## Backend
 
-`go.mod` must pin:
+Direct dependencies are the source of truth in `api/go.mod`:
 
-```txt
-go 1.26.4
-
-require (
-  github.com/go-chi/chi/v5 v5.3.0
-  github.com/golang-jwt/jwt/v5 v5.3.1
-  github.com/jackc/pgx/v5 v5.10.0
-  github.com/google/uuid v1.6.0
-  github.com/pgvector/pgvector-go v0.4.0
-  github.com/microcosm-cc/bluemonday v1.0.27
-  github.com/yuin/goldmark v1.8.2
-  github.com/joho/godotenv v1.5.1
-  golang.org/x/crypto v0.52.0
-  golang.org/x/net v0.55.0
-)
-```
-
-### 3.1 Backend package constraints
-
-- Router: `github.com/go-chi/chi/v5@v5.3.0`。
-- JWT: `github.com/golang-jwt/jwt/v5@v5.3.1`；禁止 `dgrijalva/jwt-go`。
-- Password hash: `golang.org/x/crypto/bcrypt` from `v0.52.0`。
-- DB: `github.com/jackc/pgx/v5@v5.10.0`。
-- UUID: `github.com/google/uuid@v1.6.0`。
-- pgvector Go helper: `github.com/pgvector/pgvector-go@v0.4.0`。
-- Markdown: `github.com/yuin/goldmark@v1.8.2`。
-- Sanitizer: `github.com/microcosm-cc/bluemonday@v1.0.27`。
-- HTML visible text extraction may use `golang.org/x/net/html@v0.55.0`。
-
-## 4. Database / Images
-
-| 用途 | 镜像 / 版本 |
+| Package | Version / purpose |
 |---|---|
-| Postgres + pgvector | `pgvector/pgvector:0.8.2-pg17` |
-| Caddy | `caddy:2.11.3-alpine` |
-| Go builder | `golang:1.26.4-alpine3.23` |
-| Node builder | `node:26.3.0-alpine3.23` |
+| `github.com/go-chi/chi/v5` | `v5.3.0`, router |
+| `github.com/golang-jwt/jwt/v5` | `v5.3.1`, JWT |
+| `github.com/google/uuid` | `v1.6.0`, identifiers |
+| `github.com/jackc/pgx/v5` | `v5.10.0`, PostgreSQL |
+| `github.com/joho/godotenv` | `v1.5.1`, local env loading |
+| `github.com/microcosm-cc/bluemonday` | `v1.0.27`, HTML sanitization |
+| `github.com/yuin/goldmark` | `v1.8.2`, Markdown |
+| `golang.org/x/crypto` | `v0.52.0`, bcrypt |
+| `golang.org/x/net` | `v0.55.0`, HTML parsing |
 
-Database extensions:
+Vector queries use PostgreSQL/pgvector SQL directly; no Go pgvector helper dependency is required.
+
+## Database and containers
+
+| Purpose | Image/version |
+|---|---|
+| PostgreSQL + pgvector | `pgvector/pgvector:0.8.2-pg17` |
+| Caddy | `caddy:2.11.3-alpine` |
+| API builder | `golang:1.26.4-alpine` |
+| Web builder | `node:22.22.3-alpine` |
+| Runtime base | `alpine:3.22` |
+
+Required extensions:
 
 ```sql
 create extension if not exists vector;
 create extension if not exists pgcrypto;
 ```
 
-Notes:
+Use Docker Compose v2 syntax with no top-level `version` key.
 
-- Use Docker Compose v2 syntax; no top-level `version:` key。
-- Postgres data volume: `postgres_data`。
-- Asset volume: `uploads` mounted at `/app/uploads`。
-
-## 5. External APIs
-
-### 5.1 Qwen / DashScope embeddings
+## Embeddings
 
 Provider: Qwen/DashScope OpenAI-compatible embeddings.
 
-Config:
-
-```txt
+```text
 EMBEDDING_PROVIDER=qwen
 DASHSCOPE_API_KEY=...
 EMBEDDING_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
@@ -167,79 +109,38 @@ EMBEDDING_MODEL=text-embedding-v4
 EMBEDDING_DIMENSIONS=1024
 ```
 
-International endpoint if needed:
+Always request `dimensions: 1024` and `encoding_format: "float"`. Semantic failure must not block saving or full-text search.
 
-```txt
-https://dashscope-intl.aliyuncs.com/compatible-mode/v1
-```
+## Security invariants
 
-Request body:
+- JWT secret comes from environment configuration.
+- Passwords use bcrypt and are never logged.
+- SQL uses pgx parameters.
+- Markdown HTML is sanitized.
+- Full HTML Documents remain isolated from the main DOM.
+- SVG validation rejects scripts, event handlers, JavaScript URLs, external references, and `foreignObject`.
 
-```json
-{
-  "model": "text-embedding-v4",
-  "input": "name\npath\nkeywords joined\nsearch_text",
-  "dimensions": 1024,
-  "encoding_format": "float"
-}
-```
-
-Constraints:
-
-- Use `text-embedding-v4` exactly。
-- Store embeddings as `vector(1024)`。
-- Always send `dimensions: 1024` and `encoding_format: "float"` for OpenAI-compatible embedding calls。
-- China API keys must use `https://dashscope.aliyuncs.com/compatible-mode/v1`; International API keys must use `https://dashscope-intl.aliyuncs.com/compatible-mode/v1`。
-- Qwen failures must not block File save。
-- No DeepSeek embedding in first release。
-- No LLM query expansion/rerank in first release。
-
-## 6. Security libraries / policies
-
-- JWT secret from `JWT_SECRET` env; never hardcode。
-- bcrypt password hash; never log password。
-- DOMPurify frontend and bluemonday backend sanitize Markdown-rendered HTML path as appropriate。
-- HTML Document is isolated by iframe sandbox and not sanitized into main DOM。
-- SVG asset detection must reject script/event/javascript/external/foreignObject.
-
-## 7. Commands
-
-Frontend:
+## Commands
 
 ```bash
-npm create vite@9.0.7 web -- --template react-ts
+# Frontend
 cd web
-npm install --save-exact react@19.2.7 react-dom@19.2.7 react-router-dom@7.16.0 @tanstack/react-query@5.101.0 dompurify@3.4.7 marked@18.0.4 lucide-react@1.17.0 zod@4.4.3
-npm install --save-dev --save-exact @vitejs/plugin-react@6.0.2 vite@8.0.16 typescript@6.0.3 @types/react@19.2.16 @types/react-dom@19.2.3 @types/dompurify@3.2.0 eslint@10.4.1 typescript-eslint@8.60.1 eslint-plugin-react-hooks@7.1.1 eslint-plugin-react-refresh@0.5.2 prettier@3.8.3
-npm run dev
-npm run build
+npm ci
 npm run lint
-```
+npm run build
+node --test tests/render-safety.test.mjs
 
-Backend:
+# Backend
+cd api
+CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go test -count=1 ./...
+CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go vet ./...
+test -z "$(gofmt -l .)"
 
-```bash
-go mod init xlab-blog/api
-go test ./...
-go run ./cmd/server
-```
-
-Deploy:
-
-```bash
+# Deployment once Docker is available
+docker compose config
 docker compose up -d --build
 ```
 
-## 8. Prohibited substitutions
+## Prohibited substitutions
 
-Do not use:
-
-- Next.js / Remix / SSR framework。
-- Redux。
-- CRA / create-react-app。
-- gin / echo / gorilla/mux。
-- GORM or ORM。
-- `dgrijalva/jwt-go`。
-- Docker Compose v1 `docker-compose`。
-- nginx as edge service。
-- Object storage implementation in first release unless this doc is updated。
+Do not introduce Next.js/Remix/SSR, Redux, CRA, Gin/Echo/Gorilla mux, an ORM, `dgrijalva/jwt-go`, Docker Compose v1, nginx, or object storage without an explicit spec decision.

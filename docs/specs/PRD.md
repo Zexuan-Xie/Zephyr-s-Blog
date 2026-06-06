@@ -246,10 +246,12 @@
 
 ## 8. 新 session 开始时必须读取
 
-1. `docs/specs/PRD.md`
-2. `docs/specs/BLOG_FLOW.md`
-3. `docs/specs/TECH_STACK.md`
-4. `docs/specs/BACKEND_STRUCTURE.md`
-5. `docs/api/openapi.yaml`
-6. `docs/specs/DESIGN.md`
-7. `docs/specs/CONTEXT.md`
+1. `PROGRESS.md`
+2. `docs/plans/SECOND_DEVELOPMENT.md`
+3. `docs/specs/CONTEXT.md`
+4. `docs/specs/PRD.md`
+5. `docs/specs/BLOG_FLOW.md`
+6. `docs/specs/BACKEND_STRUCTURE.md`
+7. `docs/specs/TECH_STACK.md`
+8. `docs/api/openapi.yaml`
+9. `docs/specs/DESIGN.md`

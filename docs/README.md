@@ -1,25 +1,28 @@
 # Documentation Index
 
-Active implementation documents live under `docs/` so the repo root stays GitHub-friendly.
+## Start here
 
-## Active source of truth
+1. [`../PROGRESS.md`](../PROGRESS.md) — current breakpoint and recovery instructions.
+2. [`plans/SECOND_DEVELOPMENT.md`](plans/SECOND_DEVELOPMENT.md) — active staged implementation plan.
+3. [`specs/CONTEXT.md`](specs/CONTEXT.md) — canonical product vocabulary.
 
-- `specs/PRD.md` — product requirements and acceptance signals.
-- `specs/BLOG_FLOW.md` — routes, pages, and user flows.
-- `specs/TECH_STACK.md` — exact runtime, package, and image versions.
-- `specs/BACKEND_STRUCTURE.md` — backend structure, schema, API rules, edge cases.
-- `api/openapi.yaml` — OpenAPI contract.
-- `specs/DESIGN.md` — Glass Ricepaper design system.
-- `design/glass-light-v2.html` — approved visual prototype.
-- `specs/CONTEXT.md` — product vocabulary.
-- `adr/` — active architectural decisions.
+## Active sources of truth
 
-## Archive
+- [`specs/PRD.md`](specs/PRD.md) — product scope and acceptance requirements.
+- [`specs/BLOG_FLOW.md`](specs/BLOG_FLOW.md) — routes and user/Admin flows.
+- [`specs/BACKEND_STRUCTURE.md`](specs/BACKEND_STRUCTURE.md) — schema, backend boundaries, and edge cases.
+- [`specs/TECH_STACK.md`](specs/TECH_STACK.md) — exact active versions and commands.
+- [`specs/DESIGN.md`](specs/DESIGN.md) — Glass Ricepaper and Admin interaction rules.
+- [`api/openapi.yaml`](api/openapi.yaml) — shared API contract; update before shared API implementation.
+- [`adr/`](adr/) — durable architectural decisions.
+- [`design/glass-light-v2.html`](design/glass-light-v2.html) — approved visual reference.
 
-`archive/` contains historical plans, roadmaps, and decision notes that are useful context but no longer drive implementation.
+## Verification
 
-Do not implement from archived files unless an active plan explicitly cites a historical rationale.
+- [`verification/BASELINE.md`](verification/BASELINE.md) — compact initial implementation verification.
+- [`verification/native-local-full-stack-smoke-20260606.md`](verification/native-local-full-stack-smoke-20260606.md) — detailed native runtime acceptance.
 
-## Soft-link index
+## Historical context
 
-`links/` contains grouped soft links to root project docs, active specs, ADRs, design assets, and archived historical Markdown files. See `../AGENT.md` for the purpose of each linked document.
+- [`archive/INITIAL_BUILD_SUMMARY.md`](archive/INITIAL_BUILD_SUMMARY.md) — compact summary of the completed initial A–J implementation.
+- Full historical plans, team checkpoints, and removed verification logs remain available in Git history; they are not active implementation inputs.
