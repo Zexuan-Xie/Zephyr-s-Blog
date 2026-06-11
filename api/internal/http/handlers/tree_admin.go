@@ -75,8 +75,18 @@ func (h *AdminNodeHandler) respondError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, tree.ErrNodeNotFound), errors.Is(err, tree.ErrFileContentNotFound):
 		respond.Error(w, http.StatusNotFound, err.Error())
-	case errors.Is(err, tree.ErrDuplicateSlug), errors.Is(err, tree.ErrReservedRootSlug):
+	case errors.Is(err, tree.ErrDuplicateSlug):
+		respond.Error(w, http.StatusConflict, "a node with this slug already exists under the selected parent")
+	case errors.Is(err, tree.ErrReservedRootSlug):
 		respond.Error(w, http.StatusConflict, err.Error())
+	case errors.Is(err, tree.ErrNodeNameRequired):
+		respond.Error(w, http.StatusBadRequest, "node name is required")
+	case errors.Is(err, tree.ErrNodeSlugRequired):
+		respond.Error(w, http.StatusBadRequest, "node slug is required")
+	case errors.Is(err, tree.ErrInvalidNodeKind):
+		respond.Error(w, http.StatusBadRequest, "node kind must be directory or file")
+	case errors.Is(err, tree.ErrInvalidNodeSlug):
+		respond.Error(w, http.StatusBadRequest, "node slug must not be '.', '..', or contain '/'")
 	case errors.Is(err, tree.ErrInvalidNodeInput),
 		errors.Is(err, tree.ErrInvalidContentFormat),
 		errors.Is(err, tree.ErrParentNotDirectory),

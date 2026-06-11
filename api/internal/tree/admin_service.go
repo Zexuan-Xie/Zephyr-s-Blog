@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -12,6 +13,10 @@ import (
 
 var (
 	ErrInvalidNodeInput   = errors.New("invalid node input")
+	ErrNodeNameRequired   = fmt.Errorf("%w: node name is required", ErrInvalidNodeInput)
+	ErrNodeSlugRequired   = fmt.Errorf("%w: node slug is required", ErrInvalidNodeInput)
+	ErrInvalidNodeKind    = fmt.Errorf("%w: node kind must be directory or file", ErrInvalidNodeInput)
+	ErrInvalidNodeSlug    = fmt.Errorf("%w: node slug must not be '.', '..', or contain '/'", ErrInvalidNodeInput)
 	ErrReservedRootSlug   = errors.New("reserved root slug")
 	ErrDuplicateSlug      = errors.New("duplicate slug under parent")
 	ErrParentNotDirectory = errors.New("parent node is not a directory")
@@ -147,8 +152,11 @@ func (s *AdminService) UpdateNode(ctx context.Context, nodeID uuid.UUID, input U
 }
 
 func validateCreateNodeInput(input CreateNodeInput) error {
-	if !validNodeKind(input.Kind) || !validNodeNameAndSlug(input.Name, input.Slug) {
-		return ErrInvalidNodeInput
+	if err := validateNodeNameAndSlug(input.Name, input.Slug); err != nil {
+		return err
+	}
+	if !validNodeKind(input.Kind) {
+		return ErrInvalidNodeKind
 	}
 	if input.ParentID == nil && isReservedRootSlug(input.Slug) {
 		return ErrReservedRootSlug
@@ -168,8 +176,8 @@ func validateUpdateNodeInput(current Node, input UpdateNodeInput) error {
 	if input.Slug != nil {
 		slug = *input.Slug
 	}
-	if !validNodeNameAndSlug(name, slug) {
-		return ErrInvalidNodeInput
+	if err := validateNodeNameAndSlug(name, slug); err != nil {
+		return err
 	}
 	parentID := current.ParentID
 	if input.ParentIDSet {
@@ -189,12 +197,17 @@ func validContentFormat(format ContentFormat) bool {
 	return format == ContentFormatMarkdown || format == ContentFormatHTMLDocument
 }
 
-func validNodeNameAndSlug(name, slug string) bool {
-	return strings.TrimSpace(name) != "" &&
-		strings.TrimSpace(slug) != "" &&
-		slug != "." &&
-		slug != ".." &&
-		!strings.Contains(slug, "/")
+func validateNodeNameAndSlug(name, slug string) error {
+	if strings.TrimSpace(name) == "" {
+		return ErrNodeNameRequired
+	}
+	if strings.TrimSpace(slug) == "" {
+		return ErrNodeSlugRequired
+	}
+	if slug == "." || slug == ".." || strings.Contains(slug, "/") {
+		return ErrInvalidNodeSlug
+	}
+	return nil
 }
 
 func isReservedRootSlug(slug string) bool {
