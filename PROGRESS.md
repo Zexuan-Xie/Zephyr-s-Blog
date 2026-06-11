@@ -1,6 +1,6 @@
 # xLab Blog Progress
 
-Last updated: 2026-06-12 00:03 CST
+Last updated: 2026-06-12 00:05 CST
 
 This is the durable resume point. Keep it concise and update it after every key milestone.
 
@@ -9,7 +9,7 @@ This is the durable resume point. Keep it concise and update it after every key 
 - Branch: `main`; local commits are ahead of `origin/main`.
 - Initial Packets A–J are complete and natively verified.
 - Active plan: `docs/plans/SECOND_DEVELOPMENT.md`.
-- Current breakpoint: Stage 1 Team `execute-approved-xlab-d760bfbb` is active. The approved 11-packet graph and five-seat mapping passed audit; tasks 1–4 are in progress, task 5 is pending, and tasks 6–11 remain dependency-gated. No product implementation commit has been integrated yet.
+- Current breakpoint: Stage 1 Team `execute-approved-xlab-d760bfbb` is active. The approved 11-packet graph and five-seat mapping passed audit; all five root tasks (`1`–`5`) are claimed and in progress, and tasks `6`–`11` remain dependency-gated. No product implementation commit has been integrated yet.
 - Current integrated commit: `f7772381459fefe4435455cdef31f5b03bdf09e9`.
 - Runtime services: API `:8080` and web `:5173` were not reachable at the 00:02 CST coordinator check; restart with `~/.local/share/xlab-blog/start-local.sh` before integrated browser verification.
 - Cleanup checkpoint: `453515d`.
@@ -80,6 +80,7 @@ The acceptance services were offline at the latest coordinator check. Their pers
 
 ## Recent milestones
 
+- **2026-06-12 00:05 CST** — all five root packets were claimed; Team state is 5 in progress, 6 pending, 0 failed.
 - **2026-06-12 00:03 CST** — Stage 1 Team launched with five live workers. `dag_sidecar`, effective worker count 5, bootstrap mapping, and all 11 packet subjects/owners/file scopes/dependencies passed exact audit. Initial event cursor and integration ledger were recorded in `docs/verification/stage-1-team-log.md`.
 - **2026-06-11 23:59 CST** — Stage 1 preflight baseline passed: Go tests/vet/gofmt and frontend render-safety/lint/build; approved plan applied and Stage 1 bootstrap DAG byte-verified.
 - **2026-06-11 23:00 CST** — Ralplan consensus completed after five review iterations: Team launch parsing, DAG JSON, packet command syntax, file ownership, Stage 2 cleanup safety, and Stage 3 restore lifecycle passed; approved plan applied and Stage 1 launch preflight started.

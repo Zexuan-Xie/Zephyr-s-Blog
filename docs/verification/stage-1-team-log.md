@@ -24,6 +24,17 @@ Rollback checkpoint: `453515de8c76a43e24d841d56e4ee28ef3f40750`
   omx team api await-event --input '{"team_name":"execute-approved-xlab-d760bfbb","after_event_id":"430f8c7d-cdf6-4882-810b-4143716976dd","timeout_ms":30000,"wakeable_only":true}' --json
   ```
 
+## Coordinator checkpoint — 2026-06-12 00:05 CST
+
+- All five root packets are now claimed and in progress; tasks `1`–`5` are active, tasks `6`–`11` are pending, and failed remains 0.
+- Worker 5 claimed security preparation after the coordinator nudge; the earlier unclaimed-task blocker is cleared.
+- Last processed event cursor: `8b1d51ff-5177-40e2-b6c0-027ad7116415`.
+- Exact next coordinator command:
+
+  ```bash
+  omx team api await-event --input '{"team_name":"execute-approved-xlab-d760bfbb","after_event_id":"8b1d51ff-5177-40e2-b6c0-027ad7116415","timeout_ms":30000,"wakeable_only":true}' --json
+  ```
+
 ## Symbolic packet mapping
 
 | Symbolic packet | Task | Owner | Dependencies | State at checkpoint |
