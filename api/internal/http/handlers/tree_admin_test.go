@@ -54,6 +54,39 @@ func TestAdminNodeHandlerMapsConflicts(t *testing.T) {
 	if response.Code != http.StatusConflict {
 		t.Fatalf("status = %d, want %d; body=%s", response.Code, http.StatusConflict, response.Body.String())
 	}
+	if !strings.Contains(response.Body.String(), `"error":"a node with this slug already exists under the selected parent"`) {
+		t.Fatalf("body = %s, want actionable duplicate-slug error", response.Body.String())
+	}
+}
+
+func TestAdminNodeHandlerMapsValidationErrorsPrecisely(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want string
+	}{
+		{name: "missing name", err: tree.ErrNodeNameRequired, want: "node name is required"},
+		{name: "missing slug", err: tree.ErrNodeSlugRequired, want: "node slug is required"},
+		{name: "invalid kind", err: tree.ErrInvalidNodeKind, want: "node kind must be directory or file"},
+		{name: "invalid slug", err: tree.ErrInvalidNodeSlug, want: "node slug must not be '.', '..', or contain '/'"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := NewAdminNodeHandler(&fakeAdminNodeService{err: tt.err})
+			request := httptest.NewRequest(http.MethodPost, "/nodes", strings.NewReader(`{"kind":"directory","name":"Notes","slug":"notes"}`))
+			response := httptest.NewRecorder()
+
+			handler.CreateNode(response, request)
+
+			if response.Code != http.StatusBadRequest {
+				t.Fatalf("status = %d, want %d; body=%s", response.Code, http.StatusBadRequest, response.Body.String())
+			}
+			if !strings.Contains(response.Body.String(), `"error":"`+tt.want+`"`) {
+				t.Fatalf("body = %s, want error %q", response.Body.String(), tt.want)
+			}
+		})
+	}
 }
 
 type fakeAdminNodeService struct {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -33,6 +34,25 @@ func TestRequireAuthRejectsMissingBearerToken(t *testing.T) {
 
 	if response.Code != http.StatusUnauthorized {
 		t.Fatalf("status = %d, want %d", response.Code, http.StatusUnauthorized)
+	}
+	if !strings.Contains(response.Body.String(), `"error":"authentication required"`) {
+		t.Fatalf("body = %s, want missing-authentication error", response.Body.String())
+	}
+}
+
+func TestRequireAuthRejectsInvalidBearerTokenPrecisely(t *testing.T) {
+	authenticator := NewAuthenticator(auth.NewTokenService("secret", time.Hour), fakeLoader{})
+	response := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/private", nil)
+	request.Header.Set("Authorization", "Bearer not-a-token")
+
+	authenticator.RequireAuth(http.HandlerFunc(okHandler)).ServeHTTP(response, request)
+
+	if response.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want %d", response.Code, http.StatusUnauthorized)
+	}
+	if !strings.Contains(response.Body.String(), `"error":"invalid token"`) {
+		t.Fatalf("body = %s, want invalid-token error", response.Body.String())
 	}
 }
 
@@ -70,6 +90,9 @@ func TestRequireAdminRejectsReaderAndAcceptsAdmin(t *testing.T) {
 	authenticator.RequireAdmin(http.HandlerFunc(okHandler)).ServeHTTP(readerResponse, readerRequest)
 	if readerResponse.Code != http.StatusForbidden {
 		t.Fatalf("reader status = %d, want %d", readerResponse.Code, http.StatusForbidden)
+	}
+	if !strings.Contains(readerResponse.Body.String(), `"error":"admin role required"`) {
+		t.Fatalf("reader body = %s, want admin-role error", readerResponse.Body.String())
 	}
 
 	adminToken, err := tokens.Issue(admin)
