@@ -1,6 +1,6 @@
 # xLab Blog Progress
 
-Last updated: 2026-06-11 23:59 CST
+Last updated: 2026-06-12 00:03 CST
 
 This is the durable resume point. Keep it concise and update it after every key milestone.
 
@@ -9,7 +9,9 @@ This is the durable resume point. Keep it concise and update it after every key 
 - Branch: `main`; local commits are ahead of `origin/main`.
 - Initial Packets A–J are complete and natively verified.
 - Active plan: `docs/plans/SECOND_DEVELOPMENT.md`.
-- Current breakpoint: approved Stage 1 Team launch; native backend/frontend baseline PASS; no product implementation commit has been integrated yet.
+- Current breakpoint: Stage 1 Team `execute-approved-xlab-d760bfbb` is active. The approved 11-packet graph and five-seat mapping passed audit; tasks 1–4 are in progress, task 5 is pending, and tasks 6–11 remain dependency-gated. No product implementation commit has been integrated yet.
+- Current integrated commit: `f7772381459fefe4435455cdef31f5b03bdf09e9`.
+- Runtime services: API `:8080` and web `:5173` were not reachable at the 00:02 CST coordinator check; restart with `~/.local/share/xlab-blog/start-local.sh` before integrated browser verification.
 - Cleanup checkpoint: `453515d`.
 - Approved Ralplan consensus: Architect `APPROVE/CLEAR`; Critic `APPROVE` at 99%.
 - Stage 1 Team will use five fixed seats: coordinator, backend, frontend, acceptance, and security.
@@ -57,7 +59,7 @@ curl -fsS http://127.0.0.1:8080/api/health
 curl -fsS http://127.0.0.1:5173/ >/dev/null
 ```
 
-Current acceptance services are running in tmux session `xlab-blog-local`.
+The acceptance services were offline at the latest coordinator check. Their persistent state remains outside Git; restart them before integrated browser verification.
 
 ## Cleanup checkpoint — complete
 
@@ -70,14 +72,15 @@ Current acceptance services are running in tmux session `xlab-blog-local`.
 
 ## Immediate next steps
 
-1. Verify the native backend/frontend baseline from `blogenv`.
-2. Activate and byte-compare the Stage 1 bootstrap DAG.
-3. Launch `omx team 5 "Execute approved xLab Blog second-development Stage 1 DAG"`.
-4. Before any code edit, verify `dag_sidecar`, five workers, the exact role mapping, all packet owners/dependencies, and ACK readbacks.
+1. Complete the five Stage 1 root packets and report their source SHAs.
+2. Leader cherry-picks backend/frontend packets in dependency order and records integration SHAs.
+3. Restart the native services, then reset acceptance/security worktrees to the integrated SHA and run their gates.
+4. Obtain architect CLEAR, code-reviewer APPROVE, and user acceptance before coordinator closeout.
 5. Preserve the current local database until the Stage 2 pre-stage backup/fixture cleanup step.
 
 ## Recent milestones
 
+- **2026-06-12 00:03 CST** — Stage 1 Team launched with five live workers. `dag_sidecar`, effective worker count 5, bootstrap mapping, and all 11 packet subjects/owners/file scopes/dependencies passed exact audit. Initial event cursor and integration ledger were recorded in `docs/verification/stage-1-team-log.md`.
 - **2026-06-11 23:59 CST** — Stage 1 preflight baseline passed: Go tests/vet/gofmt and frontend render-safety/lint/build; approved plan applied and Stage 1 bootstrap DAG byte-verified.
 - **2026-06-11 23:00 CST** — Ralplan consensus completed after five review iterations: Team launch parsing, DAG JSON, packet command syntax, file ownership, Stage 2 cleanup safety, and Stage 3 restore lifecycle passed; approved plan applied and Stage 1 launch preflight started.
 - **2026-06-06 21:13 CST** — clean Stage 1-ready repository baseline committed as `453515d`.
