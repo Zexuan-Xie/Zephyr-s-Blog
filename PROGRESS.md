@@ -1,6 +1,6 @@
 # xLab Blog Progress
 
-Last updated: 2026-06-06 21:12 CST
+Last updated: 2026-06-11 23:59 CST
 
 This is the durable resume point. Keep it concise and update it after every key milestone.
 
@@ -9,9 +9,11 @@ This is the durable resume point. Keep it concise and update it after every key 
 - Branch: `main`; local commits are ahead of `origin/main`.
 - Initial Packets A–J are complete and natively verified.
 - Active plan: `docs/plans/SECOND_DEVELOPMENT.md`.
-- Current breakpoint: clean, verified Stage 1-ready baseline; Stage 1 implementation has not started.
+- Current breakpoint: approved Stage 1 Team launch; native backend/frontend baseline PASS; no product implementation commit has been integrated yet.
 - Cleanup checkpoint: `453515d`.
-- No active OMX team. Do not revive old team state or detached worker commits.
+- Approved Ralplan consensus: Architect `APPROVE/CLEAR`; Critic `APPROVE` at 99%.
+- Stage 1 Team will use five fixed seats: coordinator, backend, frontend, acceptance, and security.
+- Only the coordinator edits `PROGRESS.md` and `docs/verification/stage-1-team-log.md` while Team is active.
 - Product code and acceptance data have not yet been changed for Stage 1.
 
 ## Locked delivery stages
@@ -68,11 +70,16 @@ Current acceptance services are running in tmux session `xlab-blog-local`.
 
 ## Immediate next steps
 
-1. Begin Stage 1 with failing regression tests for the successful-create/false-error bug.
-2. Preserve the current local database until the Stage 2 pre-stage backup/fixture cleanup step.
+1. Verify the native backend/frontend baseline from `blogenv`.
+2. Activate and byte-compare the Stage 1 bootstrap DAG.
+3. Launch `omx team 5 "Execute approved xLab Blog second-development Stage 1 DAG"`.
+4. Before any code edit, verify `dag_sidecar`, five workers, the exact role mapping, all packet owners/dependencies, and ACK readbacks.
+5. Preserve the current local database until the Stage 2 pre-stage backup/fixture cleanup step.
 
 ## Recent milestones
 
+- **2026-06-11 23:59 CST** — Stage 1 preflight baseline passed: Go tests/vet/gofmt and frontend render-safety/lint/build; approved plan applied and Stage 1 bootstrap DAG byte-verified.
+- **2026-06-11 23:00 CST** — Ralplan consensus completed after five review iterations: Team launch parsing, DAG JSON, packet command syntax, file ownership, Stage 2 cleanup safety, and Stage 3 restore lifecycle passed; approved plan applied and Stage 1 launch preflight started.
 - **2026-06-06 21:13 CST** — clean Stage 1-ready repository baseline committed as `453515d`.
 - **2026-06-06 21:12 CST** — repository cleanup completed: stale agent/runtime/doc artifacts removed, unused dependencies removed, active documentation reorganized and compacted, all local quality gates passed, and the native acceptance stack was restored in `xlab-blog-local`.
 - **2026-06-06 20:58 CST** — requirements interview reached ~95% shared understanding; three-stage plan and ADR 0007 committed as `075d2f3`.
