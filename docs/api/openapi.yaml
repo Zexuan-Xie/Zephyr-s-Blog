@@ -300,7 +300,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminNodeDetail'
+        '400':
+          description: Invalid JSON or invalid node fields
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                invalidName:
+                  value: { error: Node name is required. }
+                invalidSlug:
+                  value: { error: Node slug is required. }
+                invalidKind:
+                  value: { error: Node kind must be directory or file. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: A sibling node already uses the requested slug
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: A node with this slug already exists under the selected parent. }
   /admin/nodes/{node_id}:
     get:
       tags: [Admin Tree]
