@@ -5,8 +5,15 @@ Status: active
 Team: `execute-approved-xlab-31e581d5`
 Coordinator: `worker-1`
 Baseline SHA: `29c37a24a8a7665daacad26ff5776da554810705`
-Current integrated SHA: `8b343880d58a1b3a562a80afc1f84cab666933c3`
+Current integrated SHA: `58df9f64fcdfbcab599133fbc4702ee3511c94f2`
 Rollback checkpoint: `453515de8c76a43e24d841d56e4ee28ef3f40750`
+
+## Acceptance fix checkpoint — 2026-06-12 10:38 CST
+
+- Browser acceptance found that duplicate URL Path HTTP 409 errors were incorrectly displayed as a missing destination because backend conflict text contains the word `parent`.
+- Fix task `12` added a failing precedence contract, then minimally reordered the classification branches. Source/integration SHA: `58df9f64fcdfbcab599133fbc4702ee3511c94f2`.
+- Verification: targeted Red 2/3 before the fix; full frontend Green 15/15, lint PASS, build PASS, diff check PASS.
+- Retest task `13` is in progress. Original acceptance task `8` remains open until the full retest and evidence record complete.
 
 ## Leader adaptation checkpoint — 2026-06-12 10:24 CST
 

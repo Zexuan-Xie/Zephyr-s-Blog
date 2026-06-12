@@ -1,6 +1,6 @@
 # xLab Blog Progress
 
-Last updated: 2026-06-12 10:24 CST
+Last updated: 2026-06-12 10:38 CST
 
 This is the durable resume point. Keep it concise and update it after every key milestone.
 
@@ -9,12 +9,12 @@ This is the durable resume point. Keep it concise and update it after every key 
 - Branch: `main`; local commits are ahead of `origin/main`.
 - Initial Packets A–J are complete and natively verified.
 - Active plan: `docs/plans/SECOND_DEVELOPMENT.md`.
-- Current breakpoint: recovery Team `execute-approved-xlab-31e581d5` remains live. Stage 1 identity/navigation and Directory creation result repairs are integrated and leader-verified. Integrated acceptance and security verification are running against the exact integrated SHA.
-- Current integrated commit: `8b343880d58a1b3a562a80afc1f84cab666933c3`.
+- Current breakpoint: recovery Team `execute-approved-xlab-31e581d5` remains live. Integrated acceptance found a duplicate-URL-Path error-classification bug; the minimal regression-tested fix is integrated and acceptance retest/security verification are running against the new SHA.
+- Current integrated commit: `58df9f64fcdfbcab599133fbc4702ee3511c94f2`.
 - Completed Stage 1 packets: control checkpoint, backend Red contract, frontend Red contract, precise auth/create API errors, acceptance/security preparation, truthful identity/minimal navigation, and Directory creation result repair.
 - Remaining Stage 1 work: integrated native/browser acceptance, integrated security review, independent architecture/code review, and coordinator closeout.
 - Runtime services: API `:8080` and web `:5173` are healthy as of 10:21 CST.
-- Recovery Team task snapshot: 11 total; 7 completed, 2 in progress (`8`, `9`), 2 pending (`10`, `11`), 0 failed.
+- Recovery Team task snapshot: 13 total after adding fix/retest packets; 8 completed, 3 in progress (`8`, `9`, `13`), 2 pending (`10`, `11`), 0 failed.
 - Worker adaptation: tmux workers 4 and 5 reached model usage limits after claiming tasks `8`/`9`. Independent native agents Einstein (acceptance) and Darwin (security) are executing the same product-code-frozen contracts with disjoint verification-document ownership. Coordinator worker 1 did not process two mailbox dispatches plus one safe wake-up, so the leader temporarily updated this required milestone record.
 - Cleanup checkpoint: `453515d`.
 - Approved Ralplan consensus: Architect `APPROVE/CLEAR`; Critic `APPROVE` at 99%.
@@ -84,6 +84,7 @@ The acceptance services were offline at the latest coordinator check. Their pers
 
 ## Recent milestones
 
+- **2026-06-12 10:38 CST** — integrated browser acceptance exposed incorrect duplicate-URL-Path messaging because parent wording was matched before HTTP 409. Fix task `12` used Red→Green regression coverage and completed at `58df9f6`; full frontend tests 15/15, lint, and build pass. Retest task `13` is active.
 - **2026-06-12 10:24 CST** — task `7` completed at integrated SHA `8b34388`; leader verification passed 14/14 frontend tests, lint, build, and `git show --check`. Tasks `8`/`9` are in progress. Because their tmux owners reached usage limits, native independent acceptance/security agents were assigned the unchanged verification contracts. API and web services are healthy.
 - **2026-06-12 09:57 CST** — recovery DAG reconciled: tasks `6`–`11` now encode the remaining frontend, acceptance, security, independent review, and closeout dependency chain. Backend bootstrap task `2` completed; four roots remain active. Services remain offline and no final gate is claimed.
 - **2026-06-12 09:56 CST** — recovery Team `execute-approved-xlab-31e581d5` launched with five live/reporting workers and all five coarse seat tasks claimed. Coordinator detected missing packet dependencies and notified the leader.
