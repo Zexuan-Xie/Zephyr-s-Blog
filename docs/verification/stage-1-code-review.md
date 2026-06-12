@@ -2,7 +2,7 @@
 
 Status: complete
 
-Integrated product SHA: `f0877d09608a8b58a38f51f5a62cd02ec8cdcd81`
+Integrated product SHA: `b16755f56bb0d95a7e3d95b3431a84fc93984cf6`
 
 Initial reviewed SHA: `9193535d63aa3470d62043ba812b380e6b3bf785` with product code through `d6c7d092ae41b2e37bbf1c89ea30cff4ec551ef6`.
 
@@ -16,7 +16,7 @@ Final verdict:
 
 1. Independent architecture review initially returned **BLOCK** because the login default was not role-aware and Reader logout always navigated away from the current public page.
 2. Independent code review initially returned **REQUEST_CHANGES** for the same identity/navigation blockers, plus missing Author logout and generic auth UI error handling.
-3. Fix commit `f0877d09608a8b58a38f51f5a62cd02ec8cdcd81` repaired the blockers and added regression coverage.
+3. Fix commit `b16755f56bb0d95a7e3d95b3431a84fc93984cf6` repaired the blockers and added regression coverage.
 4. Final independent architecture review returned **CLEAR**.
 5. Final independent code review returned **APPROVE** with zero severity-rated findings.
 

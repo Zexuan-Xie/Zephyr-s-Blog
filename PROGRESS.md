@@ -9,8 +9,8 @@ This is the durable resume point. Keep it concise and update it after every key 
 - Branch: `main`; local commits are ahead of `origin/main`.
 - Initial Packets A–J are complete and natively verified.
 - Active plan: `docs/plans/SECOND_DEVELOPMENT.md`.
-- Current breakpoint: Stage 1 engineering closeout is complete at product SHA `f0877d0` with Architect `CLEAR` and Code Review `APPROVE`; Stage 1 is ready for explicit user acceptance and Stage 2 must not start until that acceptance is given.
-- Current integrated product commit: `f0877d09608a8b58a38f51f5a62cd02ec8cdcd81`.
+- Current breakpoint: Stage 1 engineering closeout is complete at product SHA `b16755f` with Architect `CLEAR` and Code Review `APPROVE`; Stage 1 is ready for explicit user acceptance and Stage 2 must not start until that acceptance is given.
+- Current integrated product commit: `b16755f56bb0d95a7e3d95b3431a84fc93984cf6`.
 - Completed Stage 1 packets: control checkpoint, backend Red contract, frontend Red contract, precise auth/create API errors, acceptance/security preparation, truthful identity/minimal navigation, Directory creation result repair, security repairs, closeout identity repair, integrated acceptance/security, and independent review.
 - Remaining Stage 1 work: explicit user acceptance only.
 - Runtime services: API `:8080` and web `:5173` are healthy as of 23:42 CST.
@@ -83,7 +83,7 @@ The native stack is currently running from this session for user acceptance. If 
 
 ## Recent milestones
 
-- **2026-06-12 23:42 CST** — Stage 1 independent review and coordinator closeout completed; terminal Team snapshot 16/16 completed. Initial Architect/Code Review found identity closeout blockers; `f0877d0` repaired role-aware Author login, Reader logout staying on public pages, Author logout from Admin to `/`, and status-specific auth UI errors. Full backend gates, 19/19 frontend tests, lint, build, 12-step native identity/API smoke, and desktop/mobile browser identity closeout passed. Evidence commit `a76dd89` records `docs/verification/stage-1-code-review.md`, closeout browser evidence, and screenshots. Architect `CLEAR`; Code Review `APPROVE`. Stage 1 now waits only for explicit user acceptance.
+- **2026-06-12 23:42 CST** — Stage 1 independent review and coordinator closeout completed; terminal Team snapshot 16/16 completed. Initial Architect/Code Review found identity closeout blockers; `b16755f` repaired role-aware Author login, Reader logout staying on public pages, Author logout from Admin to `/`, and status-specific auth UI errors. Full backend gates, 19/19 frontend tests, lint, build, 12-step native identity/API smoke, and rerun desktop/mobile browser identity closeout passed after restoring `clearIdentity`. Evidence commit `29e9795` records `docs/verification/stage-1-code-review.md`, closeout browser evidence, and screenshots. Architect `CLEAR`; Code Review `APPROVE`. Stage 1 now waits only for explicit user acceptance.
 
 - **2026-06-12 18:26 CST** — integrated acceptance/security retests completed with `PASS` against product SHA `d6c7d09`; evidence commit `ee6a5c2` records the 21-step PostgreSQL/API smoke, full backend/frontend gates, desktop/mobile role and creation scenarios, security blocker retests, explicit-ID cleanup, and redacted artifacts. Team tasks are 14/16 complete; independent architecture/code review is active.
 - **2026-06-12 17:54 CST** — security fixes integrated: `673650e` hardens Login return targets (17/17 frontend tests, lint, build PASS); `d6c7d09` makes configured Author credentials authoritative and sanitizes unexpected auth errors (full Go tests/vet/gofmt and PostgreSQL rollback regression PASS). Independent security and acceptance retests started.
