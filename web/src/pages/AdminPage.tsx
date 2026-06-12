@@ -364,14 +364,14 @@ function formatAdminCreateError(error: unknown) {
     if (error.status === 403) {
       return 'Author access is required to create content.';
     }
-    if (error.status === 404 || /parent|destination/i.test(error.message)) {
-      return 'The destination Directory no longer exists. Refresh the Content Tree and try again.';
-    }
     if (error.status === 409 && /reserved/i.test(error.message)) {
       return 'This URL path is reserved. Choose another URL path.';
     }
     if (error.status === 409) {
       return 'This URL path is already in use. Choose another URL path.';
+    }
+    if (error.status === 404 || /parent|destination/i.test(error.message)) {
+      return 'The destination Directory no longer exists. Refresh the Content Tree and try again.';
     }
     if (/name is required/i.test(error.message)) {
       return 'Enter a Name for the new Directory or File.';

@@ -39,3 +39,18 @@ test('create failures are actionable and Author-facing without implementation la
   assert.doesNotMatch(adminPageSource, />Slug</);
   assert.doesNotMatch(adminPageSource, /Check slug|root slugs|slug uniqueness/i);
 });
+
+test('URL Path conflicts take precedence over parent wording in the API message', () => {
+  const formatterStart = adminPageSource.indexOf('function formatAdminCreateError');
+  const formatterEnd = adminPageSource.indexOf('function formatBytes', formatterStart);
+  const formatter = adminPageSource.slice(formatterStart, formatterEnd);
+  const conflictIndex = formatter.indexOf('error.status === 409');
+  const missingParentIndex = formatter.indexOf('/parent|destination/i');
+
+  assert.ok(conflictIndex >= 0, 'create errors should classify HTTP 409 conflicts');
+  assert.ok(missingParentIndex >= 0, 'create errors should classify a missing destination');
+  assert.ok(
+    conflictIndex < missingParentIndex,
+    'HTTP 409 must win before matching backend conflict text that mentions the selected parent',
+  );
+});
