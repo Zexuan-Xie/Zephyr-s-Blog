@@ -2,6 +2,7 @@ import { FormEvent, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Navigate } from 'react-router-dom';
 import {
+  ApiError,
   createAdminNode,
   deleteAdminNode,
   deleteAsset,
@@ -62,7 +63,8 @@ export function AdminPage() {
 
   async function submitCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const createForm = event.currentTarget;
+    const form = new FormData(createForm);
     const parent = stringValue(form, 'parent_id');
     const kind = stringValue(form, 'kind') as NodeKind;
     const input: CreateAdminNodeInput = {
@@ -73,15 +75,19 @@ export function AdminPage() {
       sort_order: numberValue(form, 'sort_order'),
       content_format: kind === 'file' ? stringValue(form, 'content_format') as ContentFormat : undefined,
     };
+    let created: AdminNodeDetail;
     try {
-      const created = await createAdminNode(input);
-      setDetail(created);
-      setSelectedId(created.node.id);
-      setStatus(`Created ${created.node.kind} at ${created.node.path}.`);
-      event.currentTarget.reset();
-    } catch {
-      setStatus('Create failed. Check slug uniqueness, reserved root slugs, parent id, and admin login.');
+      created = await createAdminNode(input);
+    } catch (error) {
+      setStatus(formatAdminCreateError(error));
+      return;
     }
+
+    setDetail(created);
+    setSelectedId(created.node.id);
+    setStatus(`${created.node.kind === 'directory' ? 'Directory' : 'File'} created at ${created.node.path}.`);
+    createForm.reset();
+    void rootQuery.refetch();
   }
 
   async function submitNodeUpdate(event: FormEvent<HTMLFormElement>) {
@@ -104,7 +110,7 @@ export function AdminPage() {
       setDetail(updated);
       setStatus(`Updated ${updated.node.path}.`);
     } catch {
-      setStatus('Update failed. Check slug uniqueness, reserved root slugs, and move constraints.');
+      setStatus('Update failed. Check URL Path uniqueness, reserved root paths, and move constraints.');
     }
   }
 
@@ -269,7 +275,7 @@ function CreateNodePanel({ parentId, onCreate }: { parentId?: string | null; onC
       <form className="admin-form" onSubmit={onCreate}>
         <label>Parent id<input name="parent_id" defaultValue={parentId ?? ''} placeholder="blank for root" /></label>
         <label>Name<input name="name" required placeholder="Research Notes" /></label>
-        <label>Slug<input name="slug" required placeholder="research-notes" /></label>
+        <label>URL Path<input name="slug" required placeholder="research-notes" /></label>
         <label>Sort order<input name="sort_order" type="number" defaultValue="0" /></label>
         <label>Kind<select name="kind" value={kind} onChange={(event) => setKind(event.target.value as NodeKind)}><option value="directory">Directory</option><option value="file">File</option></select></label>
         {kind === 'file' ? <label>Content format<select name="content_format" defaultValue="markdown"><option value="markdown">Markdown</option><option value="html_document">HTML Document</option></select></label> : null}
@@ -287,7 +293,7 @@ function NodeEditor({ detail, onSubmit, onDelete }: { detail: AdminNodeDetail; o
       <form className="admin-form" onSubmit={onSubmit}>
         <label>Parent id<input name="parent_id" defaultValue={detail.node.parent_id ?? ''} placeholder="blank for root" /></label>
         <label>Name<input name="name" defaultValue={detail.node.name} required /></label>
-        <label>Slug<input name="slug" defaultValue={detail.node.slug} required /></label>
+        <label>URL Path<input name="slug" defaultValue={detail.node.slug} required /></label>
         <label>Sort order<input name="sort_order" type="number" defaultValue={detail.node.sort_order} /></label>
         <div className="button-row"><button className="primary-button" type="submit">Save node</button><button className="glass-button danger-button" type="button" onClick={onDelete}>Delete node</button></div>
       </form>
@@ -348,6 +354,37 @@ function numberValue(form: FormData, key: string) {
 
 function splitKeywords(value: string) {
   return value.split(',').map((keyword) => keyword.trim()).filter(Boolean);
+}
+
+function formatAdminCreateError(error: unknown) {
+  if (error instanceof ApiError) {
+    if (error.status === 401) {
+      return 'Your session expired. Log in again.';
+    }
+    if (error.status === 403) {
+      return 'Author access is required to create content.';
+    }
+    if (error.status === 404 || /parent|destination/i.test(error.message)) {
+      return 'The destination Directory no longer exists. Refresh the Content Tree and try again.';
+    }
+    if (error.status === 409 && /reserved/i.test(error.message)) {
+      return 'This URL path is reserved. Choose another URL path.';
+    }
+    if (error.status === 409) {
+      return 'This URL path is already in use. Choose another URL path.';
+    }
+    if (/name is required/i.test(error.message)) {
+      return 'Enter a Name for the new Directory or File.';
+    }
+    if (/slug|path/i.test(error.message)) {
+      return 'Enter a valid URL path using a single path segment.';
+    }
+    if (/kind|content format/i.test(error.message)) {
+      return 'Choose a valid content type and format, then try again.';
+    }
+  }
+
+  return 'Could not create this item. Check the connection and try again.';
 }
 
 function formatBytes(bytes: number) {
