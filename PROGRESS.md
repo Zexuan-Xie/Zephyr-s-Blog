@@ -9,12 +9,12 @@ This is the durable resume point. Keep it concise and update it after every key 
 - Branch: `main`; local commits are ahead of `origin/main`.
 - Initial Packets A–J are complete and natively verified.
 - Active plan: `docs/plans/SECOND_DEVELOPMENT.md`.
-- Current breakpoint: recovery Team `execute-approved-xlab-31e581d5` is live with all five functional seats and all five coarse recovery tasks claimed. Stage 1 backend/API error work and the frontend Red contract remain integrated. The regenerated task state does not reproduce the approved 11-node Stage 1 packet DAG: it contains only five dependency-free root tasks, so packet-level integration and final gate completion remain pending explicit leader reconciliation.
+- Current breakpoint: recovery Team `execute-approved-xlab-31e581d5` is live with all five functional seats. Stage 1 backend/API error work and the frontend Red contract remain integrated. The initial five coarse seat tasks have now been supplemented by explicit recovery packets `6`–`11` for identity/navigation, Directory creation, integrated acceptance/security, independent review, and coordinator closeout.
 - Current integrated commit: `d636c3176d031b0d714ff8fdcd7920ea807b15fe`.
 - Completed Stage 1 packets: control checkpoint, backend Red contract, frontend Red contract, precise auth/create API errors, acceptance preparation document, and security preparation document.
 - Remaining Stage 1 work: truthful identity/minimal navigation, Directory creation result repair, integrated native/browser acceptance, integrated security review, independent architecture/code review, and coordinator closeout.
 - Runtime services: API `:8080` and web `:5173` were not reachable at the 00:02 CST coordinator check; restart with `~/.local/share/xlab-blog/start-local.sh` before integrated browser verification.
-- Recovery Team task snapshot: 5 total, 5 in progress (`1`–`5`), 0 pending, 0 completed, 0 failed; five worker panes are live and reporting.
+- Recovery Team task snapshot: 11 total; 4 in progress (`1`, `3`–`5`), 6 pending (`6`–`11`), 1 completed (`2`), 0 failed; five worker panes are live and reporting.
 - Cleanup checkpoint: `453515d`.
 - Approved Ralplan consensus: Architect `APPROVE/CLEAR`; Critic `APPROVE` at 99%.
 - Stage 1 Team will use five fixed seats: coordinator, backend, frontend, acceptance, and security.
@@ -75,15 +75,16 @@ The acceptance services were offline at the latest coordinator check. Their pers
 
 ## Immediate next steps
 
-1. Reconcile the five coarse recovery tasks with the approved remaining Stage 1 packets before claiming packet-level closeout.
-2. Implement and integrate truthful identity/minimal navigation, then repair the Directory creation result.
+1. Complete frontend bootstrap task `3`, then implement and integrate identity/navigation task `6` and Directory creation task `7`.
+2. Preserve the recovery dependency chain: acceptance/security tasks `8`/`9`, independent review task `10`, then coordinator closeout task `11`.
 3. Restart native services and run full backend/frontend, PostgreSQL API smoke, desktop/mobile browser acceptance, and security gates.
 4. Obtain architect CLEAR, code-reviewer APPROVE, and user acceptance before coordinator closeout.
 5. Preserve the current local database until the Stage 2 pre-stage backup/fixture cleanup step.
 
 ## Recent milestones
 
-- **2026-06-12 09:56 CST** — recovery Team `execute-approved-xlab-31e581d5` launched with five live/reporting workers and all five recovery tasks claimed. Coordinator detected that the regenerated tasks are coarse dependency-free seat tasks rather than the approved 11-node packet DAG and notified the leader; services remain offline and no final gate is claimed.
+- **2026-06-12 09:57 CST** — recovery DAG reconciled: tasks `6`–`11` now encode the remaining frontend, acceptance, security, independent review, and closeout dependency chain. Backend bootstrap task `2` completed; four roots remain active. Services remain offline and no final gate is claimed.
+- **2026-06-12 09:56 CST** — recovery Team `execute-approved-xlab-31e581d5` launched with five live/reporting workers and all five coarse seat tasks claimed. Coordinator detected missing packet dependencies and notified the leader.
 - **2026-06-12 09:49 CST** — recovered from a non-resumable Team: old runtime state archived, all five clean detached worktrees removed, backend packets 2/6 verified complete, and the durable breakpoint moved to integrated SHA `d636c31`.
 - **2026-06-12 00:05 CST** — all five root packets were claimed; Team state is 5 in progress, 6 pending, 0 failed.
 - **2026-06-12 00:03 CST** — Stage 1 Team launched with five live workers. `dag_sidecar`, effective worker count 5, bootstrap mapping, and all 11 packet subjects/owners/file scopes/dependencies passed exact audit. Initial event cursor and integration ledger were recorded in `docs/verification/stage-1-team-log.md`.
