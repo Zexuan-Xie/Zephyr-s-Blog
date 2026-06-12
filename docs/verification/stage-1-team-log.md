@@ -6,7 +6,7 @@ Team: `execute-approved-xlab-31e581d5`
 Coordinator: `worker-1`
 Baseline SHA: `29c37a24a8a7665daacad26ff5776da554810705`
 Current product SHA: `b16755f56bb0d95a7e3d95b3431a84fc93984cf6`
-Current evidence HEAD: `29e9795f7f56e07e2085700dc4d7da4c107692e9`
+Closeout evidence artifacts introduced: `a76dd89f60055aa509a14bddc1442a783cfeb7e0`; closeout docs refreshed in later progress-only commits
 Rollback checkpoint: `453515de8c76a43e24d841d56e4ee28ef3f40750`
 
 
@@ -14,7 +14,7 @@ Rollback checkpoint: `453515de8c76a43e24d841d56e4ee28ef3f40750`
 
 - Independent review task `10` is complete after initial `BLOCK` / `REQUEST_CHANGES` findings were repaired. Final Architect verdict: `CLEAR`; final Code Review verdict: `APPROVE`.
 - Closeout identity repair product SHA: `b16755f56bb0d95a7e3d95b3431a84fc93984cf6`.
-- Evidence commit: `29e9795f7f56e07e2085700dc4d7da4c107692e9`.
+- Evidence artifacts introduced at `a76dd89f60055aa509a14bddc1442a783cfeb7e0`; closeout docs refreshed after final `clearIdentity` restoration.
 - Repaired blockers: role-aware Author login default to `/admin`, Reader logout stays on public pages, Author logout exists in Admin and returns to `/`, and auth UI preserves actionable 400/401/409/5xx/network distinctions.
 - Verification after repair: full Go tests/vet/gofmt PASS; frontend `node --test tests/*.test.mjs` PASS 19/19, lint PASS, build PASS; 12-step native identity/API smoke PASS with explicit-ID cleanup; desktop/mobile browser identity closeout PASS.
 - Evidence: `docs/verification/stage-1-code-review.md`, `docs/verification/stage-1-browser-20260612/closeout-identity-browser.md`, and closeout screenshots under `docs/verification/stage-1-browser-20260612/`.
