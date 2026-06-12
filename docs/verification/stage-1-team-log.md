@@ -4,8 +4,20 @@ Status: active
 
 Team: `execute-approved-xlab-d760bfbb`  
 Coordinator: `worker-1`  
-Baseline / current integrated SHA: `f7772381459fefe4435455cdef31f5b03bdf09e9`  
+Baseline SHA: `f7772381459fefe4435455cdef31f5b03bdf09e9`
+Current integrated SHA: `d636c3176d031b0d714ff8fdcd7920ea807b15fe`
 Rollback checkpoint: `453515de8c76a43e24d841d56e4ee28ef3f40750`
+
+## Recovery checkpoint — 2026-06-12 09:49 CST
+
+- Original Team `execute-approved-xlab-d760bfbb` was not resumable: all five worker processes were dead, with four lifecycle tasks completed and seven pending.
+- Runtime state was copied to `.omx/recovery/execute-approved-xlab-d760bfbb-20260612T094833+0800` before cleanup.
+- All five detached worktrees were clean. They and the stale Team state were removed; no detached worker changes were revived.
+- Integrated `main` SHA is `d636c3176d031b0d714ff8fdcd7920ea807b15fe`.
+- Backend packets 2 and 6 are complete. Full Go tests, vet, and formatting pass with `CGO_ENABLED=0`.
+- Frontend Red contract is integrated and intentionally fails 0/5 until packets 7 and 8 are implemented.
+- Acceptance and security preparation documents are integrated. Their final runtime verdicts remain pending.
+- Next action: launch a fresh five-seat recovery Team from the current `main` SHA, with coordinator, frontend development, acceptance, security, and independent review ownership.
 
 ## Coordinator checkpoint — 2026-06-12 00:03 CST
 
