@@ -4,32 +4,43 @@ import { getReturnTo, setToken } from '../lib/auth';
 
 interface AuthPageProps {
   mode: 'login' | 'register';
+  onAuthenticated?: () => void;
 }
 
-export function AuthPage({ mode }: AuthPageProps) {
+export function AuthPage({ mode, onAuthenticated }: AuthPageProps) {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setError(null);
     const data = new FormData(event.currentTarget);
     const payload = Object.fromEntries(data.entries());
-    const response = await fetch(`/api/auth/${mode}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(payload),
-    });
 
-    if (!response.ok) {
-      setError(mode === 'login' ? 'Invalid email or password.' : 'Unable to register this account.');
-      return;
-    }
+    try {
+      const response = await fetch(`/api/auth/${mode}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-    const json = (await response.json()) as { token?: string };
-    if (json.token) {
+      if (!response.ok) {
+        setError(mode === 'login' ? 'Invalid email or password.' : 'Unable to register this account.');
+        return;
+      }
+
+      const json = (await response.json()) as { token?: string };
+      if (!json.token) {
+        setError('Authentication succeeded without a usable session. Please try again.');
+        return;
+      }
+
       setToken(json.token);
+      onAuthenticated?.();
+      navigate(getReturnTo('/recent'), { replace: true });
+    } catch {
+      setError('Unable to reach the server. Check your connection and try again.');
     }
-    navigate(getReturnTo('/recent'), { replace: true });
   }
 
   return (

@@ -1,12 +1,24 @@
-import { BookOpen, FolderTree, Search, UserRound } from 'lucide-react';
+import { BookOpen, FolderTree, LogOut, Search, UserRound } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { clearToken } from '../lib/auth';
+import type { CurrentUser } from '../lib/types';
 
 interface GlassNavProps {
   onOpenDirectory: () => void;
+  currentUser: CurrentUser | null;
+  identityStatus: 'loading' | 'error' | 'ready';
+  retryIdentity: () => void;
+  onLogout: () => void;
 }
 
-export function GlassNav({ onOpenDirectory }: GlassNavProps) {
+export function GlassNav({
+  onOpenDirectory,
+  currentUser,
+  identityStatus,
+  retryIdentity,
+  onLogout,
+}: GlassNavProps) {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
 
@@ -20,6 +32,12 @@ export function GlassNav({ onOpenDirectory }: GlassNavProps) {
     }
   }
 
+  function logout() {
+    clearToken();
+    onLogout();
+    navigate('/recent');
+  }
+
   return (
     <header className="site-header">
       <nav className="glass glass-nav" aria-label="Primary navigation">
@@ -29,8 +47,6 @@ export function GlassNav({ onOpenDirectory }: GlassNavProps) {
         </Link>
         <div className="nav-links">
           <NavLink to="/recent">Recent</NavLink>
-          <NavLink to="/search">Search</NavLink>
-          <NavLink to="/admin">Admin</NavLink>
         </div>
         <form className="nav-search" role="search" onSubmit={submitSearch}>
           <Search size={16} aria-hidden="true" />
@@ -43,12 +59,40 @@ export function GlassNav({ onOpenDirectory }: GlassNavProps) {
         </form>
         <button className="glass-button nav-icon" type="button" onClick={onOpenDirectory}>
           <FolderTree size={17} aria-hidden="true" />
-          <span>Tree</span>
+          <span>Directory</span>
         </button>
-        <Link className="glass-button nav-icon" to="/login">
-          <UserRound size={17} aria-hidden="true" />
-          <span>Login</span>
-        </Link>
+        {identityStatus === 'loading' ? (
+          <span className="glass-button nav-icon identity-loading" aria-label="Checking identity" />
+        ) : null}
+        {identityStatus === 'error' ? (
+          <button className="glass-button nav-icon" type="button" onClick={retryIdentity}>
+            <span>Retry</span>
+          </button>
+        ) : null}
+        {identityStatus === 'ready' && !currentUser ? (
+          <Link className="glass-button nav-icon" to="/login">
+            <UserRound size={17} aria-hidden="true" />
+            <span>Login</span>
+          </Link>
+        ) : null}
+        {identityStatus === 'ready' && currentUser?.role === 'admin' ? (
+          <Link className="glass-button nav-icon" to="/admin">
+            <UserRound size={17} aria-hidden="true" />
+            <span>Author</span>
+          </Link>
+        ) : null}
+        {identityStatus === 'ready' && currentUser?.role === 'reader' ? (
+          <details className="nav-icon">
+            <summary className="glass-button">
+              <UserRound size={17} aria-hidden="true" />
+              <span>{currentUser.display_name || 'Reader'}</span>
+            </summary>
+            <button className="glass-button" type="button" onClick={logout}>
+              <LogOut size={16} aria-hidden="true" />
+              <span>Logout</span>
+            </button>
+          </details>
+        ) : null}
       </nav>
     </header>
   );

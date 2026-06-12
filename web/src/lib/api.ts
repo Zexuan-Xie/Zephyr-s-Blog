@@ -4,6 +4,16 @@ import type { BreadcrumbItem, CommentItem, CommentThread, ContentEntry, CurrentU
 
 const apiBase = '/api';
 
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
 async function requestJson<T>(path: string, schema: z.ZodType<T>, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`${apiBase}${path}`, {
     ...init,
@@ -11,11 +21,35 @@ async function requestJson<T>(path: string, schema: z.ZodType<T>, init: RequestI
   });
 
   if (!response.ok) {
-    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+    throw new ApiError(response.status, await readErrorMessage(response));
   }
 
   const json: unknown = await response.json();
   return schema.parse(json);
+}
+
+async function readErrorMessage(response: Response): Promise<string> {
+  const fallback = `Request failed: ${response.status} ${response.statusText}`;
+
+  try {
+    const payload: unknown = await response.json();
+    if (typeof payload !== 'object' || payload === null) return fallback;
+
+    if ('message' in payload && typeof payload.message === 'string') {
+      return payload.message;
+    }
+    if ('error' in payload && typeof payload.error === 'string') {
+      return payload.error;
+    }
+    if ('error' in payload && typeof payload.error === 'object' && payload.error !== null
+      && 'message' in payload.error && typeof payload.error.message === 'string') {
+      return payload.error.message;
+    }
+  } catch {
+    // Preserve the HTTP status fallback when an error body is empty or malformed.
+  }
+
+  return fallback;
 }
 
 const nullableStringSchema = z.string().nullable().optional();
