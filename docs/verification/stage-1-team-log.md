@@ -5,9 +5,15 @@ Status: active
 Team: `execute-approved-xlab-31e581d5`
 Coordinator: `worker-1`
 Baseline SHA: `29c37a24a8a7665daacad26ff5776da554810705`
-Current product SHA: `58df9f64fcdfbcab599133fbc4702ee3511c94f2`
-Current evidence HEAD: `1877c254e310c85cc42aa68cecd4acfcf8e27460`
+Current product SHA: `d6c7d092ae41b2e37bbf1c89ea30cff4ec551ef6`
+Current evidence HEAD: pending integrated retests
 Rollback checkpoint: `453515de8c76a43e24d841d56e4ee28ef3f40750`
+
+## Security repair checkpoint — 2026-06-12 17:54 CST
+
+- Frontend task `15` completed at `673650e6ec249cc3a0ac138f674ce2a8d348e0a0`: backslash/control/encoded unsafe return targets and auth loops are rejected while valid application paths/query/hash remain valid. Leader gate: 17/17 frontend tests, lint, build, and commit check PASS.
+- Backend task `14` completed at `d6c7d092ae41b2e37bbf1c89ea30cff4ec551ef6`: configured Author seed replaces password hash, role, and provider; unexpected auth errors return generic HTTP 500; OpenAPI documents the contract. Leader gate: full Go tests/vet/gofmt and PostgreSQL rollback-only repository regression PASS.
+- Native independent agents Archimedes and Averroes now run security task `16` and acceptance tasks `8`/`13` against the exact integrated product SHA.
 
 ## Security failure checkpoint — 2026-06-12 17:45 CST
 
