@@ -70,9 +70,10 @@ test('login and logout use safe, loop-free destinations', () => {
   assert.match(authSource, /startsWith\(['"]\/['"]\)/);
   assert.match(authSource, /startsWith\(['"]\/\/['"]\)/);
   assert.match(authSource, /['"]\/login['"]/);
-  assert.match(authPageSource, /getReturnTo\(['"]\/recent['"]\)/);
+  assert.match(authPageSource, /sanitizeReturnTo\(requestedReturn, defaultPath\)/);
+  assert.match(authPageSource, /json\.user\.role === ['"]admin['"] \? ['"]\/admin['"] : ['"]\/recent['"]/);
   assert.match(navSource, /clearToken\(\)/);
-  assert.match(navSource, /navigate\(['"]\/recent['"]/);
+  assert.match(navSource, /location\.pathname\.startsWith\(['"]\/admin['"]\)/);
 });
 
 test('return targets preserve safe application paths, queries, and hashes', () => {
@@ -104,4 +105,24 @@ test('return targets reject external, auth-loop, backslash, and control-characte
   for (const target of unsafeTargets) {
     assert.equal(sanitizeReturnTo(target), '/recent', target);
   }
+});
+
+
+test('Author and Reader logout destinations match the identity contract', () => {
+  assert.match(appSource, /function clearIdentity\(\)/);
+  assert.match(appSource, /<AdminPage onLogout=\{clearIdentity\} \/>/);
+  assert.match(source('../src/pages/AdminPage.tsx'), /window\.location\.assign\(['"]\/['"]\)/);
+  assert.match(navSource, /location\.pathname\.startsWith\(['"]\/admin['"]\)/);
+  assert.match(navSource, /navigate\(['"]\/recent['"], \{ replace: true \}\)/);
+  assert.match(navSource, /currentUser\?\.role === ['"]reader['"]/);
+  assert.match(authPageSource, /defaultPath = mode === ['"]login['"] && json\.user\.role === ['"]admin['"] \? ['"]\/admin['"] : ['"]\/recent['"]/);
+});
+
+test('authentication errors preserve actionable status distinctions', () => {
+  assert.match(authPageSource, /formatAuthError\(response, mode\)/);
+  assert.match(authPageSource, /response\.status === 401/);
+  assert.match(authPageSource, /response\.status === 409/);
+  assert.match(authPageSource, /response\.status === 400/);
+  assert.match(authPageSource, /response\.status >= 500/);
+  assert.match(authPageSource, /Unable to reach the server/);
 });

@@ -1,6 +1,6 @@
 import { BookOpen, FolderTree, LogOut, Search, UserRound } from 'lucide-react';
 import { FormEvent, useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { clearToken } from '../lib/auth';
 import type { CurrentUser } from '../lib/types';
 
@@ -20,6 +20,7 @@ export function GlassNav({
   onLogout,
 }: GlassNavProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [query, setQuery] = useState('');
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
@@ -35,7 +36,9 @@ export function GlassNav({
   function logout() {
     clearToken();
     onLogout();
-    navigate('/recent');
+    if (location.pathname.startsWith('/admin')) {
+      navigate('/recent', { replace: true });
+    }
   }
 
   return (

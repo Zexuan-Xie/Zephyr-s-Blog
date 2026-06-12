@@ -49,6 +49,12 @@ export function App() {
     setIdentityToken(getToken());
   }
 
+  function clearIdentity() {
+    clearToken();
+    queryClient.removeQueries({ queryKey: ['auth', 'current-user'] });
+    setIdentityToken(null);
+  }
+
   return (
     <div className="app-shell">
       <GlassNav
@@ -87,7 +93,7 @@ export function App() {
                   : !currentUser
                     ? <Navigate to="/login?return_to=%2Fadmin" replace />
                     : currentUser?.role === 'admin'
-                      ? <AdminPage />
+                      ? <AdminPage onLogout={clearIdentity} />
                       : (
                         <section className="glass status-panel">
                           <p className="eyebrow">AUTHOR</p>

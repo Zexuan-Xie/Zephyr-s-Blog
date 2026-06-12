@@ -21,7 +21,7 @@ import {
 import { getToken } from '../lib/auth';
 import type { AdminNodeDetail, ContentEntry, ContentFormat, FileAsset, NodeKind } from '../lib/types';
 
-export function AdminPage() {
+export function AdminPage({ onLogout }: { onLogout: () => void }) {
   const token = getToken();
   const viewerQuery = useQuery({
     queryKey: ['auth', 'me', 'admin'],
@@ -209,12 +209,18 @@ export function AdminPage() {
     }
   }
 
+  function logoutAuthor() {
+    onLogout();
+    window.location.assign('/');
+  }
+
   return (
     <section className="page-stack admin-manager-page">
       <section className="glass status-panel admin-hero">
         <p className="eyebrow">ADMIN</p>
         <h1>Tree Manager</h1>
         <p>Create, edit, move, publish, unpublish, upload assets, and refresh hybrid-search embeddings from one Packet I workspace.</p>
+        <button className="glass-button" type="button" onClick={logoutAuthor}>Logout</button>
         {status ? <p className="muted">{status}</p> : null}
       </section>
 
