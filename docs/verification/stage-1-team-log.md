@@ -6,8 +6,17 @@ Team: `execute-approved-xlab-31e581d5`
 Coordinator: `worker-1`
 Baseline SHA: `29c37a24a8a7665daacad26ff5776da554810705`
 Current product SHA: `d6c7d092ae41b2e37bbf1c89ea30cff4ec551ef6`
-Current evidence HEAD: pending integrated retests
+Current evidence HEAD: `ee6a5c2c83f5e7f31132b8e0e133e83f61660341`
 Rollback checkpoint: `453515de8c76a43e24d841d56e4ee28ef3f40750`
+
+## Integrated verification checkpoint — 2026-06-12 18:26 CST
+
+- Acceptance tasks `8` and `13` completed with `PASS` against product SHA `d6c7d092ae41b2e37bbf1c89ea30cff4ec551ef6`.
+- Security tasks `9` and `16` completed with `PASS`; the three blockers recorded at `1877c25` were independently repaired and retested.
+- Evidence commit `ee6a5c2c83f5e7f31132b8e0e133e83f61660341` records final acceptance/security reports and redacted browser screenshots.
+- Native PostgreSQL/API smoke passed 21 steps; backend tests/vet/gofmt and frontend 17/17 tests/lint/build passed.
+- Desktop/mobile Anonymous Visitor, Reader, and Author flows passed, including successful Directory creation, duplicate/reserved URL Path errors, safe return targets, and explicit-ID cleanup.
+- Team snapshot: 16 total; 14 completed, task `10` in progress, task `11` pending, 0 failed. All five tmux workers are dead after quota exhaustion; native Architect and code-reviewer agents own the final read-only review.
 
 ## Security repair checkpoint — 2026-06-12 17:54 CST
 

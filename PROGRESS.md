@@ -1,6 +1,6 @@
 # xLab Blog Progress
 
-Last updated: 2026-06-12 17:54 CST
+Last updated: 2026-06-12 18:26 CST
 
 This is the durable resume point. Keep it concise and update it after every key milestone.
 
@@ -9,13 +9,13 @@ This is the durable resume point. Keep it concise and update it after every key 
 - Branch: `main`; local commits are ahead of `origin/main`.
 - Initial Packets A–J are complete and natively verified.
 - Active plan: `docs/plans/SECOND_DEVELOPMENT.md`.
-- Current breakpoint: all three Stage 1 security blockers are fixed and leader-verified. Independent integrated security and acceptance retests are running against product SHA `d6c7d09`.
+- Current breakpoint: integrated native/browser acceptance and security retests are complete with `PASS`; independent architecture and code review task `10` is active against product SHA `d6c7d09` and evidence commit `ee6a5c2`.
 - Current integrated product commit: `d6c7d092ae41b2e37bbf1c89ea30cff4ec551ef6`.
 - Completed Stage 1 packets: control checkpoint, backend Red contract, frontend Red contract, precise auth/create API errors, acceptance/security preparation, truthful identity/minimal navigation, and Directory creation result repair.
-- Remaining Stage 1 work: finish native/browser acceptance and security retests, independent architecture/code review, and coordinator closeout.
+- Remaining Stage 1 work: obtain independent Architect CLEAR and Code Review APPROVE, complete coordinator closeout, then wait for explicit user acceptance.
 - Runtime services: API `:8080` and web `:5173` are healthy as of 10:21 CST.
-- Recovery Team task snapshot: 16 total; 10 completed, 4 in progress (`8`, `9`, `13`, `16`), 2 pending (`10`, `11`), 0 failed.
-- Worker adaptation: all five tmux workers remain dead after quota exhaustion. Native independent agents Archimedes (security) and Averroes (acceptance) own disjoint verification documents/artifacts; the durable Team ledger remains the source of truth.
+- Recovery Team task snapshot: 16 total; 14 completed, 1 in progress (`10`), 1 pending (`11`), 0 failed.
+- Worker adaptation: all five tmux workers remain dead after quota exhaustion. Native independent Architect and code-reviewer agents now own the final read-only review lanes; the durable Team ledger remains the source of truth.
 - Cleanup checkpoint: `453515d`.
 - Approved Ralplan consensus: Architect `APPROVE/CLEAR`; Critic `APPROVE` at 99%.
 - Stage 1 Team will use five fixed seats: coordinator, backend, frontend, acceptance, and security.
@@ -76,14 +76,15 @@ The acceptance services were offline at the latest coordinator check. Their pers
 
 ## Immediate next steps
 
-1. Complete and integrate acceptance/security tasks `8`/`9` from native backup agents.
-2. Preserve the remaining dependency chain: independent review task `10`, then coordinator closeout task `11`.
-3. Keep native services healthy while PostgreSQL API smoke, desktop/mobile browser acceptance, and security gates run.
-4. Obtain architect CLEAR, code-reviewer APPROVE, and user acceptance before coordinator closeout.
+1. Complete independent review task `10` with Architect CLEAR and Code Review APPROVE.
+2. Complete coordinator closeout task `11`, preserving exact SHAs, evidence, rollback, and user-acceptance handoff.
+3. Keep the native stack available for user acceptance at `http://127.0.0.1:5173`.
+4. Do not start Stage 2 until the user explicitly accepts Stage 1.
 5. Preserve the current local database until the Stage 2 pre-stage backup/fixture cleanup step.
 
 ## Recent milestones
 
+- **2026-06-12 18:26 CST** — integrated acceptance/security retests completed with `PASS` against product SHA `d6c7d09`; evidence commit `ee6a5c2` records the 21-step PostgreSQL/API smoke, full backend/frontend gates, desktop/mobile role and creation scenarios, security blocker retests, explicit-ID cleanup, and redacted artifacts. Team tasks are 14/16 complete; independent architecture/code review is active.
 - **2026-06-12 17:54 CST** — security fixes integrated: `673650e` hardens Login return targets (17/17 frontend tests, lint, build PASS); `d6c7d09` makes configured Author credentials authoritative and sanitizes unexpected auth errors (full Go tests/vet/gofmt and PostgreSQL rollback regression PASS). Independent security and acceptance retests started.
 - **2026-06-12 17:45 CST** — independent security report `1877c25` recorded `FAIL`: existing Reader elevation retained the old password, unexpected auth errors leaked internal messages, and backslash-form return targets broke post-login navigation. Backend task `14`, frontend task `15`, and security retest task `16` were added; native agents Dewey/Planck are active because all tmux workers are dead.
 - **2026-06-12 10:38 CST** — integrated browser acceptance exposed incorrect duplicate-URL-Path messaging because parent wording was matched before HTTP 409. Fix task `12` used Red→Green regression coverage and completed at `58df9f6`; full frontend tests 15/15, lint, and build pass. Retest task `13` is active.
