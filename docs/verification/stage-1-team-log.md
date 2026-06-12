@@ -1,13 +1,26 @@
 # Stage 1 Team Log
 
-Status: active
+Status: engineering complete; awaiting user acceptance
 
 Team: `execute-approved-xlab-31e581d5`
 Coordinator: `worker-1`
 Baseline SHA: `29c37a24a8a7665daacad26ff5776da554810705`
-Current product SHA: `d6c7d092ae41b2e37bbf1c89ea30cff4ec551ef6`
-Current evidence HEAD: `ee6a5c2c83f5e7f31132b8e0e133e83f61660341`
+Current product SHA: `f0877d09608a8b58a38f51f5a62cd02ec8cdcd81`
+Current evidence HEAD: `a76dd89f60055aa509a14bddc1442a783cfeb7e0`
 Rollback checkpoint: `453515de8c76a43e24d841d56e4ee28ef3f40750`
+
+
+## Coordinator closeout checkpoint — 2026-06-12 23:42 CST
+
+- Independent review task `10` is complete after initial `BLOCK` / `REQUEST_CHANGES` findings were repaired. Final Architect verdict: `CLEAR`; final Code Review verdict: `APPROVE`.
+- Closeout identity repair product SHA: `f0877d09608a8b58a38f51f5a62cd02ec8cdcd81`.
+- Evidence commit: `a76dd89f60055aa509a14bddc1442a783cfeb7e0`.
+- Repaired blockers: role-aware Author login default to `/admin`, Reader logout stays on public pages, Author logout exists in Admin and returns to `/`, and auth UI preserves actionable 400/401/409/5xx/network distinctions.
+- Verification after repair: full Go tests/vet/gofmt PASS; frontend `node --test tests/*.test.mjs` PASS 19/19, lint PASS, build PASS; 12-step native identity/API smoke PASS with explicit-ID cleanup; desktop/mobile browser identity closeout PASS.
+- Evidence: `docs/verification/stage-1-code-review.md`, `docs/verification/stage-1-browser-20260612/closeout-identity-browser.md`, and closeout screenshots under `docs/verification/stage-1-browser-20260612/`.
+- Runtime services: API `127.0.0.1:8080/api/health` returns database `ok`; web `127.0.0.1:5173` returns HTTP 200.
+- Terminal Team snapshot: 16 total; 16 completed, 0 in progress, 0 pending, 0 failed. All five tmux workers remain dead after quota exhaustion; leader completed closeout via the durable Team ledger.
+- Stage 1 is engineering-complete but not user-accepted. Do not start Stage 2 until explicit user acceptance is recorded.
 
 ## Integrated verification checkpoint — 2026-06-12 18:26 CST
 

@@ -1,6 +1,6 @@
 # xLab Blog Progress
 
-Last updated: 2026-06-12 18:26 CST
+Last updated: 2026-06-12 23:42 CST
 
 This is the durable resume point. Keep it concise and update it after every key milestone.
 
@@ -9,13 +9,13 @@ This is the durable resume point. Keep it concise and update it after every key 
 - Branch: `main`; local commits are ahead of `origin/main`.
 - Initial Packets A–J are complete and natively verified.
 - Active plan: `docs/plans/SECOND_DEVELOPMENT.md`.
-- Current breakpoint: integrated native/browser acceptance and security retests are complete with `PASS`; independent architecture and code review task `10` is active against product SHA `d6c7d09` and evidence commit `ee6a5c2`.
-- Current integrated product commit: `d6c7d092ae41b2e37bbf1c89ea30cff4ec551ef6`.
-- Completed Stage 1 packets: control checkpoint, backend Red contract, frontend Red contract, precise auth/create API errors, acceptance/security preparation, truthful identity/minimal navigation, and Directory creation result repair.
-- Remaining Stage 1 work: obtain independent Architect CLEAR and Code Review APPROVE, complete coordinator closeout, then wait for explicit user acceptance.
-- Runtime services: API `:8080` and web `:5173` are healthy as of 10:21 CST.
-- Recovery Team task snapshot: 16 total; 14 completed, 1 in progress (`10`), 1 pending (`11`), 0 failed.
-- Worker adaptation: all five tmux workers remain dead after quota exhaustion. Native independent Architect and code-reviewer agents now own the final read-only review lanes; the durable Team ledger remains the source of truth.
+- Current breakpoint: Stage 1 engineering closeout is complete at product SHA `f0877d0` with Architect `CLEAR` and Code Review `APPROVE`; Stage 1 is ready for explicit user acceptance and Stage 2 must not start until that acceptance is given.
+- Current integrated product commit: `f0877d09608a8b58a38f51f5a62cd02ec8cdcd81`.
+- Completed Stage 1 packets: control checkpoint, backend Red contract, frontend Red contract, precise auth/create API errors, acceptance/security preparation, truthful identity/minimal navigation, Directory creation result repair, security repairs, closeout identity repair, integrated acceptance/security, and independent review.
+- Remaining Stage 1 work: explicit user acceptance only.
+- Runtime services: API `:8080` and web `:5173` are healthy as of 23:42 CST.
+- Recovery Team terminal task snapshot: 16 total; 16 completed, 0 in progress, 0 pending, 0 failed; all five tmux workers remain dead and the leader completed closeout via the durable ledger.
+- Worker adaptation: all five tmux workers remain dead after quota exhaustion. Native independent Architect/code-reviewer agents completed review; the durable Team ledger remains the source of truth.
 - Cleanup checkpoint: `453515d`.
 - Approved Ralplan consensus: Architect `APPROVE/CLEAR`; Critic `APPROVE` at 99%.
 - Stage 1 Team will use five fixed seats: coordinator, backend, frontend, acceptance, and security.
@@ -63,7 +63,7 @@ curl -fsS http://127.0.0.1:8080/api/health
 curl -fsS http://127.0.0.1:5173/ >/dev/null
 ```
 
-The acceptance services were offline at the latest coordinator check. Their persistent state remains outside Git; restart them before integrated browser verification.
+The native stack is currently running from this session for user acceptance. If it is offline later, restart it with `~/.local/share/xlab-blog/start-local.sh`.
 
 ## Cleanup checkpoint — complete
 
@@ -76,13 +76,14 @@ The acceptance services were offline at the latest coordinator check. Their pers
 
 ## Immediate next steps
 
-1. Complete independent review task `10` with Architect CLEAR and Code Review APPROVE.
-2. Complete coordinator closeout task `11`, preserving exact SHAs, evidence, rollback, and user-acceptance handoff.
-3. Keep the native stack available for user acceptance at `http://127.0.0.1:5173`.
-4. Do not start Stage 2 until the user explicitly accepts Stage 1.
-5. Preserve the current local database until the Stage 2 pre-stage backup/fixture cleanup step.
+1. Ask the user to perform Stage 1 acceptance at `http://127.0.0.1:5173` using the handoff checklist in the assistant response.
+2. Do not start Stage 2 until the user explicitly accepts Stage 1.
+3. Preserve the current local database until the Stage 2 pre-stage backup/fixture cleanup step.
+4. If services stop, recover with `~/.local/share/xlab-blog/start-local.sh`.
 
 ## Recent milestones
+
+- **2026-06-12 23:42 CST** — Stage 1 independent review and coordinator closeout completed; terminal Team snapshot 16/16 completed. Initial Architect/Code Review found identity closeout blockers; `f0877d0` repaired role-aware Author login, Reader logout staying on public pages, Author logout from Admin to `/`, and status-specific auth UI errors. Full backend gates, 19/19 frontend tests, lint, build, 12-step native identity/API smoke, and desktop/mobile browser identity closeout passed. Evidence commit `a76dd89` records `docs/verification/stage-1-code-review.md`, closeout browser evidence, and screenshots. Architect `CLEAR`; Code Review `APPROVE`. Stage 1 now waits only for explicit user acceptance.
 
 - **2026-06-12 18:26 CST** — integrated acceptance/security retests completed with `PASS` against product SHA `d6c7d09`; evidence commit `ee6a5c2` records the 21-step PostgreSQL/API smoke, full backend/frontend gates, desktop/mobile role and creation scenarios, security blocker retests, explicit-ID cleanup, and redacted artifacts. Team tasks are 14/16 complete; independent architecture/code review is active.
 - **2026-06-12 17:54 CST** — security fixes integrated: `673650e` hardens Login return targets (17/17 frontend tests, lint, build PASS); `d6c7d09` makes configured Author credentials authoritative and sanitizes unexpected auth errors (full Go tests/vet/gofmt and PostgreSQL rollback regression PASS). Independent security and acceptance retests started.
