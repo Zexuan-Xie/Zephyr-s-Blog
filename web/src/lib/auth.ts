@@ -12,12 +12,43 @@ export function clearToken(): void {
   localStorage.removeItem(tokenKey);
 }
 
+const applicationOrigin = 'http://xlab.local';
+const asciiControlOrBackslash = /[\u0000-\u001f\u007f\\]/;
+
+function decodePercentEscapes(value: string): string {
+  return value.replace(/%([0-9a-f]{2})/gi, (_, hex: string) =>
+    String.fromCharCode(Number.parseInt(hex, 16)));
+}
+
 export function sanitizeReturnTo(candidate: string | null, defaultPath = '/recent'): string {
   if (!candidate?.startsWith('/') || candidate.startsWith('//')) {
     return defaultPath;
   }
 
-  const path = candidate.split(/[?#]/, 1)[0].replace(/\/+$/, '') || '/';
+  let inspected = candidate;
+  while (true) {
+    if (asciiControlOrBackslash.test(inspected) || inspected.startsWith('//')) {
+      return defaultPath;
+    }
+
+    const decoded = decodePercentEscapes(inspected);
+    if (decoded === inspected) {
+      break;
+    }
+    inspected = decoded;
+  }
+
+  let target: URL;
+  try {
+    target = new URL(inspected, applicationOrigin);
+  } catch {
+    return defaultPath;
+  }
+  if (target.origin !== applicationOrigin) {
+    return defaultPath;
+  }
+
+  const path = target.pathname.replace(/\/+$/, '') || '/';
   if (path === '/login' || path === '/register') {
     return defaultPath;
   }

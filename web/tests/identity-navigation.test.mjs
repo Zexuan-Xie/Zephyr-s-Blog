@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import ts from 'typescript';
 
 function source(path) {
   return readFileSync(new URL(path, import.meta.url), 'utf8');
@@ -12,6 +13,16 @@ const authPageSource = source('../src/pages/AuthPages.tsx');
 const searchPageSource = source('../src/pages/SearchPage.tsx');
 const apiSource = source('../src/lib/api.ts');
 const authSource = source('../src/lib/auth.ts');
+const authModule = await import(
+  `data:text/javascript;base64,${Buffer.from(
+    ts.transpileModule(authSource, {
+      compilerOptions: {
+        module: ts.ModuleKind.ESNext,
+        target: ts.ScriptTarget.ES2022,
+      },
+    }).outputText,
+  ).toString('base64')}`
+);
 
 test('App owns the single current-user state and distinguishes invalid credentials from outages', () => {
   assert.match(appSource, /fetchCurrentUser/);
@@ -62,4 +73,35 @@ test('login and logout use safe, loop-free destinations', () => {
   assert.match(authPageSource, /getReturnTo\(['"]\/recent['"]\)/);
   assert.match(navSource, /clearToken\(\)/);
   assert.match(navSource, /navigate\(['"]\/recent['"]/);
+});
+
+test('return targets preserve safe application paths, queries, and hashes', () => {
+  const { sanitizeReturnTo } = authModule;
+
+  assert.equal(sanitizeReturnTo('/research/notes'), '/research/notes');
+  assert.equal(sanitizeReturnTo('/search?q=content%20tree#results'), '/search?q=content%20tree#results');
+  assert.equal(sanitizeReturnTo('/文件?语言=中文#评论'), '/文件?语言=中文#评论');
+});
+
+test('return targets reject external, auth-loop, backslash, and control-character variants', () => {
+  const { sanitizeReturnTo } = authModule;
+  const unsafeTargets = [
+    'https://attacker.example/steal',
+    '//attacker.example/steal',
+    '/\\attacker.example/steal',
+    '/%5c%5cattacker.example/steal',
+    '/%255c%255cattacker.example/steal',
+    '/login',
+    '/login?return_to=/recent',
+    '/register/#again',
+    '/%6cogin',
+    '/safe\npath',
+    '/safe%0dpath',
+    '/safe%2509path',
+    '/safe\u007fpath',
+  ];
+
+  for (const target of unsafeTargets) {
+    assert.equal(sanitizeReturnTo(target), '/recent', target);
+  }
 });
