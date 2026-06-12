@@ -48,7 +48,9 @@ func (r *fakeUserRepo) FindByID(_ context.Context, id uuid.UUID) (users.User, er
 
 func (r *fakeUserRepo) UpsertAdmin(_ context.Context, email, passwordHash string) (users.User, error) {
 	if user, ok := r.byEmail[email]; ok {
+		user.PasswordHash = passwordHash
 		user.Role = users.RoleAdmin
+		user.Provider = "local"
 		r.byEmail[email] = user
 		r.byID[user.ID] = user
 		return user, nil
@@ -108,6 +110,10 @@ func TestSeedAdminCreatesOrUpgradesAdmin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Register() error = %v", err)
 	}
+	reader := repo.byEmail["admin@example.com"]
+	reader.Provider = "github"
+	repo.byEmail[reader.Email] = reader
+	repo.byID[reader.ID] = reader
 	if err := service.SeedAdmin(context.Background(), "admin@example.com", "admin-password"); err != nil {
 		t.Fatalf("SeedAdmin() error = %v", err)
 	}
@@ -117,5 +123,20 @@ func TestSeedAdminCreatesOrUpgradesAdmin(t *testing.T) {
 	}
 	if user.Role != users.RoleAdmin {
 		t.Fatalf("role = %q, want admin", user.Role)
+	}
+	if user.Provider != "local" {
+		t.Fatalf("provider = %q, want local", user.Provider)
+	}
+	if !VerifyPassword("admin-password", user.PasswordHash) {
+		t.Fatal("configured admin password does not authenticate")
+	}
+	if VerifyPassword("reader-password", user.PasswordHash) {
+		t.Fatal("prior reader password still authenticates")
+	}
+	if _, err := service.Login(context.Background(), "admin@example.com", "admin-password"); err != nil {
+		t.Fatalf("configured admin password Login() error = %v", err)
+	}
+	if _, err := service.Login(context.Background(), "admin@example.com", "reader-password"); !errors.Is(err, users.ErrInvalidCredential) {
+		t.Fatalf("prior reader password Login() error = %v, want ErrInvalidCredential", err)
 	}
 }

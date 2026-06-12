@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 
 	"xlab-blog/api/internal/auth"
 	"xlab-blog/api/internal/http/middleware"
@@ -38,12 +39,20 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 	result, err := h.service.Register(r.Context(), request.Email, request.Password, request.DisplayName)
 	if err != nil {
-		if errors.Is(err, users.ErrEmailExists) {
+		switch {
+		case errors.Is(err, users.ErrEmailExists):
 			respond.Error(w, http.StatusConflict, "email already exists")
 			return
+		case strings.HasPrefix(err.Error(), "invalid email:"):
+			respond.Error(w, http.StatusBadRequest, "invalid email")
+			return
+		case err.Error() == "password must be at least 8 characters":
+			respond.Error(w, http.StatusBadRequest, err.Error())
+			return
+		default:
+			respond.Error(w, http.StatusInternalServerError, "internal server error")
+			return
 		}
-		respond.Error(w, http.StatusBadRequest, err.Error())
-		return
 	}
 	respond.JSON(w, http.StatusCreated, result)
 }
@@ -60,7 +69,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 			respond.Error(w, http.StatusUnauthorized, "invalid credentials")
 			return
 		}
-		respond.Error(w, http.StatusBadRequest, err.Error())
+		respond.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 	respond.JSON(w, http.StatusOK, result)

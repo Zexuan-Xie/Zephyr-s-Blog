@@ -41,7 +41,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid JSON, email, or password
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                invalidJSON:
+                  value: { error: invalid JSON body }
+                invalidEmail:
+                  value: { error: invalid email }
+                invalidPassword:
+                  value: { error: password must be at least 8 characters }
         '409': { $ref: '#/components/responses/Conflict' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
   /auth/login:
     post:
       tags: [Auth]
@@ -60,7 +73,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid JSON body
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: invalid JSON body }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalServerError' }
   /auth/me:
     get:
       tags: [Auth]
@@ -871,3 +891,9 @@ components:
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
+    InternalServerError:
+      description: Unexpected server error with no internal implementation details
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: internal server error }
