@@ -49,6 +49,12 @@ export function App() {
     setIdentityToken(getToken());
   }
 
+  function clearIdentity() {
+    clearToken();
+    queryClient.removeQueries({ queryKey: ['auth', 'current-user'] });
+    setIdentityToken(null);
+  }
+
   return (
     <div className="app-shell">
       <GlassNav
