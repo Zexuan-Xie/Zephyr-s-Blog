@@ -1,158 +1,203 @@
 # Stage 1 Acceptance
 
-Status: pending
+Status: complete
 
-Verdict: pending
+Verdict: **PASS**
 
 Stage: Reliability, navigation, and identity
 
-Owner: Worker 4, independent acceptance seat
+Integrated product SHA: `d6c7d092ae41b2e37bbf1c89ea30cff4ec551ef6`
 
-Prepared against: `f7772381459fefe4435455cdef31f5b03bdf09e9`
+Evidence directory: `docs/verification/stage-1-browser-20260612/`
 
-Integrated SHA under test: pending leader handoff
+## Decision
 
-This matrix prepares independent acceptance only. A PASS may be recorded only after the leader supplies the integrated Stage 1 SHA, this worktree is clean and reset to that SHA, and all static, API, database, desktop, mobile, console, and network checks below have fresh evidence.
+The native Stage 1 candidate passes required backend/frontend gates, PostgreSQL/API
+smoke, desktop/mobile browser acceptance, role boundaries, navigation requirements,
+Directory creation/error handling, safe return targets, public regressions, and test
+data cleanup.
 
-## Preconditions
+This is engineering acceptance only. Stage 1 is not user-accepted until the user
+completes real use and explicitly accepts it.
 
-1. Receive the leader-recorded Stage 1 integration SHA and confirm every required backend/frontend source commit has an integration SHA in the team log.
-2. Preserve this evidence file, then reset a clean detached worktree to the integration SHA:
+## Environment
 
-   ```bash
-   git status --short
-   git checkout --detach "$STAGE_INTEGRATION_SHA"
-   test "$(git rev-parse HEAD)" = "$STAGE_INTEGRATION_SHA"
-   ```
-
-3. Start the native PostgreSQL, API, and Vite services; do not use Docker before native user acceptance:
-
-   ```bash
-   ~/.local/share/xlab-blog/start-local.sh
-   curl -fsS http://127.0.0.1:8080/api/health
-   curl -fsS http://127.0.0.1:5173/ >/dev/null
-   ```
-
-4. Use dedicated disposable acceptance records with recorded IDs. Do not delete or mutate unrelated baseline content.
-5. Record exact Node.js, npm, Go, PostgreSQL, and `playwright-cli` versions.
-
-## Scenarios
-
-| ID | Actor / viewport | Scenario | Required observations |
-|---|---|---|---|
-| S1-01 | Anonymous Visitor, desktop and mobile | Open the public site with no stored token while current-user resolution is pending. | The identity control reserves its final space with a quiet skeleton; Login does not flash before resolution. |
-| S1-02 | Anonymous Visitor, desktop and mobile | Resolve current user with no token, then inspect the global bar. | Recent, Directory button, exactly one search input, and exactly one identity entry are present. A separate Search link and permanent Admin link are absent. |
-| S1-03 | Invalid-token session, desktop | Seed an invalid/expired token and load a public route. | The invalid token is cleared and the truthful final identity is Anonymous Visitor; the page does not loop or expose Author controls. |
-| S1-04 | Network-failure session, desktop and mobile | Route or disable the current-user request while a stored session exists. | A retryable network error is shown; the state is not silently downgraded to Anonymous Visitor and Login is not presented as an authentication decision. |
-| S1-05 | Reader, desktop and mobile | Log in with no return target and open the identity menu. | Login lands on `/recent`; the menu identifies the Reader and exposes Logout; Logout reaches the documented public destination without a redirect loop. |
-| S1-06 | Reader, desktop and mobile | Navigate directly to `/admin`. | The Reader remains logged in, sees `Author access required`, and can use `Return to Recent`; no Author data or controls render. |
-| S1-07 | Anonymous Visitor, desktop and mobile | Navigate directly to `/admin`. | The browser reaches Login with a relative, encoded return target for `/admin`; successful Author login returns once to `/admin` without a loop. |
-| S1-08 | Anonymous Visitor, desktop | Attempt unsafe or looping return targets during Login. | External, scheme-relative, login/register, and recursive targets are rejected or replaced by the safe default; no open redirect or loop occurs. |
-| S1-09 | Author, desktop and mobile | Resolve current user, use the single identity entry, and open the Author destination. | The identity entry opens `/admin`; the Admin workspace renders without a permanent Admin link in the public navigation. |
-| S1-10 | Anonymous Visitor, desktop and mobile | Search from the global bar, including results, no-results, and API-error cases. | `/search` contains query/results/empty/error content only, has no second search input, and preserves actionable error text. |
-| S1-11 | Author, desktop | Create a valid Directory from the existing Stage 1 Admin flow. | One success notice appears, the final returned URL Path is shown, the tree refreshes, and the returned node is selected/opened. No generic failure appears after success. Persisted server state matches the visible node and URL Path. |
-| S1-12 | Author, desktop and mobile | Exercise validation, reserved root URL Path, conflict, expired-session, missing-parent, and offline create failures. | Each failure is truthful and actionable near the relevant action/field; raw generic or success-then-failure messaging is absent. The offline case offers retry and does not create a node. |
-| S1-13 | Anonymous Visitor / Reader / Author, desktop and mobile | Regress public root/Directory/File navigation, Recent, published search, redirects, Assets, comments, and Likes using the preserved baseline fixture. | Existing public behavior remains intact; Draft data stays absent from public routes/search; Reader interactions still work; no unrelated Glass Ricepaper redesign is introduced. |
-| S1-14 | Desktop `1440x900` and mobile `390x844` | Complete the applicable scenarios with trace, screenshot, console, and request capture. | Expected responsive state is visible; there are no unexpected console errors or failed network responses; evidence paths and the tested integration SHA are recorded; sessions close cleanly. |
-
-## Static and API gates
-
-Run from the clean integrated SHA:
-
-```bash
-conda run -n blogenv bash -lc \
-  'cd api && CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go test -count=1 ./... && CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go vet ./... && test -z "$(gofmt -l .)"'
-
-conda run -n blogenv bash -lc \
-  'cd web && node --test tests/*.test.mjs && npm run lint && npm run build'
+```text
+Node.js 22.22.3
+npm 10.9.8
+Go 1.26.4
+PostgreSQL 17.10
+playwright-cli 0.1.11
 ```
 
-The frontend build is the TypeScript gate because `npm run build` executes `tsc --noEmit` before Vite.
+The native API and Vite service were restored in persistent tmux session
+`xlab-stack`.
 
-Targeted Stage 1 evidence must identify tests for:
+Evidence:
 
-- precise validation/conflict/auth API errors while preserving `RequireAdmin`;
-- current-user loading, invalid-token, and network-error state classification;
-- role-aware navigation and safe Login return targets;
-- exactly one global search input and no duplicate Search/Admin navigation;
-- successful create using the returned node without entering a generic failure branch;
-- actionable create failure classification.
+- `stage-1-browser-20260612/environment-final.log`
+- `stage-1-browser-20260612/service-recovery-final.log`
 
-## Browser commands
+## Required static gates
 
-Use the existing external `playwright-cli`; do not add a repository Playwright dependency.
+Backend:
 
-Desktop evidence:
-
-```bash
-playwright-cli -s=stage-1-desktop open http://127.0.0.1:5173
-playwright-cli -s=stage-1-desktop resize 1440 900
-playwright-cli -s=stage-1-desktop tracing-start
-# Execute S1-01 through S1-13 as applicable with snapshot/fill/click/route/eval.
-playwright-cli -s=stage-1-desktop console error
-playwright-cli -s=stage-1-desktop requests
-playwright-cli -s=stage-1-desktop screenshot
-playwright-cli -s=stage-1-desktop tracing-stop
-playwright-cli -s=stage-1-desktop close
+```text
+CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go test -count=1 ./...  PASS
+CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go vet ./...            PASS
+test -z "$(gofmt -l .)"                                                PASS
 ```
 
-Mobile evidence:
+Frontend:
 
-```bash
-playwright-cli -s=stage-1-mobile open http://127.0.0.1:5173
-playwright-cli -s=stage-1-mobile resize 390 844
-playwright-cli -s=stage-1-mobile tracing-start
-# Repeat role/navigation/search/create/public-regression checks that have mobile UI.
-playwright-cli -s=stage-1-mobile console error
-playwright-cli -s=stage-1-mobile requests
-playwright-cli -s=stage-1-mobile screenshot
-playwright-cli -s=stage-1-mobile tracing-stop
-playwright-cli -s=stage-1-mobile close
+```text
+node --test tests/*.test.mjs  PASS (17 assertions across 3 files)
+npm run lint                  PASS
+npm run build                 PASS
 ```
 
-Use `route` or `network-state-set offline` for controlled network failures, then restore the route/network state before continuing. Inspect every expected non-2xx request separately so an intentional validation/auth response is not confused with an unexpected transport or server failure.
+Evidence:
 
-## Evidence record
+- `stage-1-backend-gates-20260612.log`
+- `stage-1-frontend-gates-20260612.log`
+- `stage-1-browser-20260612/backend-gates-final.log`
+- `stage-1-browser-20260612/frontend-gates-final.log`
 
-Complete this section during integrated acceptance:
+## Native PostgreSQL/API smoke
 
-- Integration SHA:
-- Worktree reset command/output:
-- Service health output:
-- Version output:
-- Backend tests/vet/gofmt:
-- Frontend tests/lint/typecheck/build:
-- Targeted Stage 1 tests:
-- Desktop trace:
-- Desktop screenshot(s):
-- Desktop console result:
-- Desktop request result:
-- Mobile trace:
-- Mobile screenshot(s):
-- Mobile console result:
-- Mobile request result:
-- Created acceptance record IDs and cleanup result:
-- Tested:
-- Not tested:
-- Findings:
+Result:
 
-## Pass criteria
+```text
+SMOKE_OK checks=21
+```
 
-Verdict may change to `PASS` only when:
+Covered:
 
-1. S1-01 through S1-14 pass against the recorded integrated SHA.
-2. Expected visible state agrees with persisted API/database state.
-3. Backend tests, vet, and formatting pass.
-4. Frontend tests, lint, TypeScript check, and production build pass.
-5. No unexpected browser console error or failed network response remains.
-6. Desktop and mobile screenshot/trace paths are durable and recorded.
-7. Public reading, search, comments, Likes, Assets, redirects, and Draft isolation have no regression.
-8. Acceptance data cleanup uses only recorded explicit IDs and preserves unrelated fixtures.
+1. health/database readiness;
+2. Author login;
+3. Reader registration;
+4. Reader 403 on Author creation;
+5. Directory creation and returned URL Path;
+6. persisted Directory detail;
+7. duplicate URL Path conflict;
+8. reserved root URL Path;
+9. child File creation;
+10. content save;
+11. publish;
+12. Anonymous Visitor resolution;
+13. full-text fallback search;
+14. Reader comment;
+15. File Like;
+16. idempotent repeated Like;
+17. Asset upload;
+18. immutable Published Asset read;
+19. public comment thread;
+20. unpublish isolation;
+21. search exclusion after unpublish.
 
-If a product behavior fails, complete the gate with `Verdict: FAIL`, record exact reproduction and evidence, and request a new development fix plus acceptance-retest task. Do not implement the product fix in this acceptance worktree.
+All disposable IDs were recorded and removed.
 
-## Preparation result
+Evidence:
 
-Tested: acceptance matrix structure, locked Stage 1 requirements, exact desktop/mobile dimensions, static gate commands, and browser evidence contract.
+- `stage-1-native-api-smoke-20260612.log`
 
-Not tested: Stage 1 product behavior, integrated runtime, persistent state, screenshots/traces, console/network results, and final verdict; these require the leader-supplied integrated SHA.
+## Browser acceptance
+
+### Anonymous Visitor
+
+- Public root renders on desktop `1440x900` and mobile `390x844`.
+- The global navigation has one search input, Recent, Directory, and one identity entry.
+- There is no duplicate Search link or permanent Admin link.
+- `/admin` reaches `/login?return_to=%2Fadmin`.
+- Invalid-token evidence clears the token.
+- Network-failure evidence preserves the session and offers Retry.
+
+Evidence:
+
+- `final-anonymous-desktop-home.png`
+- `final-anonymous-mobile-home.png`
+- `final-anonymous-admin-redirect.png`
+- `invalid-token-cleared.png`
+- `identity-network-failure.png`
+
+### Reader
+
+- Reader remains signed in when opening `/admin`.
+- `Author access required` and `Return to Recent` render.
+- No Author workspace or data renders.
+
+Evidence:
+
+- `reader-desktop-admin-denied.png`
+- `reader-mobile-admin-denied.png`
+- API smoke Reader 403 result.
+
+### Author
+
+- Public identity location displays `Author`.
+- `/admin` renders the existing Stage 1 Tree Manager.
+- Successful Directory creation shows the returned final URL Path, refreshes the tree,
+  and opens/selects the returned Directory.
+- Duplicate URL Path displays `This URL path is already in use`.
+- Reserved URL Path displays `This URL path is reserved`.
+- No success-then-generic-failure regression occurs.
+
+Evidence:
+
+- `final-author-admin-clean.png`
+- `final-author-create-success.png`
+- `final-author-create-conflict.png`
+- `final-author-create-reserved.png`
+
+### Search and public regressions
+
+- Search is driven by the single global input.
+- `/search` renders results without a second input.
+- Published File reading, Recent, search fallback, Assets, comments, and Likes passed
+  the 21-step API smoke.
+- Draft/unpublished File resolution and search exclusion passed.
+- No Glass Ricepaper redesign was introduced.
+
+Evidence:
+
+- `anonymous-desktop-search.png`
+- `stage-1-native-api-smoke-20260612.log`
+
+### Safe return targets
+
+- Absolute external and backslash-form targets default to `/recent`.
+- Final Chromium backslash test produced no browser error.
+
+Evidence:
+
+- `backslash-return-fixed.png`
+- frontend return-target regression tests.
+
+## Cleanup and recovery
+
+Before removing older acceptance fixtures, the local database was backed up to:
+
+```text
+~/.local/share/xlab-blog/backups/pre-stage1-acceptance-cleanup-20260612T180837.dump
+```
+
+Cleanup used only explicitly recorded IDs. Verification after cleanup:
+
+```text
+remaining acceptance nodes = 0
+remaining acceptance Reader = 0
+final UI-created Directory remaining = 0
+```
+
+The persistent local stack remains available at:
+
+```text
+http://127.0.0.1:5173
+```
+
+## Remaining boundary
+
+- Real DashScope embedding generation was not tested because no API key is configured.
+  Full-text search fallback and missing-provider behavior remain the supported local path.
+- Docker Compose/server deployment remains deferred until after user acceptance and
+  production secret/upload hardening.
