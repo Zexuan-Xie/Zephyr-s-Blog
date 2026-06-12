@@ -1,6 +1,6 @@
 # xLab Blog Progress
 
-Last updated: 2026-06-12 10:38 CST
+Last updated: 2026-06-12 17:45 CST
 
 This is the durable resume point. Keep it concise and update it after every key milestone.
 
@@ -9,13 +9,13 @@ This is the durable resume point. Keep it concise and update it after every key 
 - Branch: `main`; local commits are ahead of `origin/main`.
 - Initial Packets A–J are complete and natively verified.
 - Active plan: `docs/plans/SECOND_DEVELOPMENT.md`.
-- Current breakpoint: recovery Team `execute-approved-xlab-31e581d5` remains live. Integrated acceptance found a duplicate-URL-Path error-classification bug; the minimal regression-tested fix is integrated and acceptance retest/security verification are running against the new SHA.
-- Current integrated commit: `58df9f64fcdfbcab599133fbc4702ee3511c94f2`.
+- Current breakpoint: Stage 1 security verification completed with `FAIL` at `1877c25`. Three blocking fixes are active: authoritative configured Author credentials, sanitized unexpected authentication errors, and rejection of backslash/control-character Login return targets.
+- Current integrated commit: `1877c254e310c85cc42aa68cecd4acfcf8e27460` (security evidence only; latest product SHA remains `58df9f64fcdfbcab599133fbc4702ee3511c94f2`).
 - Completed Stage 1 packets: control checkpoint, backend Red contract, frontend Red contract, precise auth/create API errors, acceptance/security preparation, truthful identity/minimal navigation, and Directory creation result repair.
-- Remaining Stage 1 work: integrated native/browser acceptance, integrated security review, independent architecture/code review, and coordinator closeout.
+- Remaining Stage 1 work: integrate security fixes, rerun native/browser acceptance and security, independent architecture/code review, and coordinator closeout.
 - Runtime services: API `:8080` and web `:5173` are healthy as of 10:21 CST.
-- Recovery Team task snapshot: 13 total after adding fix/retest packets; 8 completed, 3 in progress (`8`, `9`, `13`), 2 pending (`10`, `11`), 0 failed.
-- Worker adaptation: tmux workers 4 and 5 reached model usage limits after claiming tasks `8`/`9`. Independent native agents Einstein (acceptance) and Darwin (security) are executing the same product-code-frozen contracts with disjoint verification-document ownership. Coordinator worker 1 did not process two mailbox dispatches plus one safe wake-up, so the leader temporarily updated this required milestone record.
+- Recovery Team task snapshot: 16 total after security fix/retest packets; 8 completed, 3 in progress (`9`, `14`, `15`), 5 pending (`8`, `10`, `11`, `13`, `16`), 0 failed.
+- Worker adaptation: all five tmux workers are now dead after quota exhaustion. The durable Team ledger remains the source of truth; native agents Dewey and Planck own disjoint backend/frontend security fix packets. The leader continues required progress updates.
 - Cleanup checkpoint: `453515d`.
 - Approved Ralplan consensus: Architect `APPROVE/CLEAR`; Critic `APPROVE` at 99%.
 - Stage 1 Team will use five fixed seats: coordinator, backend, frontend, acceptance, and security.
@@ -84,6 +84,7 @@ The acceptance services were offline at the latest coordinator check. Their pers
 
 ## Recent milestones
 
+- **2026-06-12 17:45 CST** — independent security report `1877c25` recorded `FAIL`: existing Reader elevation retained the old password, unexpected auth errors leaked internal messages, and backslash-form return targets broke post-login navigation. Backend task `14`, frontend task `15`, and security retest task `16` were added; native agents Dewey/Planck are active because all tmux workers are dead.
 - **2026-06-12 10:38 CST** — integrated browser acceptance exposed incorrect duplicate-URL-Path messaging because parent wording was matched before HTTP 409. Fix task `12` used Red→Green regression coverage and completed at `58df9f6`; full frontend tests 15/15, lint, and build pass. Retest task `13` is active.
 - **2026-06-12 10:24 CST** — task `7` completed at integrated SHA `8b34388`; leader verification passed 14/14 frontend tests, lint, build, and `git show --check`. Tasks `8`/`9` are in progress. Because their tmux owners reached usage limits, native independent acceptance/security agents were assigned the unchanged verification contracts. API and web services are healthy.
 - **2026-06-12 09:57 CST** — recovery DAG reconciled: tasks `6`–`11` now encode the remaining frontend, acceptance, security, independent review, and closeout dependency chain. Backend bootstrap task `2` completed; four roots remain active. Services remain offline and no final gate is claimed.

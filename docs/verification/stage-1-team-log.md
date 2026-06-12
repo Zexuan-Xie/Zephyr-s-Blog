@@ -5,8 +5,17 @@ Status: active
 Team: `execute-approved-xlab-31e581d5`
 Coordinator: `worker-1`
 Baseline SHA: `29c37a24a8a7665daacad26ff5776da554810705`
-Current integrated SHA: `58df9f64fcdfbcab599133fbc4702ee3511c94f2`
+Current product SHA: `58df9f64fcdfbcab599133fbc4702ee3511c94f2`
+Current evidence HEAD: `1877c254e310c85cc42aa68cecd4acfcf8e27460`
 Rollback checkpoint: `453515de8c76a43e24d841d56e4ee28ef3f40750`
+
+## Security failure checkpoint — 2026-06-12 17:45 CST
+
+- Independent security verification commit `1877c254e310c85cc42aa68cecd4acfcf8e27460` records `FAIL`.
+- Blocking findings: configured Author elevation preserved a prior Reader password; unexpected Register/Login service errors were returned verbatim; backslash-form return targets passed validation and broke post-login navigation.
+- Tasks `14` and `15` own the disjoint backend/frontend repairs. Task `16` owns the independent integrated security retest.
+- All five original tmux workers are dead after quota exhaustion. Native agents Dewey and Planck execute tasks `14`/`15`; the Team task ledger remains durable and the leader owns temporary coordination/progress updates.
+- Non-blocking release observations remain recorded in the security report: Compose placeholder defaults must block deployment claims, and multipart upload needs a hard request envelope before production hardening.
 
 ## Acceptance fix checkpoint — 2026-06-12 10:38 CST
 
