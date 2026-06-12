@@ -5,8 +5,18 @@ Status: active
 Team: `execute-approved-xlab-31e581d5`
 Coordinator: `worker-1`
 Baseline SHA: `29c37a24a8a7665daacad26ff5776da554810705`
-Current integrated SHA: `d636c3176d031b0d714ff8fdcd7920ea807b15fe`
+Current integrated SHA: `8b343880d58a1b3a562a80afc1f84cab666933c3`
 Rollback checkpoint: `453515de8c76a43e24d841d56e4ee28ef3f40750`
+
+## Leader adaptation checkpoint — 2026-06-12 10:24 CST
+
+- Task `6` (truthful identity/minimal navigation) is complete and integrated.
+- Task `7` (Directory creation result repair) is complete at `8b343880d58a1b3a562a80afc1f84cab666933c3`.
+- Leader verification at the integrated SHA: frontend tests 14/14 PASS, lint PASS, build PASS, and `git show --check` PASS.
+- Task snapshot: 11 total; 7 completed, 2 in progress (`8`, `9`), 2 pending (`10`, `11`), 0 failed.
+- API `127.0.0.1:8080/api/health` reports database healthy; web `127.0.0.1:5173` returns HTTP 200.
+- Tmux workers 4 and 5 reached model usage limits after claiming integrated acceptance/security. Independent native agents Einstein and Darwin now execute the unchanged tasks `8`/`9` contracts against the exact integrated SHA, with product code frozen and disjoint verification-document ownership.
+- Coordinator worker 1 did not process two durable mailbox dispatches plus one safe manual wake-up. The leader made this required milestone update as a temporary backup action; task `11` remains owned by worker 1 and blocked by task `10`.
 
 ## Recovery Team checkpoint — 2026-06-12 09:56 CST
 
