@@ -24,6 +24,10 @@ _Avoid_: Guest user, reader
 The Unix-like hierarchy that organizes the blog's public content. It contains directories and files and can grow through nested directories.
 _Avoid_: Category list, flat post list, article collection
 
+**Author Workspace**:
+The Author-facing creation and management surface for the Content Tree, Files, assets, publication controls, and node settings. The route may be protected by Admin privileges, but product UI should describe the workspace as the Author's workspace rather than an admin console.
+_Avoid_: Admin console, Tree Manager, backend panel, node manager
+
 **URL Path**:
 The readable address of a Directory or File within the Content Tree, such as `/research/notes`. The Author sees and edits a URL Path; `slug` is an internal implementation term and must not appear in product UI.
 _Avoid_: Slug, route key, node URL

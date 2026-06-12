@@ -1,6 +1,6 @@
 # xLab Blog Progress
 
-Last updated: 2026-06-12 23:42 CST
+Last updated: 2026-06-13 00:55 CST
 
 This is the durable resume point. Keep it concise and update it after every key milestone.
 
@@ -9,11 +9,11 @@ This is the durable resume point. Keep it concise and update it after every key 
 - Branch: `main`; local commits are ahead of `origin/main`.
 - Initial Packets A–J are complete and natively verified.
 - Active plan: `docs/plans/SECOND_DEVELOPMENT.md`.
-- Current breakpoint: Stage 1 engineering closeout is complete at product SHA `b16755f` with Architect `CLEAR` and Code Review `APPROVE`; Stage 1 is ready for explicit user acceptance and Stage 2 must not start until that acceptance is given.
+- Current breakpoint: Stage 1 engineering closeout is complete at product SHA `b16755f` with Architect `CLEAR` and Code Review `APPROVE`; user acceptance exposed four Stage 2 UX/product blockers that must be corrected in Stage 2 before acceptance can pass.
 - Current integrated product commit: `b16755f56bb0d95a7e3d95b3431a84fc93984cf6`.
 - Completed Stage 1 packets: control checkpoint, backend Red contract, frontend Red contract, precise auth/create API errors, acceptance/security preparation, truthful identity/minimal navigation, Directory creation result repair, security repairs, closeout identity repair, integrated acceptance/security, and independent review.
-- Remaining Stage 1 work: explicit user acceptance only.
-- Runtime services: API `:8080` and web `:5173` are healthy as of 23:42 CST.
+- Remaining Stage 1 work: user acceptance is not yet passed; Stage 2 must address the recorded Author Admin UX blockers before the next acceptance pass.
+- Runtime services: API `:8080` and web `:5173` were healthy at the Stage 1 handoff; recheck before any next verification.
 - Recovery Team terminal task snapshot: 16 total; 16 completed, 0 in progress, 0 pending, 0 failed; all five tmux workers remain dead and the leader completed closeout via the durable ledger.
 - Worker adaptation: all five tmux workers remain dead after quota exhaustion. Native independent Architect/code-reviewer agents completed review; the durable Team ledger remains the source of truth.
 - Cleanup checkpoint: `453515d`.
@@ -76,12 +76,16 @@ The native stack is currently running from this session for user acceptance. If 
 
 ## Immediate next steps
 
-1. Ask the user to perform Stage 1 acceptance at `http://127.0.0.1:5173` using the handoff checklist in the assistant response.
-2. Do not start Stage 2 until the user explicitly accepts Stage 1.
+1. Resume `$grill-with-docs` Stage 2 replanning from `docs/plans/STAGE_2_REPLAN_BREAKPOINT.md`; next prompt is Q13 about Settings danger/advanced-operation layering. Ask one question at a time until at least 90% intent confidence.
+2. Do not start Stage 2 implementation yet; the Stage 2 plan is being revised from the Author acceptance feedback.
 3. Preserve the current local database until the Stage 2 pre-stage backup/fixture cleanup step.
 4. If services stop, recover with `~/.local/share/xlab-blog/start-local.sh`.
 
 ## Recent milestones
+
+- **2026-06-13 00:55 CST** — `$grill-with-docs` Stage 2 replanning interview paused by user request and recorded in `docs/plans/STAGE_2_REPLAN_BREAKPOINT.md`. Confirmed decisions Q1–Q12: replace current Admin page with a Chinese Author Workspace; desktop two-column/mobile single-column; Chinese scope focused on Author flows plus related public entry points; Author-only public Directory/File manage/edit actions; protected expand/collapse Content Tree without search; minimal create flow; same-parent drag sorting only; Directory overview workspace; File workspace shell with manual save; single primary publication action with secondary unpublish; creation toast plus automatic tree selection; explicit return buttons plus lightweight breadcrumbs. Next question is Q13 about Settings danger/advanced-operation layering.
+
+- **2026-06-13 00:42 CST** — User acceptance did not pass and produced four Stage 2 correction requirements: stale Content Tree/navigation after Directory/File creation, missing explicit in-app back/return controls, inability to select/edit/unpublish generated Files from Author workflows including public File browsing, and overly complex English Admin UI requiring a more graphical Chinese redesign with clearer prompts, typography, spacing, and layout. No feature code changed; waiting for further user instruction before Stage 2 implementation.
 
 - **2026-06-12 23:42 CST** — Stage 1 independent review and coordinator closeout completed; terminal Team snapshot 16/16 completed. Initial Architect/Code Review found identity closeout blockers; `b16755f` repaired role-aware Author login, Reader logout staying on public pages, Author logout from Admin to `/`, and status-specific auth UI errors. Full backend gates, 19/19 frontend tests, lint, build, 12-step native identity/API smoke, and rerun desktop/mobile browser identity closeout passed after restoring `clearIdentity`. Evidence artifacts introduced at `a76dd89`; closeout docs were refreshed after final `clearIdentity` restoration. Architect `CLEAR`; Code Review `APPROVE`. Stage 1 now waits only for explicit user acceptance.
 
