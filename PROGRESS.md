@@ -1,6 +1,6 @@
 # xLab Blog Progress
 
-Last updated: 2026-06-12 09:49 CST
+Last updated: 2026-06-12 09:56 CST
 
 This is the durable resume point. Keep it concise and update it after every key milestone.
 
@@ -9,11 +9,12 @@ This is the durable resume point. Keep it concise and update it after every key 
 - Branch: `main`; local commits are ahead of `origin/main`.
 - Initial Packets A–J are complete and natively verified.
 - Active plan: `docs/plans/SECOND_DEVELOPMENT.md`.
-- Current breakpoint: Stage 1 backend/API error work and the frontend Red contract are integrated. The original Team `execute-approved-xlab-d760bfbb` became non-resumable after all five worker processes exited; its state was archived under `.omx/recovery/`, and its clean detached worktrees/state were removed. A fresh five-seat Team must continue from the current `main` SHA without reviving old worker changes.
+- Current breakpoint: recovery Team `execute-approved-xlab-31e581d5` is live with all five functional seats and all five coarse recovery tasks claimed. Stage 1 backend/API error work and the frontend Red contract remain integrated. The regenerated task state does not reproduce the approved 11-node Stage 1 packet DAG: it contains only five dependency-free root tasks, so packet-level integration and final gate completion remain pending explicit leader reconciliation.
 - Current integrated commit: `d636c3176d031b0d714ff8fdcd7920ea807b15fe`.
 - Completed Stage 1 packets: control checkpoint, backend Red contract, frontend Red contract, precise auth/create API errors, acceptance preparation document, and security preparation document.
 - Remaining Stage 1 work: truthful identity/minimal navigation, Directory creation result repair, integrated native/browser acceptance, integrated security review, independent architecture/code review, and coordinator closeout.
 - Runtime services: API `:8080` and web `:5173` were not reachable at the 00:02 CST coordinator check; restart with `~/.local/share/xlab-blog/start-local.sh` before integrated browser verification.
+- Recovery Team task snapshot: 5 total, 5 in progress (`1`–`5`), 0 pending, 0 completed, 0 failed; five worker panes are live and reporting.
 - Cleanup checkpoint: `453515d`.
 - Approved Ralplan consensus: Architect `APPROVE/CLEAR`; Critic `APPROVE` at 99%.
 - Stage 1 Team will use five fixed seats: coordinator, backend, frontend, acceptance, and security.
@@ -74,7 +75,7 @@ The acceptance services were offline at the latest coordinator check. Their pers
 
 ## Immediate next steps
 
-1. Launch a fresh five-seat recovery Team from `d636c31`; do not reuse old detached worktrees.
+1. Reconcile the five coarse recovery tasks with the approved remaining Stage 1 packets before claiming packet-level closeout.
 2. Implement and integrate truthful identity/minimal navigation, then repair the Directory creation result.
 3. Restart native services and run full backend/frontend, PostgreSQL API smoke, desktop/mobile browser acceptance, and security gates.
 4. Obtain architect CLEAR, code-reviewer APPROVE, and user acceptance before coordinator closeout.
@@ -82,6 +83,7 @@ The acceptance services were offline at the latest coordinator check. Their pers
 
 ## Recent milestones
 
+- **2026-06-12 09:56 CST** — recovery Team `execute-approved-xlab-31e581d5` launched with five live/reporting workers and all five recovery tasks claimed. Coordinator detected that the regenerated tasks are coarse dependency-free seat tasks rather than the approved 11-node packet DAG and notified the leader; services remain offline and no final gate is claimed.
 - **2026-06-12 09:49 CST** — recovered from a non-resumable Team: old runtime state archived, all five clean detached worktrees removed, backend packets 2/6 verified complete, and the durable breakpoint moved to integrated SHA `d636c31`.
 - **2026-06-12 00:05 CST** — all five root packets were claimed; Team state is 5 in progress, 6 pending, 0 failed.
 - **2026-06-12 00:03 CST** — Stage 1 Team launched with five live workers. `dag_sidecar`, effective worker count 5, bootstrap mapping, and all 11 packet subjects/owners/file scopes/dependencies passed exact audit. Initial event cursor and integration ledger were recorded in `docs/verification/stage-1-team-log.md`.

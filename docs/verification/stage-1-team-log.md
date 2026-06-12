@@ -2,11 +2,25 @@
 
 Status: active
 
-Team: `execute-approved-xlab-d760bfbb`  
+Team: `execute-approved-xlab-31e581d5`  
 Coordinator: `worker-1`  
-Baseline SHA: `f7772381459fefe4435455cdef31f5b03bdf09e9`
+Baseline SHA: `29c37a24a8a7665daacad26ff5776da554810705`
 Current integrated SHA: `d636c3176d031b0d714ff8fdcd7920ea807b15fe`
 Rollback checkpoint: `453515de8c76a43e24d841d56e4ee28ef3f40750`
+
+## Recovery Team checkpoint — 2026-06-12 09:56 CST
+
+- Recovery Team `execute-approved-xlab-31e581d5` is live with five worker panes and no dead or non-reporting workers.
+- Bootstrap mapping is preserved by seat: task 1 coordinator/writer, task 2 backend/executor, task 3 frontend/designer, task 4 acceptance/test-engineer, and task 5 security/code-reviewer.
+- Task snapshot: 5 total; 5 in progress (`1`–`5`); 0 pending; 0 completed; 0 failed.
+- Boundary mismatch: the regenerated task state contains only five dependency-free, coarse seat tasks. It does not reproduce the approved 11-node Stage 1 packet graph or its dependencies. The coordinator notified the leader; packet-level integration and closeout remain pending reconciliation.
+- Services: API `127.0.0.1:8080` and web `127.0.0.1:5173` are still unreachable.
+- Last processed event cursor: `9561606b-8011-481a-bf07-34fc46b154cf`.
+- Exact next coordinator command:
+
+  ```bash
+  omx team api await-event --input '{"team_name":"execute-approved-xlab-31e581d5","after_event_id":"9561606b-8011-481a-bf07-34fc46b154cf","timeout_ms":30000,"wakeable_only":true}' --json
+  ```
 
 ## Recovery checkpoint — 2026-06-12 09:49 CST
 
@@ -79,6 +93,9 @@ Rollback checkpoint: `453515de8c76a43e24d841d56e4ee28ef3f40750`
 
 ## Tested
 
+- `omx team status execute-approved-xlab-31e581d5 --json` — PASS; five workers live/reporting, five tasks in progress, and no failed tasks.
+- Recovery task readback for tasks 1–5 — PASS; all five are claimed by their assigned functional seats.
+- API/web reachability probes — FAIL as expected at the recorded breakpoint; both native services are offline and must be restarted before integrated acceptance.
 - `omx team status execute-approved-xlab-d760bfbb --json` — PASS; five workers live, 11 tasks, no failed tasks.
 - `omx team api read-task` for tasks 1–11 — PASS; every concrete task was read back.
 - Exact packet comparison script — PASS; 11 nodes and all subjects, owners, scopes, and dependencies match.
@@ -86,6 +103,7 @@ Rollback checkpoint: `453515de8c76a43e24d841d56e4ee28ef3f40750`
 
 ## Not tested
 
-- Stage 1 product changes: not yet integrated.
+- Remaining Stage 1 product changes: not yet integrated.
 - API/web browser behavior: services currently offline; required after integration.
+- Recovery task-to-packet dependency fidelity: not established; leader reconciliation is required.
 - External DashScope embeddings and Docker Compose: outside the native Stage 1 gate.
