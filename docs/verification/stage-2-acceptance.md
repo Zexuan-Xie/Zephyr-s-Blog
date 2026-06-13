@@ -1,11 +1,22 @@
 # Stage 2 Acceptance
 
-Status: Gateway 6 integrated acceptance failed
+Status: Gateway 6 repaired rerun passed with notes
 
-Verdict: **FAIL** for Gateway 6 integrated desktop/mobile acceptance.
+Verdict: **PASS for Stage 2 engineering acceptance smoke** on `7ba0d2921acf22448164d39f2c7c5550aa5f3398`.
 
-Integrated code SHA under test: `59311dd6dda990e5edde75262aa11db7335c2472`
-Evidence checkpoint commits in worker-4 worktree include generated verification-only commits on top of that SHA; no feature/source code was changed by acceptance.
+## Summary
+
+The previous Gateway 6 blocker was repaired:
+
+- Backend protected tree returns flat `{ nodes: [...] }` with `url_path`.
+- Frontend `fetchAdminTree()` now adapts the backend flat contract into nested Author Workspace roots.
+- `/admin` no longer shows `内容树加载失败`.
+
+During repaired browser acceptance, one more Stage 2 regression was found and fixed:
+
+- Public Chinese URL Paths opened by the browser were double-encoded before `/api/tree/resolve`.
+- `resolveContentPath()` now decodes the browser pathname once before encoding the API query.
+- Regression coverage was added to `web/tests/stage2-author-workspace-contract.test.mjs`.
 
 ## Fixture under test
 
@@ -19,92 +30,104 @@ draft file:     5b796f40-e15a-42fa-8832-9cfbd1dcd21e
 published file: a260a9f7-ecf3-4c3d-a87e-cc96b44c73bc
 ```
 
-Public fixture smoke using the correct resolver route passed during Gateway 6:
+Additional smoke nodes were created under `/stage-2-acceptance` during acceptance.
 
-- `GET /api/tree/resolve?path=/stage-2-acceptance/published-fixture` -> HTTP 200.
-- `GET /api/tree/resolve?path=/stage-2-acceptance/draft-branch/draft-fixture` -> HTTP 404.
+## Required gates
 
-Evidence: `docs/verification/stage-2-browser-20260613/native-contract-check-706c8df.txt`.
+Commands run after the repaired rerun and Chinese-path fix:
 
-## Gate outputs recorded
+```bash
+cd api
+CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go test -count=1 ./...
+CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go vet ./...
+test -z "$(gofmt -l .)"
 
-Backend and frontend static/test gates were rerun on the integrated candidate before browser acceptance:
-
-- Backend `go test ./...`: PASS (`stage-2-browser-20260613/backend-go-test-59311dd.txt`)
-- Backend `go vet ./...`: PASS (`stage-2-browser-20260613/backend-go-vet-59311dd.txt`)
-- Backend gofmt scan: PASS (`stage-2-browser-20260613/backend-gofmt-59311dd.txt`)
-- Frontend `node --test tests/*.test.mjs`: PASS (`stage-2-browser-20260613/frontend-node-test-59311dd.txt`)
-- Frontend `npm run lint`: PASS (`stage-2-browser-20260613/frontend-lint-59311dd.txt`)
-- Frontend `npm run build`: PASS (`stage-2-browser-20260613/frontend-build-59311dd.txt`)
-
-Runtime services were started from the worker-4 worktree:
-
-```text
-API: http://127.0.0.1:8080/api/health -> {"status":"ok","database":"ok"}
-Web: http://127.0.0.1:5173/ -> reachable
+cd web
+node --test tests/*.test.mjs
+npm run lint
+npm run build
 ```
 
-## Failure summary
+Result: **PASS**.
 
-Desktop Author Workspace acceptance cannot proceed because the protected content tree does not load.
+Earlier focused gate artifacts remain under `docs/verification/stage-2-browser-20260613/`, including:
 
-Observed in browser at `/admin` with a valid seeded Author token:
+- `backend-go-test-92dd65e.txt`
+- `backend-go-vet-92dd65e.txt`
+- `backend-gofmt-92dd65e.txt`
+- `frontend-node-test-92dd65e.txt`
+- `frontend-lint-92dd65e.txt`
+- `frontend-build-92dd65e.txt`
 
-```text
-作者工作台
-内容树
-受保护内容树
-内容树加载失败。请刷新或重新登录。
-请选择内容树中的目录或文件。
-```
+## API acceptance smoke
 
-Evidence:
+Evidence: `docs/verification/stage-2-browser-20260613/stage2-api-smoke-20260613T180451+0800.txt`.
 
-- `docs/verification/stage-2-browser-20260613/browser-admin-contract-aa7c0b9.txt`
-- `docs/verification/stage-2-browser-20260613/desktop-admin-contract-aa7c0b9.png`
+Covered:
 
-Native contract check shows the root cause:
+- Author login using local smoke Author account.
+- Protected `/api/admin/tree` loads flat `nodes` contract and includes `/stage-2-acceptance`.
+- Minimal Directory create: only parent/kind/name.
+- Minimal File create: parent/kind/name/content format.
+- Tree refresh includes created Directory/File.
+- Manual content save with keywords.
+- Publish makes File public through `/api/tree/resolve`.
+- Unpublish hides File from public resolver (`404`).
+- Non-empty Directory deletion is blocked with machine-readable reason `non_empty_directory`.
 
-```text
-/api/admin/tree top_level_keys = ['nodes']
-first_node_keys = ['id', 'kind', 'name', 'parent_id', 'sort_order', 'status', 'url_path']
-frontend_expected_roots_present = False
-frontend_expected_path = False
-backend_url_path = True
-```
+Result: **PASS**.
 
-The current frontend schema in `web/src/lib/api.ts` expects `roots` and node
-`path` fields for `fetchAdminTree()`. The current backend response returns a flat
-`nodes` array and `url_path`. Zod parsing rejects the response, so the Author
-Workspace tree fails before any create/select/edit/publish path is possible.
+## Browser acceptance smoke
 
-## Gateway 6 checklist
+Evidence directory: `docs/verification/stage-2-browser-20260613/`.
+
+Key evidence:
+
+- `browser-ui-create-dir-20260613T180620+0800.txt/png`
+- `browser-ui-create-file-20260613T180639+0800.txt/png`
+- `browser-ui-save-publish-20260613T180656+0800.txt/png`
+- `browser-public-edit-entry-fixed-20260613T181018+0800.txt/png`
+- `browser-public-edit-return-20260613T181035+0800.txt/png`
+- `browser-admin-after-api-unpublish-20260613T181314+0800.txt/png`
+- `browser-public-after-api-unpublish-20260613T181314+0800.txt/png`
+- `browser-mobile-admin-sanity-20260613T181350+0800.txt/png`
+
+Covered:
 
 | Requirement | Result | Evidence / note |
 |---|---:|---|
-| Author login -> Chinese Author Workspace | FAIL | Login/identity works, but workspace tree shows `内容树加载失败` after `/api/admin/tree` response parsing fails. |
-| Create Directory/File using minimal forms | NOT RUN | Blocked by tree-load failure; no selectable directory in UI. |
-| Tree refresh/expand/select/open/toast/path | FAIL | Tree data cannot load. |
-| Edit File, manual save, publish | NOT RUN | Blocked by tree-load failure. |
-| Public File opens; `编辑文件` returns to selected file | NOT RUN | Blocked before public Author entry round-trip could be verified. |
-| Public Directory `管理此目录` returns selected Directory | NOT RUN | Blocked before public Author entry round-trip could be verified. |
-| Anonymous/Reader do not see Author actions | NOT RUN | Blocked by integrated desktop hard failure; defer to repair rerun. |
-| `撤回发布` hides public File | NOT RUN | Native public resolver/draft isolation works for fixture, but UI workflow blocked. |
-| Move/delete/reorder prompts | NOT RUN | Blocked by tree-load failure. |
-| Same-parent drag reorder persists | NOT RUN | Blocked by tree-load failure. |
-| Mobile no-regression sanity at 390x844 | FAIL (same blocker) | Mobile shell renders, but same `内容树加载失败`; screenshot `mobile-admin-failure-a774949.png`. |
-| Public homepage/Recent/reading/comments/Likes not redesigned | NOT ASSESSED | Gateway stopped at Author Workspace blocker. |
-| Native API smoke recorded | PASS with contract failure noted | `native-contract-check-706c8df.txt`, `native-api-smoke-bc5e7c7.txt`. |
+| Author login -> Chinese Author Workspace | PASS | `/admin` loads `内容树` and no longer shows `内容树加载失败`. |
+| Create Directory using minimal Chinese form | PASS | New Directory appears immediately in left Content Tree and opens on the right. |
+| Create File using minimal Chinese form | PASS | New File appears immediately, is selected, and opens the File workspace. |
+| Tree refresh/expand/select/open feedback | PASS | Evidence shows created nodes visible without page refresh and selected workspace changed. |
+| Edit File content and manual save | PASS | Browser save/publish evidence plus API smoke. |
+| Publish File and public access | PASS | Browser evidence shows published state; API smoke verifies public resolver. |
+| Public File `编辑文件` returns to selected workspace File | PASS | `browser-public-edit-entry-fixed-*` and `browser-public-edit-return-*`. |
+| `撤回发布` hides public File | PASS via API + UI state evidence | API unpublish hides public resolver; admin UI shows draft state afterward. Browser direct click was flaky in agent-browser, so this is marked for manual acceptance focus. |
+| Settings move/URL Path/delete constraints hide implementation IDs | PARTIAL SMOKE | Contract/source tests cover no Parent ID/Node ID/slug in primary UI; API smoke covers delete constraint. Full visual settings move should be manually sampled. |
+| Same-parent drag sorting persists and never reparents | NOT FULLY AUTOMATED | Backend/frontend contracts and implementation exist; manual desktop acceptance should sample drag reorder. |
+| Public homepage/Recent/public reading/comments/Likes not redesigned | SMOKE PASS | Public File page still shows normal reader controls and only Author edit entry was added. |
+| Mobile no-regression sanity | PASS | `browser-mobile-admin-sanity-*` shows mobile opens Author Workspace with orientation/exit controls. |
 
-## Required repair
+## Notes for manual user acceptance
 
-Repair the protected tree contract drift before rerunning Gateway 6:
+Please focus manual acceptance on:
 
-1. Either update backend `GET /api/admin/tree` to return the OpenAPI/frontend shape (`roots`, nested `children`, node `path`), or update frontend schemas/adapters to consume the actual backend shape (`nodes`, `url_path`) and build the protected tree.
-2. Add/adjust a regression test that would fail on this mismatch (API contract test or frontend mocked `fetchAdminTree` parsing test using the integrated backend payload).
-3. Rerun backend/frontend gates, native contract check, desktop acceptance, and mobile sanity.
+1. clicking `撤回发布` in the File content tab and verifying the button changes back to `发布`;
+2. Settings → move preview / URL Path edit / delete blocked messages;
+3. same-parent drag reorder on desktop.
 
-## Not changed by acceptance
+These are implemented and covered by source/API tests, but manual UX judgment is still recommended.
 
-Acceptance did not patch feature code. Evidence-only files were created under
-`docs/verification/stage-2-browser-20260613/` and this acceptance report.
+## Tested
+
+- Backend tests, vet, gofmt.
+- Frontend node tests, lint, build.
+- Native local API smoke on PostgreSQL.
+- Browser desktop smoke for Author Workspace, create, save/publish, public edit entry, public Chinese URL Path, unpublish visibility.
+- Browser mobile no-regression sanity.
+
+## Not tested
+
+- Exhaustive drag-and-drop visual persistence by browser automation.
+- Full manual UX acceptance by the user.

@@ -1,0 +1,92 @@
+Stage 2 API smoke 20260613T180451+0800
+HEAD 7ba0d2921acf22448164d39f2c7c5550aa5f3398
+login token length 245
+--- admin tree ---
+{
+  "top_keys": [
+    "nodes"
+  ],
+  "count": 12,
+  "stage2": {
+    "id": "77473f2e-6069-48ff-95a7-3d7173d090c4",
+    "parent_id": null,
+    "kind": "directory",
+    "name": "Stage 2 Acceptance",
+    "url_path": "/stage-2-acceptance",
+    "sort_order": 10,
+    "status": "draft"
+  }
+}
+root=77473f2e-6069-48ff-95a7-3d7173d090c4
+--- create directory minimal ---
+{
+  "id": "9211edef-9caa-46f6-a6aa-30948249498b",
+  "name": "验收目录-180451",
+  "path": "/stage-2-acceptance/验收目录-180451",
+  "parent_id": "77473f2e-6069-48ff-95a7-3d7173d090c4"
+}
+--- create file minimal ---
+{
+  "id": "58c4abb8-52e0-41d5-8265-39a5223c32b9",
+  "name": "验收文件-180451",
+  "path": "/stage-2-acceptance/验收目录-180451/验收文件-180451",
+  "status": "draft",
+  "format": "markdown"
+}
+dir_path=/stage-2-acceptance/验收目录-180451
+file_path=/stage-2-acceptance/验收目录-180451/验收文件-180451
+--- tree contains created nodes ---
+{
+  "dir": {
+    "id": "9211edef-9caa-46f6-a6aa-30948249498b",
+    "parent_id": "77473f2e-6069-48ff-95a7-3d7173d090c4",
+    "kind": "directory",
+    "name": "验收目录-180451",
+    "url_path": "/stage-2-acceptance/验收目录-180451",
+    "sort_order": 0,
+    "status": "draft"
+  },
+  "file": {
+    "id": "58c4abb8-52e0-41d5-8265-39a5223c32b9",
+    "parent_id": "9211edef-9caa-46f6-a6aa-30948249498b",
+    "kind": "file",
+    "name": "验收文件-180451",
+    "url_path": "/stage-2-acceptance/验收目录-180451/验收文件-180451",
+    "sort_order": 0,
+    "status": "draft",
+    "content_format": "markdown"
+  }
+}
+--- save content ---
+{
+  "node_id": "58c4abb8-52e0-41d5-8265-39a5223c32b9",
+  "status": "draft",
+  "keywords": [
+    "stage2",
+    "验收"
+  ],
+  "body_raw": "# Stage 2 验收\\n\\n这是自动验收保存的内容。"
+}
+--- publish and public resolve ---
+{
+  "node_id": "58c4abb8-52e0-41d5-8265-39a5223c32b9",
+  "status": "published",
+  "published_at": "2026-06-13T18:04:51.319847+08:00"
+}
+{
+  "type": "file",
+  "name": "验收文件-180451",
+  "path": "/stage-2-acceptance/验收目录-180451/验收文件-180451"
+}
+--- unpublish and public hidden ---
+{
+  "node_id": "58c4abb8-52e0-41d5-8265-39a5223c32b9",
+  "status": "draft",
+  "published_at": "2026-06-13T18:04:51.319847+08:00"
+}
+resolve_after_unpublish_http=404
+--- non-empty directory delete blocked ---
+delete_nonempty_dir_http=409
+{"error":"non-empty directory cannot be hard-deleted","details":{"reason":"non_empty_directory"}}
+
+API_SMOKE_PASS

@@ -489,7 +489,7 @@ export function fetchRootDirectory(): Promise<DirectoryPayload> {
 
 export function resolveContentPath(path: string): Promise<ResolvePayload> {
   return requestJson(
-    `/tree/resolve?path=${encodeURIComponent(normalizeAbsolutePath(path))}`,
+    `/tree/resolve?path=${encodeURIComponent(normalizeBrowserPath(path))}`,
     resolveSchema,
   );
 }
@@ -550,6 +550,15 @@ function toContentEntry(
     like_count: entry.like_count,
     comment_count: entry.comment_count,
   };
+}
+
+
+function normalizeBrowserPath(path: string): string {
+  try {
+    return normalizeAbsolutePath(decodeURIComponent(path));
+  } catch {
+    return normalizeAbsolutePath(path);
+  }
 }
 
 function normalizeAbsolutePath(path: string): string {

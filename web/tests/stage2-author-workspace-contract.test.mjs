@@ -96,3 +96,9 @@ test('Stage 2 admin tree adapter accepts backend flat nodes contract and builds 
   assert.match(apiSource, /path:\s*node\.url_path/);
   assert.match(apiSource, /parent\.children\.push\(treeNode\)/);
 });
+
+test('Stage 2 public resolver decodes browser pathname before API query encoding', () => {
+  assert.match(apiSource, /function normalizeBrowserPath/);
+  assert.match(apiSource, /decodeURIComponent\(path\)/);
+  assert.match(apiSource, /encodeURIComponent\(normalizeBrowserPath\(path\)\)/);
+});
