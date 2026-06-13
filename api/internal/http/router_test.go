@@ -419,6 +419,25 @@ func (r *routerFakeAssetRepository) FindPublishedAsset(_ context.Context, assetI
 	return asset, nil
 }
 
+func (r *routerFakeAssetRepository) FindDraftAsset(_ context.Context, assetID uuid.UUID, filename string) (assets.FileAsset, error) {
+	return r.FindPublishedAsset(context.Background(), assetID, filename)
+}
+
+func (r *routerFakeAssetRepository) ListAssetState(_ context.Context, fileID uuid.UUID) ([]assets.FileAsset, []assets.FileAsset, error) {
+	out := []assets.FileAsset{}
+	for _, asset := range r.assets {
+		if asset.FileID == fileID {
+			out = append(out, asset)
+		}
+	}
+	return out, out, nil
+}
+
+func (r *routerFakeAssetRepository) PromoteDraftAssets(_ context.Context, fileID uuid.UUID) ([]assets.FileAsset, error) {
+	_, published, err := r.ListAssetState(context.Background(), fileID)
+	return published, err
+}
+
 func (r *routerFakeAssetRepository) DeleteAsset(_ context.Context, assetID uuid.UUID) (assets.FileAsset, error) {
 	asset, ok := r.assets[assetID]
 	if !ok {

@@ -54,10 +54,10 @@ func (r *SQLRepository) CreateAsset(ctx context.Context, asset FileAsset) (FileA
 
 func (r *SQLRepository) FindPublishedAsset(ctx context.Context, assetID uuid.UUID, filename string) (FileAsset, error) {
 	const query = `
-		select a.id, a.file_node_id, a.filename, a.mime_type, a.size_bytes, a.storage_provider, a.storage_key, a.created_at
+		select a.id, a.file_node_id, a.filename, a.mime_type, a.size_bytes, a.storage_provider, a.storage_key, a.state, a.published_asset_id, a.created_at
 		from file_assets a
 		join nodes n on n.id = a.file_node_id and n.kind = 'file'
-		join file_contents fc on fc.node_id = n.id and fc.status = 'published'
+		join published_file_contents pfc on pfc.node_id = n.id and pfc.visible
 		where a.id = $1 and a.filename = $2`
 	asset, err := scanAsset(r.pool.QueryRow(ctx, query, assetID, filename), r.publicBaseURL)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -66,11 +66,60 @@ func (r *SQLRepository) FindPublishedAsset(ctx context.Context, assetID uuid.UUI
 	return asset, err
 }
 
+func (r *SQLRepository) FindDraftAsset(ctx context.Context, assetID uuid.UUID, filename string) (FileAsset, error) {
+	const query = `
+		select a.id, a.file_node_id, a.filename, a.mime_type, a.size_bytes, a.storage_provider, a.storage_key, a.state, a.published_asset_id, a.created_at
+		from file_assets a
+		where a.id = $1 and a.filename = $2 and a.state in ('draft','draft_and_published')`
+	asset, err := scanAsset(r.pool.QueryRow(ctx, query, assetID, filename), r.publicBaseURL)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return FileAsset{}, ErrAssetNotFound
+	}
+	return asset, err
+}
+
+func (r *SQLRepository) ListAssetState(ctx context.Context, fileID uuid.UUID) ([]FileAsset, []FileAsset, error) {
+	const query = `
+		select id, file_node_id, filename, mime_type, size_bytes, storage_provider, storage_key, state, published_asset_id, created_at
+		from file_assets
+		where file_node_id = $1
+		order by created_at, filename`
+	rows, err := r.pool.Query(ctx, query, fileID)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+	draft := []FileAsset{}
+	published := []FileAsset{}
+	for rows.Next() {
+		asset, err := scanAsset(rows, r.publicBaseURL)
+		if err != nil {
+			return nil, nil, err
+		}
+		if asset.State == "draft" || asset.State == "draft_and_published" {
+			draft = append(draft, asset)
+		}
+		if asset.State == "published" || asset.State == "draft_and_published" {
+			published = append(published, asset)
+		}
+	}
+	return draft, published, rows.Err()
+}
+
+func (r *SQLRepository) PromoteDraftAssets(ctx context.Context, fileID uuid.UUID) ([]FileAsset, error) {
+	_, err := r.pool.Exec(ctx, `update file_assets set state = 'draft_and_published' where file_node_id = $1`, fileID)
+	if err != nil {
+		return nil, err
+	}
+	_, published, err := r.ListAssetState(ctx, fileID)
+	return published, err
+}
+
 func (r *SQLRepository) DeleteAsset(ctx context.Context, assetID uuid.UUID) (FileAsset, error) {
 	const query = `
 		delete from file_assets
-		where id = $1
-		returning id, file_node_id, filename, mime_type, size_bytes, storage_provider, storage_key, created_at`
+		where id = $1 and state = 'draft'
+		returning id, file_node_id, filename, mime_type, size_bytes, storage_provider, storage_key, state, published_asset_id, created_at`
 	asset, err := scanAsset(r.pool.QueryRow(ctx, query, assetID), r.publicBaseURL)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return FileAsset{}, ErrAssetNotFound
@@ -92,6 +141,8 @@ func scanAsset(row rowScanner, publicBaseURL string) (FileAsset, error) {
 		&asset.SizeBytes,
 		&asset.StorageProvider,
 		&asset.StorageKey,
+		&asset.State,
+		&asset.PublishedAssetID,
 		&asset.CreatedAt,
 	); err != nil {
 		return FileAsset{}, err

@@ -111,6 +111,25 @@ func (f *fakeRepository) FindPublishedAsset(_ context.Context, assetID uuid.UUID
 	return asset, nil
 }
 
+func (f *fakeRepository) FindDraftAsset(_ context.Context, assetID uuid.UUID, filename string) (FileAsset, error) {
+	return f.FindPublishedAsset(context.Background(), assetID, filename)
+}
+
+func (f *fakeRepository) ListAssetState(_ context.Context, fileID uuid.UUID) ([]FileAsset, []FileAsset, error) {
+	assets := []FileAsset{}
+	for _, asset := range f.assets {
+		if asset.FileID == fileID {
+			assets = append(assets, asset)
+		}
+	}
+	return assets, assets, nil
+}
+
+func (f *fakeRepository) PromoteDraftAssets(_ context.Context, fileID uuid.UUID) ([]FileAsset, error) {
+	_, published, err := f.ListAssetState(context.Background(), fileID)
+	return published, err
+}
+
 func (f *fakeRepository) DeleteAsset(_ context.Context, assetID uuid.UUID) (FileAsset, error) {
 	asset, ok := f.assets[assetID]
 	if !ok {
