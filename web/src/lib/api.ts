@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { getToken } from './auth';
-import type { BreadcrumbItem, CommentItem, CommentThread, ContentEntry, CurrentUser, DirectoryPayload, FileAsset, FilePayload, LikeState, ResolvePayload, SearchResult, AdminNodeDetail, ContentFormat, EmbeddingState, NodeKind } from './types';
+import type { BreadcrumbItem, CommentItem, CommentThread, ContentEntry, CurrentUser, DirectoryPayload, FileAsset, FilePayload, LikeState, ResolvePayload, SearchResult, AdminNodeDetail, AdminTreeNode, AdminTreeResponse, ContentFormat, EmbeddingState, NodeKind } from './types';
 
 const apiBase = '/api';
 
@@ -253,6 +253,22 @@ const pathRedirectSchema = z.object({
   new_path: z.string(),
   node_id: z.string(),
   created_at: z.string(),
+});
+
+
+const adminTreeNodeSchema: z.ZodType<AdminTreeNode> = z.lazy(() => z.object({
+  id: z.string(),
+  parent_id: z.string().nullable().optional(),
+  kind: z.enum(['directory', 'file']),
+  name: z.string(),
+  path: z.string(),
+  status: z.enum(['draft', 'published']),
+  children: z.array(adminTreeNodeSchema).default([]),
+  content_format: z.enum(['markdown', 'html_document']).optional(),
+}));
+
+const adminTreeResponseSchema: z.ZodType<AdminTreeResponse> = z.object({
+  roots: z.array(adminTreeNodeSchema),
 });
 
 const adminNodeDetailSchema: z.ZodType<AdminNodeDetail> = z.object({
@@ -516,7 +532,7 @@ export interface CreateAdminNodeInput {
   parent_id?: string | null;
   kind: NodeKind;
   name: string;
-  slug: string;
+  slug?: string;
   sort_order?: number;
   content_format?: ContentFormat;
 }
@@ -533,6 +549,10 @@ export interface UpsertFileContentInput {
   body_raw: string;
   body_html?: string | null;
   keywords: string[];
+}
+
+export function fetchAdminTree(): Promise<AdminTreeResponse> {
+  return requestJson('/admin/tree', adminTreeResponseSchema, authInit());
 }
 
 export function fetchAdminNode(nodeId: string): Promise<AdminNodeDetail> {

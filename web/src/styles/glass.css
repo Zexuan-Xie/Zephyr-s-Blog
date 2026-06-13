@@ -844,3 +844,87 @@ h3 {
     grid-template-columns: 1fr;
   }
 }
+
+.author-workspace-grid {
+  align-items: start;
+}
+
+.author-tree-panel,
+.author-detail-panel {
+  min-height: 28rem;
+}
+
+.panel-heading-row {
+  align-items: start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.author-tree-row {
+  align-items: stretch;
+  display: flex;
+  gap: 0.35rem;
+}
+
+.author-tree-row.is-selected {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.tree-toggle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  display: inline-flex;
+  justify-content: center;
+  min-width: 1.3rem;
+}
+
+.tree-select-button {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  display: grid;
+  flex: 1;
+  gap: 0.2rem;
+  text-align: left;
+}
+
+.status-pill {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  white-space: nowrap;
+}
+
+.status-pill.published {
+  background: rgba(52, 211, 153, 0.14);
+}
+
+.status-pill.draft {
+  background: rgba(251, 191, 36, 0.14);
+}
+
+.admin-child-card-grid {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  margin: 1rem 0;
+}
+
+.admin-child-card {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 1rem;
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.9rem;
+}
+
+.admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}

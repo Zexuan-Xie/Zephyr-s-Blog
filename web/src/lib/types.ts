@@ -109,6 +109,22 @@ export interface SearchResult {
   sources: Array<'text' | 'semantic' | 'keyword'>;
 }
 
+
+export interface AdminTreeNode {
+  id: string;
+  parent_id?: string | null;
+  kind: NodeKind;
+  name: string;
+  path: string;
+  status: 'draft' | 'published';
+  children: AdminTreeNode[];
+  content_format?: ContentFormat;
+}
+
+export interface AdminTreeResponse {
+  roots: AdminTreeNode[];
+}
+
 export interface AdminNodeDetail {
   node: {
     id: string;
