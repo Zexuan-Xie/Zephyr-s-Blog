@@ -939,22 +939,23 @@ export function fetchPublishSummary(fileId: string): Promise<PublishSummary> {
 
 export function publishFile(
   fileId: string,
-  expected_revision?: number,
-): Promise<PublishResult | FileContentVersion> {
+  expected_revision: number,
+): Promise<PublishResult> {
   return requestJson(
     `/admin/files/${encodeURIComponent(fileId)}/publish`,
-    z.union([publishResultSchema, adminFileContentSchema]),
-    jsonAuthInit("POST", expected_revision ? { expected_revision } : undefined),
+    publishResultSchema,
+    jsonAuthInit("POST", { expected_revision }),
   );
 }
 
 export function unpublishFile(
   fileId: string,
+  expected_revision: number,
 ): Promise<FileContentVersion> {
   return requestJson(
     `/admin/files/${encodeURIComponent(fileId)}/unpublish`,
     adminFileContentSchema,
-    jsonAuthInit("POST"),
+    jsonAuthInit("POST", { expected_revision }),
   );
 }
 

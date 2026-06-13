@@ -46,8 +46,8 @@ func TestServiceUploadValidatesAndStoresProviderNeutralKey(t *testing.T) {
 	if !strings.HasPrefix(asset.StorageKey, "files/"+fileID.String()+"/") || strings.HasPrefix(asset.StorageKey, "/") {
 		t.Fatalf("storage key = %q, want provider-neutral relative key", asset.StorageKey)
 	}
-	if asset.PublicURL != "/api/assets/"+asset.ID.String()+"/"+asset.Filename {
-		t.Fatalf("public_url = %q", asset.PublicURL)
+	if asset.PublicURL != "" {
+		t.Fatalf("draft public_url = %q, want empty until publish", asset.PublicURL)
 	}
 	if _, ok := storage.objects[asset.StorageKey]; !ok {
 		t.Fatalf("stored object missing at key %q", asset.StorageKey)
@@ -95,7 +95,6 @@ func (f *fakeRepository) FileAssetTotalBytes(context.Context, uuid.UUID) (int64,
 
 func (f *fakeRepository) CreateAsset(_ context.Context, asset FileAsset) (FileAsset, error) {
 	f.created = asset
-	asset.PublicURL = "/api/assets/" + asset.ID.String() + "/" + asset.Filename
 	if f.assets == nil {
 		f.assets = map[uuid.UUID]FileAsset{}
 	}
