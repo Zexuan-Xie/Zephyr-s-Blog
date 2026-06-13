@@ -16,11 +16,17 @@ import type {
   AdminTreeNode,
   AdminTreeResponse,
   ContentFormat,
+  DraftPreviewPayload,
   EmbeddingState,
+  FileAssetState,
+  FileContentVersion,
+  FileVersionState,
   MoveNodeInput,
   MovePreviewResponse,
   NodeKind,
   ReorderChildrenInput,
+  PublishResult,
+  PublishSummary,
   ReorderChildrenResponse,
 } from "./types";
 
@@ -137,6 +143,8 @@ const fileAssetSchema: z.ZodType<FileAsset> = z.object({
   storage_provider: z.string(),
   storage_key: z.string().optional(),
   public_url: z.string(),
+  state: z.enum(["draft", "published", "draft_and_published"]).optional(),
+  published_asset_id: z.string().nullable().optional(),
   created_at: z.string(),
 });
 
@@ -255,12 +263,14 @@ const legacyFileSchema = z.object({
 
 const fileContentSchema = z.object({
   node_id: z.string(),
+  revision: z.number().optional(),
   content_format: z.enum(["markdown", "html_document"]),
   keywords: z.array(z.string()).optional(),
   body_raw: z.string().optional(),
   body_html: z.string().nullable().optional(),
   status: z.string().optional(),
   published_at: nullableStringSchema,
+  last_saved_at: nullableStringSchema,
   reading_time_minutes: nullableNumberSchema,
 });
 
@@ -274,19 +284,75 @@ const openApiFileSchema = z.object({
   assets: z.array(fileAssetSchema).optional(),
 });
 
-const adminFileContentSchema = z.object({
+const adminFileContentSchema: z.ZodType<FileContentVersion> = z.object({
   node_id: z.string(),
+  revision: z.number().default(1),
   content_format: z.enum(["markdown", "html_document"]),
   keywords: z.array(z.string()).default([]),
   body_raw: z.string().default(""),
   body_html: z.string().nullable().optional(),
   search_text: z.string().default(""),
-  status: z.enum(["draft", "published"]),
+  status: z.enum(["draft", "published", "unpublished_changes"]),
   published_at: nullableStringSchema,
+  last_saved_at: z.string().default(""),
   embedding_model: nullableStringSchema,
   embedding_status: z.enum(["pending", "ready", "failed"]),
   embedding_error: nullableStringSchema,
   embedding_updated_at: nullableStringSchema,
+});
+
+const publishedContentSchema = z.object({
+  node_id: z.string(),
+  source_revision: z.number(),
+  content_format: z.enum(["markdown", "html_document"]),
+  keywords: z.array(z.string()).default([]),
+  body_raw: z.string().default(""),
+  body_html: z.string().nullable().optional(),
+  search_text: z.string().default(""),
+  published_at: z.string(),
+  updated_at: z.string().optional(),
+  visible: z.boolean(),
+});
+
+const fileVersionStateSchema: z.ZodType<FileVersionState> = z.object({
+  current: adminFileContentSchema,
+  previous: adminFileContentSchema.nullable().optional(),
+  published: publishedContentSchema.nullable().optional(),
+  has_unpublished_changes: z.boolean().default(false),
+  draft_assets: z.array(fileAssetSchema).default([]),
+  published_assets: z.array(fileAssetSchema).default([]),
+});
+
+const publishSummarySchema: z.ZodType<PublishSummary> = z.object({
+  file_id: z.string(),
+  current_revision: z.number(),
+  published_source_revision: z.number().nullable().optional(),
+  will_update_content: z.boolean(),
+  draft_assets: z.array(fileAssetSchema).default([]),
+  published_assets: z.array(fileAssetSchema).default([]),
+  asset_changes: z.array(z.object({
+    filename: z.string(),
+    change: z.enum(["added", "removed", "changed", "unchanged"]),
+  })).default([]),
+});
+
+const publishResultSchema: z.ZodType<PublishResult> = z.object({
+  current: adminFileContentSchema,
+  published: publishedContentSchema,
+  promoted_assets: z.array(fileAssetSchema).default([]),
+});
+
+const fileAssetStateSchema: z.ZodType<FileAssetState> = z.object({
+  draft_assets: z.array(fileAssetSchema).default([]),
+  published_assets: z.array(fileAssetSchema).default([]),
+});
+
+const draftPreviewSchema: z.ZodType<DraftPreviewPayload> = z.object({
+  node: z.any().optional(),
+  current: adminFileContentSchema,
+  html: z.string().default(""),
+  assets: z.array(fileAssetSchema).default([]),
+  iframe_sandbox: z.string(),
 });
 
 const pathRedirectSchema = z.object({
@@ -324,7 +390,7 @@ const nestedAdminTreeNodeSchema: z.ZodType<AdminTreeNode> = z.lazy(() =>
     kind: z.enum(["directory", "file"]),
     name: z.string(),
     path: z.string(),
-    status: z.enum(["draft", "published"]),
+    status: z.enum(["draft", "published", "unpublished_changes"]),
     children: z.array(nestedAdminTreeNodeSchema).default([]),
     content_format: z.enum(["markdown", "html_document"]).optional(),
   }),
@@ -337,7 +403,7 @@ const flatAdminTreeNodeSchema = z.object({
   name: z.string(),
   url_path: z.string(),
   sort_order: z.number(),
-  status: z.enum(["draft", "published"]),
+  status: z.enum(["draft", "published", "unpublished_changes"]),
   content_format: z.enum(["markdown", "html_document"]).optional(),
 });
 
@@ -701,6 +767,7 @@ export interface UpdateAdminNodeInput {
 }
 
 export interface UpsertFileContentInput {
+  expected_revision: number;
   content_format: ContentFormat;
   body_raw: string;
   body_html?: string | null;
@@ -825,10 +892,22 @@ export async function deleteAdminNode(nodeId: string): Promise<void> {
   }
 }
 
+export function fetchFileVersions(fileId: string): Promise<FileVersionState> {
+  return requestJson(
+    `/admin/files/${encodeURIComponent(fileId)}/content`,
+    fileVersionStateSchema,
+    authInit(),
+  );
+}
+
+export function fetchFilePreviousVersions(fileId: string): Promise<FileVersionState> {
+  return fetchFileVersions(fileId);
+}
+
 export function upsertFileContent(
   fileId: string,
   input: UpsertFileContentInput,
-): Promise<AdminNodeDetail["content"]> {
+): Promise<FileContentVersion> {
   return requestJson(
     `/admin/files/${encodeURIComponent(fileId)}/content`,
     adminFileContentSchema,
@@ -836,23 +915,59 @@ export function upsertFileContent(
   );
 }
 
+export function restorePreviousContent(
+  fileId: string,
+  expected_revision: number,
+): Promise<FileVersionState> {
+  return requestJson(
+    `/admin/files/${encodeURIComponent(fileId)}/previous/restore`,
+    fileVersionStateSchema,
+    jsonAuthInit("POST", { expected_revision }),
+  );
+}
+
+export function fetchPublishSummary(fileId: string): Promise<PublishSummary> {
+  return requestJson(
+    `/admin/files/${encodeURIComponent(fileId)}/publish-summary`,
+    publishSummarySchema,
+    authInit(),
+  );
+}
+
 export function publishFile(
   fileId: string,
-): Promise<AdminNodeDetail["content"]> {
+  expected_revision?: number,
+): Promise<PublishResult | FileContentVersion> {
   return requestJson(
     `/admin/files/${encodeURIComponent(fileId)}/publish`,
-    adminFileContentSchema,
-    jsonAuthInit("POST"),
+    z.union([publishResultSchema, adminFileContentSchema]),
+    jsonAuthInit("POST", expected_revision ? { expected_revision } : undefined),
   );
 }
 
 export function unpublishFile(
   fileId: string,
-): Promise<AdminNodeDetail["content"]> {
+): Promise<FileContentVersion> {
   return requestJson(
     `/admin/files/${encodeURIComponent(fileId)}/unpublish`,
     adminFileContentSchema,
     jsonAuthInit("POST"),
+  );
+}
+
+export function fetchDraftPreview(fileId: string): Promise<DraftPreviewPayload> {
+  return requestJson(
+    `/admin/preview/${encodeURIComponent(fileId)}`,
+    draftPreviewSchema,
+    authInit(),
+  );
+}
+
+export function fetchFileAssetState(fileId: string): Promise<FileAssetState> {
+  return requestJson(
+    `/admin/files/${encodeURIComponent(fileId)}/assets`,
+    fileAssetStateSchema,
+    authInit(),
   );
 }
 
