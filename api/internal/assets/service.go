@@ -89,6 +89,21 @@ func (s *Service) OpenPublished(ctx context.Context, assetID uuid.UUID, filename
 	return asset, object, nil
 }
 
+func (s *Service) OpenDraft(ctx context.Context, assetID uuid.UUID, filename string) (FileAsset, StoredObject, error) {
+	asset, err := s.repo.FindDraftAsset(ctx, assetID, filename)
+	if err != nil {
+		return FileAsset{}, StoredObject{}, err
+	}
+	object, err := s.storage.Open(asset.StorageKey)
+	if err != nil {
+		return FileAsset{}, StoredObject{}, err
+	}
+	if object.ContentType == "" {
+		object.ContentType = asset.MIMEType
+	}
+	return asset, object, nil
+}
+
 func (s *Service) Delete(ctx context.Context, assetID uuid.UUID) error {
 	asset, err := s.repo.DeleteAsset(ctx, assetID)
 	if err != nil {

@@ -20,6 +20,7 @@ const maxMultipartMemory = 8 << 20
 type AssetService interface {
 	Upload(context.Context, uuid.UUID, assets.Upload) (assets.FileAsset, error)
 	OpenPublished(context.Context, uuid.UUID, string) (assets.FileAsset, assets.StoredObject, error)
+	OpenDraft(context.Context, uuid.UUID, string) (assets.FileAsset, assets.StoredObject, error)
 	Delete(context.Context, uuid.UUID) error
 }
 
@@ -79,6 +80,32 @@ func (h *AssetHandler) ServePublished(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+	if asset.MIMEType == "application/pdf" {
+		w.Header().Set("Content-Disposition", "inline")
+	}
+	w.Header().Set("Content-Length", int64String(object.Size))
+	w.WriteHeader(http.StatusOK)
+	_, _ = io.Copy(w, object.Reader)
+}
+
+func (h *AssetHandler) ServeDraft(w http.ResponseWriter, r *http.Request) {
+	assetID, ok := parseAssetID(w, r, "asset_id")
+	if !ok {
+		return
+	}
+	filename := strings.TrimSpace(chi.URLParam(r, "filename"))
+	asset, object, err := h.service.OpenDraft(r.Context(), assetID, filename)
+	if err != nil {
+		h.respondError(w, err)
+		return
+	}
+	defer object.Reader.Close()
+	contentType := object.ContentType
+	if contentType == "" {
+		contentType = asset.MIMEType
+	}
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Cache-Control", "no-store")
 	if asset.MIMEType == "application/pdf" {
 		w.Header().Set("Content-Disposition", "inline")
 	}

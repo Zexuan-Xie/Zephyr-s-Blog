@@ -142,12 +142,18 @@ func NewRouter(deps Dependencies) http.Handler {
 					}
 					if lifecycleService != nil {
 						admin.Delete("/nodes/{node_id}", lifecycleHandler.DeleteNode)
+						admin.Get("/files/{file_id}/content", lifecycleHandler.GetFileContent)
 						admin.Put("/files/{file_id}/content", lifecycleHandler.UpsertFileContent)
+						admin.Post("/files/{file_id}/previous/restore", lifecycleHandler.RestorePreviousContent)
+						admin.Get("/files/{file_id}/publish-summary", lifecycleHandler.PublishSummary)
 						admin.Post("/files/{file_id}/publish", lifecycleHandler.PublishFile)
 						admin.Post("/files/{file_id}/unpublish", lifecycleHandler.UnpublishFile)
+						admin.Get("/preview/{file_id}", lifecycleHandler.DraftPreview)
+						admin.Get("/files/{file_id}/assets", lifecycleHandler.FileAssetState)
 					}
 					if assetHandler != nil {
 						admin.Post("/files/{file_id}/assets", assetHandler.Upload)
+						admin.Get("/assets/{asset_id}/{filename}", assetHandler.ServeDraft)
 						admin.Delete("/assets/{asset_id}", assetHandler.Delete)
 					}
 					if searchHandler != nil {
