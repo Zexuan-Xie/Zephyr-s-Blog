@@ -1,21 +1,22 @@
 # Progress
 
-Last updated: 2026-06-13 23:48 CST
+Last updated: 2026-06-13 23:58 CST
 
 ## Current breakpoint
 
-Stage 3 is active on Team `execute-aeolian-blog-a98ab708` from protected Stage 2 checkpoint `73bcc9e` (`checkpoint: stage 2 polish before stage 3`). Current coordinator worktree HEAD observed while reconciling the ledger: `f50fb4d`.
+Stage 3 is active on Team `execute-aeolian-blog-a98ab708` from protected Stage 2 checkpoint `73bcc9e` (`checkpoint: stage 2 polish before stage 3`). Current coordinator worktree HEAD observed while reconciling the ledger: `8189832`; leader-reported integrated backend security PASS: `dd2b493`.
 
 Gateway status:
 
 - **Gateway 0 — PASS.** Stage 2 checkpoint protected; pre-schema backup/restore proof recorded in `docs/verification/stage-3-team-log.md`.
-- **Gateway 1 — PASS.** OpenAPI/backend/frontend red contracts and acceptance/security contract reviews completed.
-- **Gateway 2 — PASS.** Worker-2 task 9 completed migration/core publication model; task 14 repaired security blockers found later.
-- **Gateway 3 — PASS.** Worker-2 task 10 completed backend HTTP APIs and Draft Preview surfaces; task 14 repaired expected-revision, conflict, DTO, asset snapshot, and unpublish issues.
-- **Gateway 4 — PASS.** Worker-3 task 4 completed autosave/version/restore/publish/Draft Preview/draft-published assets UI at commit `9b51d36`; frontend lint/build/contracts/node tests passed.
-- **Backend security repair re-review — PASS.** Task 15 passed on integrated repaired HEAD `97acc9e`/`dd2b493`; `docs/verification/stage-3-security.md` records that the Gateway 2/3 backend repair items are resolved.
-- **MCP gate — BLOCKED / not implemented.** MCP-specific security and acceptance remain a later gate: disabled-by-default, per-call kill switch, JSONL audit, backup/export, and no direct SQL in MCP handlers still need implementation evidence.
-- **Coordinator ledger — in progress.** Task 2 is now claimed by worker-2 to keep `PROGRESS.md`, `docs/verification/stage-3-team-log.md`, and breakpoint state current until terminal counts and closeout gates pass.
+- **Gateway 1 — PASS.** Contract acceptance review task 11 completed with downstream fixture/watch items recorded in `docs/verification/stage-3-acceptance.md`.
+- **Gateway 2 — PASS.** Worker-2 task 9 completed migration/core publication model; security REVISE repair task 14 is now completed and accepted by post-repair review task 15.
+- **Gateway 3 — PASS.** Worker-2 task 10 completed version-state, restore, publish summary/publish/unpublish, Draft Preview, and asset-state HTTP surfaces; backend security repair is accepted after task 15.
+- **Gateway 4 — PASS for frontend implementation.** Worker-3 task 4 completed autosave/version/restore/publish/Draft Preview/draft-published assets UI at commit `9b51d36`; frontend lint/build/contracts/node tests passed.
+- **Security implementation review — backend repair accepted.** Task 12 remains a historical REVISE verdict with findings recorded in `docs/verification/stage-3-security.md`; task 14 completed the backend repair and task 15 post-repair security re-review passed at leader-reported integrated SHA `dd2b493`. MCP-specific security remains a later Gateway 6 gate.
+- **Gateway 6 — MCP in progress.** Tasks 16-19 now track server-local stdio MCP skeleton/tools, acceptance smoke, and security review; task 20 is final integrated acceptance/closeout after MCP gates pass.
+
+Current verification note (2026-06-13 23:58 CST): frontend Gateway 4 verification passed on worker-3 (`npm run lint`, `npm run build`, Stage 3 frontend contract, and all web node tests). Backend security REVISE repair is complete: task 14 records backend `go test`/`go vet`/gofmt PASS evidence, and task 15 records post-repair security review PASS at `dd2b493`. MCP implementation remains pending and must be accepted only after integrated MCP SHAs land.
 
 Current task reconciliation (2026-06-13 23:48 CST): tasks 1,3,4,5,6,7,8,9,10,11,13,14,15 are completed; task 12 is terminal failed with the security REVISE that spawned task 14; task 2 remains the only active coordinator ledger task. No implementation/acceptance closeout task for MCP is complete yet, so Stage 3 is **not** final-closeout complete.
 
@@ -39,7 +40,9 @@ Gateway 0 backup before schema work:
 Current coordination constraints:
 
 - Do not add/commit `web/node_modules`, node_modules symlinks, caches, `web/dist`, local DB/uploads, or `.omx` runtime state.
+- Production frontend Gateway 4 UI is implemented; do not run acceptance/security closeout against non-integrated branches.
 - Acceptance/security tests run only against integrated leader SHAs, not isolated worker branches.
+- Gateway 6 MCP work is split across tasks 16-19; keep final closeout blocked until MCP implementation, acceptance, and security review are integrated and passed.
 - Preserve iframe sandbox, full-text fallback, Author-only protected surfaces, draft/public isolation, and the Stage 2 simple-English Aeolian UI baseline.
 - Keep MCP security/acceptance gates blocked until an actual server-local stdio MCP package exists with explicit enablement, per-call kill switch, audit JSONL, backup/export, and no direct SQL in handlers.
 
@@ -59,11 +62,10 @@ npm run build
 
 ## Immediate next steps
 
-1. Keep task 2 open while coordinator ledger/closeout remains active; do not shut down until terminal task counts and closeout gates pass.
-2. Decide/assign the next Stage 3 MCP implementation and MCP acceptance/security gate work, because MCP is still required by the Stage 3 scope but not implemented.
-3. After MCP lands, run disabled/enabled stdio MCP smoke, audit/backup evidence, no-direct-SQL review, and add evidence under `docs/verification/`.
-4. Run integrated backend/frontend/API/browser acceptance on the final closeout SHA, not worker-local partial branches.
-5. Keep `PROGRESS.md` and `docs/verification/stage-3-team-log.md` synchronized after each integration or gate decision.
+1. Monitor MCP Gateway 6 task chain: task 16 skeleton, task 17 tool slices, task 18 acceptance smoke/evidence, and task 19 security review.
+2. Keep MCP security/acceptance gates blocked until an actual server-local stdio MCP package exists with explicit enablement, per-call kill switch, audit JSONL, backup/export, no public HTTP/SSE listener, and no direct SQL in handlers.
+3. After MCP acceptance/security pass, let task 20 run final integrated acceptance and closeout; Task 2 remains open until terminal task counts and closeout gates pass.
+4. Keep `PROGRESS.md` and `docs/verification/stage-3-team-log.md` synchronized after each integration or gate decision.
 
 ## Previous notes
 # xLab Blog Progress

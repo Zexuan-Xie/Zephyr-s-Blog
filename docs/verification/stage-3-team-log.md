@@ -1,6 +1,6 @@
 # Stage 3 Team Log
 
-Status: Gateway 0 PASS; Gateway 1 PASS; Gateway 2 PASS; Gateway 3 PASS; Gateway 4 PASS; backend security repair PASS; MCP/closeout pending
+Status: Gateway 0 PASS; Gateway 1 PASS; Gateway 2 PASS; Gateway 3 PASS; Gateway 4 PASS; backend security repair accepted; Gateway 6 MCP in progress
 
 Team: `execute-aeolian-blog-a98ab708`
 Coordinator: `worker-2` (task 2 reassigned from worker-3 after backend repair/security re-review)
@@ -89,11 +89,11 @@ Required red-test topics:
 
 | Worker | Lane | Current task focus | Status |
 |---|---|---|---|
-| worker-1 | coordinator / gateway | Gateway 0 complete; original task 2 superseded/reassigned | superseded |
-| worker-2 | backend / coordinator | Tasks 3/9/10/14 complete; Task 2 ledger reconciliation now active | in progress |
-| worker-3 | frontend / planner | Task 4 Gateway 4 frontend complete; prior Task 2 ledger handoff complete | complete |
-| worker-4 | acceptance / verifier | Gateway 1 PASS recorded; final integrated acceptance pending MCP/closeout | pending |
-| worker-5 | security / review | Task 15 backend repair re-review PASS; MCP security gate remains pending | complete / MCP pending |
+| worker-1 | coordinator / gateway | Task 20 final integrated acceptance and closeout after MCP gates | pending / blocked by 18,19 |
+| worker-2 | backend / MCP | Task 16 MCP skeleton, then task 17 MCP tools | pending |
+| worker-3 | planner | Task 2 coordinator ledger and MCP monitoring | in progress |
+| worker-4 | acceptance / verifier | Task 18 MCP acceptance smoke and evidence | pending / blocked by 16,17 |
+| worker-5 | security / review | Task 19 MCP security review; backend task 15 PASS integrated | pending / blocked by 16,17 |
 
 ## Subagent probes integrated by coordinator
 
@@ -270,6 +270,72 @@ Coordination note:
   worker-3 to stop duplicate Task 12 review because a security REVISE verdict was
   already integrated and repair task 14 exists. Worker-3 ACKed, marked the
   message delivered, and is now only maintaining the ledger through Task 2.
+
+
+## Coordinator ledger update — 2026-06-13 23:58 CST
+
+Verdict: **Backend security repair accepted; MCP Gateway 6 task chain opened; Task 2 remains open**
+
+Leader-reported integrated security PASS SHA: `dd2b493`. Current worker-3
+coordinator worktree HEAD before this docs checkpoint: `8189832`.
+
+Task state reconciliation from OMX task JSON and leader mailbox:
+
+- Task 14 (Repair Gateway 2/3 backend security REVISE findings): **completed**
+  by worker-2. Recorded evidence includes backend `go test`, `go vet`, and
+  gofmt PASS, plus repairs for published asset snapshot binding, publish/
+  unpublish expected revision, revision conflict `current_revision`, DTO storage
+  key/provider leakage, comments/likes visibility, and asset insert scanning.
+- Task 15 (Post-repair security re-review): **completed / PASS** by worker-5
+  on leader-reported integrated HEAD `97acc9e` / `dd2b493`. Evidence is recorded
+  in `docs/verification/stage-3-security.md`; MCP-specific security remains a
+  later gate after MCP implementation.
+- Task 12 remains a **historical REVISE review verdict** and is superseded by
+  task 14 repair plus task 15 PASS evidence. It is not an outstanding duplicate
+  review lane.
+- Task 16 (Gateway 6 MCP research and server skeleton): **pending**, owner
+  worker-2. Required: separate server-local stdio package/process, disabled by
+  default via `BLOG_MCP_ENABLED`, per-call kill switch, JSONL audit, backup/
+  export helper design, no direct SQL in MCP handlers, tests/smoke transcript.
+- Task 17 (Gateway 6 MCP tool implementation slices): **pending**, owner
+  worker-2, blocked by task 16. Required tool groups: read/search, content,
+  publish, tree, assets, maintenance, all using backend service/API-client
+  boundaries with audit/refusal behavior.
+- Task 18 (Gateway 6 MCP acceptance smoke and evidence): **pending**, owner
+  worker-4, blocked by tasks 16 and 17. Must verify disabled refusal, enabled
+  local stdio, tool coverage, JSONL audit, export/backup, kill-switch
+  no-mutation proof, and no public HTTP/SSE listener.
+- Task 19 (Gateway 6 MCP security review): **pending**, owner worker-5, blocked
+  by tasks 16 and 17. Must verify disabled-by-default, per-call kill switch,
+  audit, destructive-tool backup/confirmation, no direct SQL, stdio-only/no
+  public listener, traversal/stale revision rejection, protected API parity, and
+  prompt/tool abuse resistance.
+- Task 20 (Gateway 7/8 final integrated acceptance and closeout): **pending**,
+  owner worker-1, blocked by tasks 18 and 19. Do not close until pending=0,
+  in_progress=0, and failed historical gates are explicitly superseded by PASS
+  evidence.
+- Task 2 (Coordinator evidence ledger): **in_progress**, owner worker-3, kept
+  open by leader instruction to monitor MCP Gateway 6 tasks and maintain this
+  ledger through final closeout.
+
+Current MCP gate policy:
+
+1. Acceptance/security evidence may run only on integrated leader SHAs.
+2. MCP remains blocked until a real server-local stdio implementation exists;
+   docs-only claims are insufficient.
+3. MCP must stay disabled by default, refuse when disabled or kill-switched,
+   audit every operation to JSONL, avoid public HTTP/SSE listeners, and avoid
+   direct SQL in handlers.
+4. Final Stage 3 closeout waits for MCP acceptance and security PASS plus task
+   20 integrated acceptance.
+
+Verification observed during this reconciliation:
+
+```text
+PASS source-of-truth read: task 14 completed; task 15 completed/PASS at dd2b493; tasks 16-20 opened for MCP/final closeout.
+PASS mailbox steering: leader reassigned Task 2 to worker-3 and instructed coordinator ledger only; keep Task 2 open until final closeout.
+PASS node_modules policy precheck before edits: git status --short clean; git ls-files -s web/node_modules empty.
+```
 
 ## Verification
 
