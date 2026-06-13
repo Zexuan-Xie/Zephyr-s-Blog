@@ -4,9 +4,9 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
-import { BlogBackendClient } from '../src/backendClient.js';
-import { loadConfig } from '../src/config.js';
-import { buildToolDefinitions } from '../src/tools.js';
+import { BlogBackendClient } from '../src/backendClient.mjs';
+import { loadConfig } from '../src/config.mjs';
+import { buildToolDefinitions } from '../src/tools.mjs';
 
 async function runHealth(env) {
   const tmp = await mkdtemp(path.join(os.tmpdir(), 'xlab-blog-mcp-test-'));

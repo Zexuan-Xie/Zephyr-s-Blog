@@ -1,8 +1,3 @@
-export interface BackendClientOptions {
-  baseUrl: string;
-  adminToken?: string;
-}
-
 /**
  * Thin backend API boundary for MCP tools.
  *
@@ -11,15 +6,12 @@ export interface BackendClientOptions {
  * or a shared service client rather than duplicating business rules in MCP handlers.
  */
 export class BlogBackendClient {
-  readonly baseUrl: string;
-  readonly adminToken?: string;
-
-  constructor(options: BackendClientOptions) {
+  constructor(options) {
     this.baseUrl = options.baseUrl.replace(/\/+$/, "");
     this.adminToken = options.adminToken;
   }
 
-  async health(): Promise<{ ok: boolean; base_url: string }> {
+  async health() {
     return { ok: true, base_url: this.baseUrl };
   }
 }
