@@ -1,5 +1,7 @@
 export type NodeKind = "directory" | "file";
 export type ContentFormat = "markdown" | "html_document";
+export type PublishStatus = "draft" | "published" | "unpublished_changes";
+export type AssetState = "draft" | "published" | "draft_and_published";
 
 export interface BreadcrumbItem {
   name: string;
@@ -60,6 +62,8 @@ export interface FileAsset {
   storage_provider: string;
   storage_key?: string;
   public_url: string;
+  state?: AssetState;
+  published_asset_id?: string | null;
   created_at: string;
 }
 
@@ -115,7 +119,7 @@ export interface AdminTreeNode {
   kind: NodeKind;
   name: string;
   path: string;
-  status: 'draft' | 'published';
+  status: PublishStatus;
   children: AdminTreeNode[];
   content_format?: ContentFormat;
 }
@@ -143,7 +147,7 @@ export interface AdminNodeDetail {
     body_raw: string;
     body_html?: string | null;
     search_text: string;
-    status: 'draft' | 'published';
+    status: PublishStatus;
     published_at?: string | null;
     embedding_model?: string | null;
     embedding_status: 'pending' | 'ready' | 'failed';
@@ -158,6 +162,75 @@ export interface AdminNodeDetail {
     node_id: string;
     created_at: string;
   }>;
+}
+
+
+export interface FileContentVersion {
+  node_id: string;
+  revision: number;
+  content_format: ContentFormat;
+  keywords: string[];
+  body_raw: string;
+  body_html?: string | null;
+  search_text: string;
+  status: PublishStatus;
+  published_at?: string | null;
+  last_saved_at: string;
+  embedding_model?: string | null;
+  embedding_status: 'pending' | 'ready' | 'failed';
+  embedding_error?: string | null;
+  embedding_updated_at?: string | null;
+}
+
+export interface PublishedContentSnapshot {
+  node_id: string;
+  source_revision: number;
+  content_format: ContentFormat;
+  keywords: string[];
+  body_raw: string;
+  body_html?: string | null;
+  search_text: string;
+  published_at: string;
+  updated_at?: string;
+  visible: boolean;
+}
+
+export interface FileVersionState {
+  current: FileContentVersion;
+  previous?: FileContentVersion | null;
+  published?: PublishedContentSnapshot | null;
+  has_unpublished_changes: boolean;
+  draft_assets: FileAsset[];
+  published_assets: FileAsset[];
+}
+
+export interface PublishSummary {
+  file_id: string;
+  current_revision: number;
+  published_source_revision?: number | null;
+  will_update_content: boolean;
+  draft_assets: FileAsset[];
+  published_assets: FileAsset[];
+  asset_changes: Array<{ filename: string; change: 'added' | 'removed' | 'changed' | 'unchanged' }>;
+}
+
+export interface PublishResult {
+  current: FileContentVersion;
+  published: PublishedContentSnapshot;
+  promoted_assets: FileAsset[];
+}
+
+export interface FileAssetState {
+  draft_assets: FileAsset[];
+  published_assets: FileAsset[];
+}
+
+export interface DraftPreviewPayload {
+  node?: AdminNodeDetail['node'];
+  current: FileContentVersion;
+  html: string;
+  assets: FileAsset[];
+  iframe_sandbox: string;
 }
 
 export interface ReorderChildrenInput {
