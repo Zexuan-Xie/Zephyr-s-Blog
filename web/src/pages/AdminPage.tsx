@@ -37,6 +37,9 @@ export function AdminPage({ onLogout }: { onLogout: () => void }) {
     ?? flatTree[0]
     ?? null;
   const effectiveSelectedId = selectedNode?.id ?? selectedId;
+  const visibleExpandedIds = selectedNode && adminTreeQuery.data
+    ? expandAncestors(expandedIds, selectedNode.id, adminTreeQuery.data.roots)
+    : expandedIds;
   const detailQuery = useQuery({
     queryKey: ['admin', 'node-detail', effectiveSelectedId],
     queryFn: () => fetchAdminNode(effectiveSelectedId),
@@ -116,8 +119,8 @@ export function AdminPage({ onLogout }: { onLogout: () => void }) {
           {adminTreeQuery.data ? (
             <TreeList
               nodes={adminTreeQuery.data.roots}
-              expandedIds={expandedIds}
-              selectedId={selectedId}
+              expandedIds={visibleExpandedIds}
+              selectedId={effectiveSelectedId}
               onSelect={selectNode}
               onToggle={toggleDirectory}
             />
