@@ -197,15 +197,6 @@ func (f *fakeLifecycleRepository) DeleteNode(_ context.Context, nodeID uuid.UUID
 	return nil
 }
 
-func (f *fakeLifecycleRepository) HasChildNodes(_ context.Context, directoryID uuid.UUID) (bool, error) {
-	for _, node := range f.nodes {
-		if node.ParentID != nil && *node.ParentID == directoryID {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
 func (f *fakeLifecycleRepository) HasPublishedDescendantFiles(_ context.Context, directoryID uuid.UUID) (bool, error) {
 	return f.hasPublished[directoryID], nil
 }
