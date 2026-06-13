@@ -317,7 +317,7 @@ const reorderChildrenResponseSchema: z.ZodType<ReorderChildrenResponse> =
     version: z.number(),
   });
 
-const adminTreeNodeSchema: z.ZodType<AdminTreeNode> = z.lazy(() =>
+const nestedAdminTreeNodeSchema: z.ZodType<AdminTreeNode> = z.lazy(() =>
   z.object({
     id: z.string(),
     parent_id: z.string().nullable().optional(),
@@ -325,14 +325,31 @@ const adminTreeNodeSchema: z.ZodType<AdminTreeNode> = z.lazy(() =>
     name: z.string(),
     path: z.string(),
     status: z.enum(["draft", "published"]),
-    children: z.array(adminTreeNodeSchema).default([]),
+    children: z.array(nestedAdminTreeNodeSchema).default([]),
     content_format: z.enum(["markdown", "html_document"]).optional(),
   }),
 );
 
-const adminTreeResponseSchema: z.ZodType<AdminTreeResponse> = z.object({
-  roots: z.array(adminTreeNodeSchema),
+const flatAdminTreeNodeSchema = z.object({
+  id: z.string(),
+  parent_id: z.string().nullable().optional(),
+  kind: z.enum(["directory", "file"]),
+  name: z.string(),
+  url_path: z.string(),
+  sort_order: z.number(),
+  status: z.enum(["draft", "published"]),
+  content_format: z.enum(["markdown", "html_document"]).optional(),
 });
+
+const adminTreeResponseSchema: z.ZodType<AdminTreeResponse> = z
+  .union([
+    z.object({ roots: z.array(nestedAdminTreeNodeSchema) }),
+    z.object({ nodes: z.array(flatAdminTreeNodeSchema) }),
+  ])
+  .transform((response): AdminTreeResponse => {
+    if ("roots" in response) return response;
+    return { roots: buildAdminTreeRoots(response.nodes) };
+  });
 
 const adminNodeDetailSchema: z.ZodType<AdminNodeDetail> = z.object({
   node: nodeSchema.extend({
@@ -672,6 +689,52 @@ export interface UpsertFileContentInput {
   body_raw: string;
   body_html?: string | null;
   keywords: string[];
+}
+
+
+type FlatAdminTreeNode = z.infer<typeof flatAdminTreeNodeSchema>;
+
+function buildAdminTreeRoots(nodes: FlatAdminTreeNode[]): AdminTreeNode[] {
+  const byId = new Map<string, AdminTreeNode>();
+  const sortedNodes = [...nodes].sort(compareFlatAdminTreeNodes);
+
+  for (const node of sortedNodes) {
+    byId.set(node.id, {
+      id: node.id,
+      parent_id: node.parent_id ?? null,
+      kind: node.kind,
+      name: node.name,
+      path: node.url_path,
+      status: node.status,
+      children: [],
+      content_format: node.content_format,
+    });
+  }
+
+  const roots: AdminTreeNode[] = [];
+  for (const node of sortedNodes) {
+    const treeNode = byId.get(node.id);
+    if (!treeNode) continue;
+    const parent = node.parent_id ? byId.get(node.parent_id) : undefined;
+    if (parent) {
+      parent.children.push(treeNode);
+    } else {
+      roots.push(treeNode);
+    }
+  }
+
+  return roots;
+}
+
+function compareFlatAdminTreeNodes(
+  left: FlatAdminTreeNode,
+  right: FlatAdminTreeNode,
+): number {
+  const leftParent = left.parent_id ?? "";
+  const rightParent = right.parent_id ?? "";
+  if (leftParent !== rightParent) return leftParent.localeCompare(rightParent);
+  if (left.sort_order !== right.sort_order) return left.sort_order - right.sort_order;
+  return left.name.localeCompare(right.name, "zh-CN");
 }
 
 export function fetchAdminTree(): Promise<AdminTreeResponse> {

@@ -87,3 +87,12 @@ test('Stage 2 frontend types model the protected tree and draft/published-only s
   assert.match(typesSource, /status:\s*'draft' \| 'published'/);
   assert.doesNotMatch(typesSource, /有未发布修改|unpublished_changes|modified/);
 });
+
+test('Stage 2 admin tree adapter accepts backend flat nodes contract and builds frontend roots', () => {
+  assert.match(apiSource, /nodes:\s*z\.array\(flatAdminTreeNodeSchema\)/);
+  assert.match(apiSource, /url_path:\s*z\.string\(\)/);
+  assert.match(apiSource, /sort_order:\s*z\.number\(\)/);
+  assert.match(apiSource, /buildAdminTreeRoots\(response\.nodes\)/);
+  assert.match(apiSource, /path:\s*node\.url_path/);
+  assert.match(apiSource, /parent\.children\.push\(treeNode\)/);
+});
