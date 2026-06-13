@@ -59,9 +59,7 @@ export interface FileAsset {
   filename: string;
   mime_type: string;
   size_bytes: number;
-  storage_provider: string;
-  storage_key?: string;
-  public_url: string;
+  public_url?: string;
   state?: AssetState;
   published_asset_id?: string | null;
   created_at: string;
