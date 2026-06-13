@@ -167,6 +167,17 @@ type PublishedContent struct {
 	Visible        bool          `json:"visible"`
 }
 
+type PublicFileContent struct {
+	NodeID         uuid.UUID     `json:"node_id"`
+	ContentFormat  ContentFormat `json:"content_format"`
+	Keywords       []string      `json:"keywords"`
+	BodyRaw        string        `json:"body_raw"`
+	BodyHTML       *string       `json:"body_html"`
+	SearchText     string        `json:"search_text"`
+	PublishedAt    time.Time     `json:"published_at"`
+	UpdatedAt      time.Time     `json:"updated_at"`
+}
+
 type FileVersionState struct {
 	Current               FileContent       `json:"current"`
 	Previous              *FileContent      `json:"previous"`
@@ -183,13 +194,13 @@ type PublishResult struct {
 }
 
 type FilePage struct {
-	Node           Node        `json:"node"`
-	Content        FileContent `json:"content"`
-	KeywordsPublic []string    `json:"keywords_public"`
-	LikeCount      int         `json:"like_count"`
-	ViewerHasLiked bool        `json:"viewer_has_liked"`
-	CommentCount   int         `json:"comment_count"`
-	Assets         []FileAsset `json:"assets"`
+	Node           Node              `json:"node"`
+	Content        PublicFileContent `json:"content"`
+	KeywordsPublic []string          `json:"keywords_public"`
+	LikeCount      int               `json:"like_count"`
+	ViewerHasLiked bool              `json:"viewer_has_liked"`
+	CommentCount   int               `json:"comment_count"`
+	Assets         []FileAsset       `json:"assets"`
 }
 
 type ResolveType string

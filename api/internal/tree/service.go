@@ -15,8 +15,7 @@ type LifecycleRepository interface {
 	RestorePreviousContent(ctx context.Context, nodeID uuid.UUID, expectedRevision int) (FileVersionState, error)
 	PublishCurrentSnapshot(ctx context.Context, nodeID uuid.UUID, expectedRevision int) (PublishResult, error)
 	PublishedContent(ctx context.Context, nodeID uuid.UUID) (PublishedContent, error)
-	PublishFile(ctx context.Context, nodeID uuid.UUID) (FileContent, error)
-	UnpublishFile(ctx context.Context, nodeID uuid.UUID) (FileContent, error)
+	UnpublishFile(ctx context.Context, nodeID uuid.UUID, expectedRevision int) (FileContent, error)
 	DeleteNode(ctx context.Context, nodeID uuid.UUID) error
 	HasPublishedDescendantFiles(ctx context.Context, directoryID uuid.UUID) (bool, error)
 	HasChildNodes(ctx context.Context, directoryID uuid.UUID) (bool, error)
@@ -66,25 +65,6 @@ func (s *LifecycleService) UpsertFileContent(ctx context.Context, nodeID uuid.UU
 	return s.repo.UpsertFileContent(ctx, nodeID, input)
 }
 
-func (s *LifecycleService) PublishFile(ctx context.Context, nodeID uuid.UUID) (FileContent, error) {
-	node, err := s.repo.GetNode(ctx, nodeID)
-	if err != nil {
-		return FileContent{}, err
-	}
-	if node.Kind != NodeKindFile {
-		return FileContent{}, ErrNodeIsNotFile
-	}
-	current, err := s.repo.GetFileContent(ctx, nodeID)
-	if err != nil {
-		return FileContent{}, err
-	}
-	result, err := s.repo.PublishCurrentSnapshot(ctx, nodeID, current.Revision)
-	if err == nil {
-		return result.Current, nil
-	}
-	return s.repo.PublishFile(ctx, nodeID)
-}
-
 func (s *LifecycleService) GetFileVersionState(ctx context.Context, nodeID uuid.UUID) (FileVersionState, error) {
 	return s.repo.GetFileVersionState(ctx, nodeID)
 }
@@ -97,7 +77,10 @@ func (s *LifecycleService) PublishCurrentSnapshot(ctx context.Context, nodeID uu
 	return s.repo.PublishCurrentSnapshot(ctx, nodeID, expectedRevision)
 }
 
-func (s *LifecycleService) UnpublishFile(ctx context.Context, nodeID uuid.UUID) (FileContent, error) {
+func (s *LifecycleService) UnpublishFile(ctx context.Context, nodeID uuid.UUID, expectedRevision int) (FileContent, error) {
+	if expectedRevision <= 0 {
+		return FileContent{}, ErrLostUpdate
+	}
 	node, err := s.repo.GetNode(ctx, nodeID)
 	if err != nil {
 		return FileContent{}, err
@@ -105,7 +88,7 @@ func (s *LifecycleService) UnpublishFile(ctx context.Context, nodeID uuid.UUID) 
 	if node.Kind != NodeKindFile {
 		return FileContent{}, ErrNodeIsNotFile
 	}
-	return s.repo.UnpublishFile(ctx, nodeID)
+	return s.repo.UnpublishFile(ctx, nodeID, expectedRevision)
 }
 
 func (s *LifecycleService) DeleteNode(ctx context.Context, nodeID uuid.UUID) error {
