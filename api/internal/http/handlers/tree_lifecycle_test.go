@@ -61,12 +61,13 @@ func TestTreeLifecycleHandlerMapsConflict(t *testing.T) {
 }
 
 type fakeTreeLifecycleService struct {
-	content tree.FileContent
-	err     error
+	content  tree.FileContent
+	err      error
+	stateErr error
 }
 
 func (f *fakeTreeLifecycleService) GetFileVersionState(context.Context, uuid.UUID) (tree.FileVersionState, error) {
-	return tree.FileVersionState{Current: f.content, DraftAssets: []tree.FileAsset{}, PublishedAssets: []tree.FileAsset{}}, f.err
+	return tree.FileVersionState{Current: f.content, DraftAssets: []tree.FileAsset{}, PublishedAssets: []tree.FileAsset{}}, f.stateErr
 }
 
 func (f *fakeTreeLifecycleService) RestorePreviousContent(context.Context, uuid.UUID, int) (tree.FileVersionState, error) {
