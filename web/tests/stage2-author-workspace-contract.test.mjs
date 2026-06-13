@@ -67,7 +67,7 @@ test('Stage 2 empty Author Workspace can create the first root content item', ()
   );
 });
 
-test('Stage 2 primary UI hides implementation identifiers and Stage 3 publication concepts', () => {
+test('Stage 2 primary UI hides implementation identifiers while allowing Stage 3 publication UX', () => {
   for (const forbidden of [
     /Parent id/i,
     /Node id/i,
@@ -75,8 +75,6 @@ test('Stage 2 primary UI hides implementation identifiers and Stage 3 publicatio
     /\bslug\b/i,
     /有未发布修改/,
     /发布更新/,
-    /Draft Preview/i,
-    /Autosave/i,
   ]) {
     assert.doesNotMatch(adminPageSource, forbidden);
   }
@@ -84,6 +82,8 @@ test('Stage 2 primary UI hides implementation identifiers and Stage 3 publicatio
   assert.match(adminPageSource, /Draft/);
   assert.match(adminPageSource, /Live/);
   assert.match(adminPageSource, /Unpublish/);
+  assert.match(adminPageSource, /Draft Preview/);
+  assert.match(adminPageSource, /Autosave/);
 });
 
 test('Stage 2 workspace provides explicit return controls for subflows', () => {
@@ -111,11 +111,12 @@ test('Stage 2 polish exposes tree-based same-parent drag', () => {
   assert.match(adminPageSource, /author-tree-row/);
 });
 
-test('Stage 2 frontend types model the protected tree and draft/published-only statuses', () => {
+test('Stage 2 frontend types model the protected tree and Stage 3 publish statuses', () => {
   assert.match(typesSource, /AdminTreeNode/);
   assert.match(typesSource, /AdminTreeResponse/);
-  assert.match(typesSource, /status:\s*'draft' \| 'published'/);
-  assert.doesNotMatch(typesSource, /有未发布修改|unpublished_changes|modified/);
+  assert.match(typesSource, /PublishStatus\s*=\s*"draft"\s*\|\s*"published"\s*\|\s*"unpublished_changes"/);
+  assert.match(typesSource, /status:\s*PublishStatus/);
+  assert.doesNotMatch(typesSource, /有未发布修改|modified/);
 });
 
 test('Stage 2 admin tree adapter accepts backend flat nodes contract and builds frontend roots', () => {

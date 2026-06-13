@@ -36,7 +36,8 @@ test('Task 14 API helpers bind Stage 2 workspace endpoints without widening crea
   assert.match(apiSource, /previewAdminMove/);
   assert.match(apiSource, /moveAdminNode/);
   assert.match(typesSource, /MovePreviewResponse/);
-  assert.match(typesSource, /status:\s*'draft' \| 'published'/);
+  assert.match(typesSource, /PublishStatus\s*=\s*"draft"\s*\|\s*"published"\s*\|\s*"unpublished_changes"/);
+  assert.match(typesSource, /status:\s*PublishStatus/);
 });
 
 test('Task 14 directory settings include guarded delete and tree-based same-parent drag', () => {
@@ -45,7 +46,8 @@ test('Task 14 directory settings include guarded delete and tree-based same-pare
   assert.match(adminPageSource, /draggable/);
   assert.doesNotMatch(adminPageSource, /Drag cards/);
   assert.match(adminPageSource, /reorderAdminChildren/);
-  assert.doesNotMatch(adminPageSource, /有未发布修改|发布更新|Draft Preview|Autosave/);
+  assert.doesNotMatch(adminPageSource, /有未发布修改|发布更新/);
+  assert.match(adminPageSource, /Draft Preview|Autosave/);
 });
 
 test('Task 14 settings provide Directory Picker move preview and danger feedback', () => {

@@ -1,7 +1,9 @@
 import {
   FormEvent,
+  useCallback,
   useEffect,
   useMemo,
+  useReducer,
   useState,
 } from "react";
 import {
@@ -21,12 +23,18 @@ import {
   fetchAdminNode,
   fetchAdminTree,
   fetchCurrentUser,
+  fetchDraftPreview,
+  fetchFileAssetState,
+  fetchFileVersions,
+  fetchPublishSummary,
+  isRevisionConflict,
   moveAdminNode,
   previewAdminMove,
   publishFile,
   reorderAdminChildren,
   type CreateAdminNodeInput,
   unpublishFile,
+  restorePreviousContent,
   updateAdminNode,
   uploadAsset,
   upsertFileContent,
@@ -36,7 +44,11 @@ import type {
   AdminNodeDetail,
   AdminTreeNode,
   ContentFormat,
+  DraftPreviewPayload,
+  FileContentVersion,
+  FileVersionState,
   MovePreviewResponse,
+  PublishSummary,
   NodeKind,
 } from "../lib/types";
 
@@ -44,6 +56,71 @@ const selectionStorageKey = "xlab-author-workspace:selected-node";
 const expandedStorageKey = "xlab-author-workspace:expanded-directories";
 
 type FileWorkspaceTab = "content" | "assets" | "settings";
+type AutosaveState = "Editing" | "Saving" | "Saved" | "Save failed" | "Conflict" | "Unpublished changes";
+
+const autosaveDelayMs = 15000;
+
+interface AutosaveDraftState {
+  contentFormat: ContentFormat;
+  bodyRaw: string;
+  keywordsText: string;
+  revision: number;
+  lastSavedAt: string;
+  state: AutosaveState;
+  localDraft: string;
+}
+
+type AutosaveDraftAction =
+  | { type: "reset"; content: FileContentVersion | null }
+  | { type: "editing"; next: Partial<{ contentFormat: ContentFormat; bodyRaw: string; keywordsText: string }> }
+  | { type: "saving" }
+  | { type: "saved"; content: FileContentVersion }
+  | { type: "failed"; state: "Save failed" | "Conflict" }
+  | { type: "state"; state: AutosaveState };
+
+function autosaveStateFromContent(content: FileContentVersion | null): AutosaveDraftState {
+  return {
+    contentFormat: content?.content_format ?? "markdown",
+    bodyRaw: content?.body_raw ?? "",
+    keywordsText: content?.keywords.join(", ") ?? "",
+    revision: content?.revision ?? 1,
+    lastSavedAt: content?.last_saved_at ?? "",
+    state: "Saved",
+    localDraft: "",
+  };
+}
+
+function autosaveDraftReducer(
+  draft: AutosaveDraftState,
+  action: AutosaveDraftAction,
+): AutosaveDraftState {
+  switch (action.type) {
+    case "reset":
+      return autosaveStateFromContent(action.content);
+    case "editing":
+      return {
+        ...draft,
+        contentFormat: action.next.contentFormat ?? draft.contentFormat,
+        bodyRaw: action.next.bodyRaw ?? draft.bodyRaw,
+        keywordsText: action.next.keywordsText ?? draft.keywordsText,
+        state: "Editing",
+      };
+    case "saving":
+      return { ...draft, state: "Saving" };
+    case "saved":
+      return {
+        ...draft,
+        revision: action.content.revision,
+        lastSavedAt: action.content.last_saved_at,
+        state: "Saved",
+        localDraft: "",
+      };
+    case "failed":
+      return { ...draft, state: action.state, localDraft: draft.bodyRaw };
+    case "state":
+      return { ...draft, state: action.state };
+  }
+}
 
 export function AdminPage({ onLogout }: { onLogout: () => void }) {
   const token = getToken();
@@ -831,6 +908,247 @@ function DirectoryOverview({
   );
 }
 
+
+function useUnsavedNavigationGuard(shouldBlock: boolean, message = "Save failed; your typed text is preserved as a local draft.") {
+  useEffect(() => {
+    if (!shouldBlock) return;
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      event.returnValue = message;
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [message, shouldBlock]);
+}
+
+function useAutosaveFile({
+  nodeId,
+  initialContent,
+  onFeedback,
+  onRefresh,
+}: {
+  nodeId: string;
+  initialContent: FileContentVersion | null;
+  onFeedback: (message: string | null) => void;
+  onRefresh: () => Promise<void>;
+}) {
+  const [draft, dispatchDraft] = useReducer(
+    autosaveDraftReducer,
+    initialContent,
+    autosaveStateFromContent,
+  );
+
+  useEffect(() => {
+    window.setTimeout(() => {
+      dispatchDraft({ type: "reset", content: initialContent });
+    }, 0);
+  }, [initialContent]);
+
+  const keywords = useMemo(
+    () => draft.keywordsText.split(",").map((item) => item.trim()).filter(Boolean),
+    [draft.keywordsText],
+  );
+  const dirty = draft.state === "Editing" || draft.state === "Save failed" || draft.state === "Conflict";
+
+  const saveNow = useCallback(async (reason: string) => {
+    dispatchDraft({ type: "saving" });
+    try {
+      const saved = await upsertFileContent(nodeId, {
+        expected_revision: draft.revision,
+        content_format: draft.contentFormat,
+        body_raw: draft.bodyRaw,
+        keywords,
+      });
+      dispatchDraft({ type: "saved", content: saved });
+      onFeedback(reason === "publish" ? "Saved before publishing." : "Saved.");
+      await onRefresh();
+      return saved;
+    } catch (error) {
+      if (isRevisionConflict(error)) {
+        dispatchDraft({ type: "failed", state: "Conflict" });
+        onFeedback("Conflict. Reload latest or Copy my changes; manual review is required.");
+      } else {
+        dispatchDraft({ type: "failed", state: "Save failed" });
+        onFeedback("Save failed; typed text is preserved as a local draft.");
+      }
+      return null;
+    }
+  }, [
+    draft.bodyRaw,
+    draft.contentFormat,
+    draft.revision,
+    keywords,
+    nodeId,
+    onFeedback,
+    onRefresh,
+  ]);
+
+  function markEditing(next: Partial<{ contentFormat: ContentFormat; bodyRaw: string; keywordsText: string }>) {
+    dispatchDraft({ type: "editing", next });
+  }
+
+  useEffect(() => {
+    if (draft.state !== "Editing") return;
+    const timer = window.setTimeout(() => {
+      void saveNow("debounce");
+    }, autosaveDelayMs);
+    return () => window.clearTimeout(timer);
+  }, [draft.state, saveNow]);
+
+  return {
+    contentFormat: draft.contentFormat,
+    bodyRaw: draft.bodyRaw,
+    keywordsText: draft.keywordsText,
+    revision: draft.revision,
+    lastSavedAt: draft.lastSavedAt,
+    state: draft.state,
+    localDraft: draft.localDraft,
+    dirty,
+    markEditing,
+    saveNow,
+    setState: (state: AutosaveState) => dispatchDraft({ type: "state", state }),
+  };
+}
+
+function VersionPanel({
+  versionState,
+  onRestore,
+}: {
+  versionState: FileVersionState | null | undefined;
+  onRestore: () => void;
+}) {
+  const current = versionState?.current;
+  const previous = versionState?.previous;
+  return (
+    <section className="nested-create-panel" aria-label="Current and Previous versions">
+      <h3>Current / Previous</h3>
+      <p className="muted">Current revision: {current?.revision ?? "—"}</p>
+      <p className="muted">Current saved: {current?.last_saved_at || "Not saved yet"}</p>
+      <p className="muted">Previous saved: {previous?.last_saved_at || "No Previous version"}</p>
+      <details>
+        <summary>Compare Current and Previous</summary>
+        <pre>{previous ? previous.body_raw.slice(0, 600) : "No Previous content to compare."}</pre>
+      </details>
+      <button className="glass-button" type="button" onClick={onRestore} disabled={!previous}>
+        Restore Previous
+      </button>
+    </section>
+  );
+}
+
+function PublishControls({
+  node,
+  versionState,
+  summary,
+  onPublish,
+  onUnpublish,
+}: {
+  node: AdminTreeNode;
+  versionState: FileVersionState | null | undefined;
+  summary: PublishSummary | null | undefined;
+  onPublish: () => void;
+  onUnpublish: () => void;
+}) {
+  const hasPublished = Boolean(versionState?.published?.visible || node.status === "published");
+  const hasChanges = Boolean(versionState?.has_unpublished_changes || summary?.will_update_content);
+  const label = !hasPublished ? "Publish" : hasChanges ? "Publish changes" : "Published";
+  return (
+    <section className="nested-create-panel" aria-label="Publish summary">
+      <h3>Publish summary</h3>
+      <p className="muted">
+        {summary?.will_update_content || hasChanges
+          ? "Content and draft assets will become public after Publish."
+          : "Published Content snapshot is up to date."}
+      </p>
+      <p className="muted">Draft assets: {summary?.draft_assets.length ?? versionState?.draft_assets.length ?? 0}</p>
+      <p className="muted">Published assets: {summary?.published_assets.length ?? versionState?.published_assets.length ?? 0}</p>
+      <div className="button-row">
+        <button className="primary-button" type="button" onClick={onPublish} disabled={label === "Published"}>
+          {label}
+        </button>
+        <button className="glass-button danger-button" type="button" onClick={onUnpublish}>
+          Unpublish
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function PreviewSplit({ preview }: { preview: DraftPreviewPayload | null | undefined }) {
+  return (
+    <section className="nested-create-panel preview-split" aria-label="Draft Preview">
+      <h3>Draft Preview</h3>
+      <p className="muted">Author-only Draft Preview. Requires author access and uses saved Current content.</p>
+      <div className="editor-preview-split">
+        <div>
+          <p className="eyebrow">Preview assets</p>
+          <p className="muted">{preview?.assets.length ?? 0} draft asset(s)</p>
+        </div>
+        <iframe
+          title="Draft Preview"
+          sandbox={preview?.iframe_sandbox || "allow-scripts"}
+          srcDoc={preview?.html || "<p>Save to refresh Draft Preview.</p>"}
+        />
+      </div>
+    </section>
+  );
+}
+
+function AssetStatePanel({
+  draftAssets,
+  publishedAssets,
+  onDelete,
+}: {
+  draftAssets: AdminNodeDetail["assets"];
+  publishedAssets: AdminNodeDetail["assets"];
+  onDelete: (assetId: string) => void;
+}) {
+  return (
+    <div className="asset-state-panel">
+      <section className="nested-create-panel" aria-label="Draft assets">
+        <h3>Draft assets</h3>
+        <p className="muted">Uploaded draft assets are not public until Publish; they will become public in the next Publish summary.</p>
+        <AssetList assets={draftAssets} onDelete={onDelete} />
+      </section>
+      <section className="nested-create-panel" aria-label="Published assets">
+        <h3>Published assets</h3>
+        <p className="muted">Published snapshot assets remain stable; deleting draft state will not break published content before the next Publish.</p>
+        <AssetList assets={publishedAssets} onDelete={onDelete} readonly />
+      </section>
+    </div>
+  );
+}
+
+function AssetList({
+  assets,
+  onDelete,
+  readonly = false,
+}: {
+  assets: AdminNodeDetail["assets"];
+  onDelete: (assetId: string) => void;
+  readonly?: boolean;
+}) {
+  if (assets.length === 0) return <p className="muted">No assets yet.</p>;
+  return (
+    <div className="admin-asset-list">
+      {assets.map((asset) => (
+        <article className="asset-link" key={asset.id}>
+          <span>{asset.filename}</span>
+          <small>{asset.mime_type} · {formatBytes(asset.size_bytes)}</small>
+          {asset.public_url ? (
+            <a className="glass-button" href={asset.public_url} target="_blank" rel="noreferrer">Open</a>
+          ) : null}
+          {!readonly ? (
+            <button className="glass-button danger-button" type="button" onClick={() => onDelete(asset.id)}>
+              Delete
+            </button>
+          ) : null}
+        </article>
+      ))}
+    </div>
+  );
+}
+
 function FileOverview({
   node,
   detail,
@@ -849,42 +1167,77 @@ function FileOverview({
     null,
   );
   const [moveDestinationId, setMoveDestinationId] = useState<string | null>(null);
-  const contentFormat =
-    detail?.content?.content_format ?? node.content_format ?? "markdown";
-  const bodyRaw = detail?.content?.body_raw ?? "";
-  const keywords = detail?.content?.keywords.join(", ") ?? "";
+  const versionQuery = useQuery({
+    queryKey: ["admin", "file-versions", node.id],
+    queryFn: () => fetchFileVersions(node.id),
+  });
+  const publishSummaryQuery = useQuery({
+    queryKey: ["admin", "publish-summary", node.id],
+    queryFn: () => fetchPublishSummary(node.id),
+  });
+  const draftPreviewQuery = useQuery({
+    queryKey: ["admin", "draft-preview", node.id],
+    queryFn: () => fetchDraftPreview(node.id),
+  });
+  const assetStateQuery = useQuery({
+    queryKey: ["admin", "asset-state", node.id],
+    queryFn: () => fetchFileAssetState(node.id),
+  });
+  const currentContent = versionQuery.data?.current ?? detail?.content ?? null;
+  const autosave = useAutosaveFile({
+    nodeId: node.id,
+    initialContent: currentContent,
+    onFeedback,
+    onRefresh,
+  });
+  useUnsavedNavigationGuard(autosave.state === "Save failed" || autosave.state === "Conflict");
   const availableDestinations = directoryOptions.filter(
     (directory) => directory.id !== node.id,
   );
 
   async function submitContent(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    await autosave.saveNow("manual");
+  }
+
+  async function restorePrevious() {
     try {
-      await upsertFileContent(node.id, {
-        content_format: stringValue(form, "content_format") as ContentFormat,
-        body_raw: stringValue(form, "body_raw"),
-        keywords: stringValue(form, "keywords")
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean),
-      });
-      onFeedback("Saved.");
+      const restored = await restorePreviousContent(node.id, autosave.revision);
+      onFeedback("Previous restored into Current.");
+      autosave.setState(restored.has_unpublished_changes ? "Unpublished changes" : "Saved");
+      await versionQuery.refetch();
       await onRefresh();
     } catch (error) {
-      onFeedback(formatAdminActionError(error, "Save failed. Check the content and try again."));
+      onFeedback(formatAdminActionError(error, "Restore failed. Reload and try again."));
     }
   }
+
+  async function reloadLatest() {
+    await versionQuery.refetch();
+    autosave.setState("Saved");
+    onFeedback("Reload latest complete.");
+  }
+
+  async function copyMyChanges() {
+    await navigator.clipboard?.writeText(autosave.bodyRaw);
+    onFeedback("Copy my changes complete. Your typed text is preserved as a local draft.");
+  }
+
 
   async function togglePublish(nextStatus: "draft" | "published") {
     try {
       if (nextStatus === "published") {
-        await publishFile(node.id);
-        onFeedback("Published.");
+        const saved = autosave.dirty ? await autosave.saveNow("publish") : currentContent;
+        if (!saved) return;
+        await publishFile(node.id, saved.revision);
+        onFeedback("Published Content snapshot updated.");
       } else {
         await unpublishFile(node.id);
-        onFeedback("Unpublished. This file is now a draft.");
+        onFeedback("Unpublished. Published Content is retained but hidden.");
       }
+      await publishSummaryQuery.refetch();
+      await versionQuery.refetch();
+      await draftPreviewQuery.refetch();
       await onRefresh();
     } catch (error) {
       onFeedback(
@@ -892,6 +1245,7 @@ function FileOverview({
       );
     }
   }
+
 
   async function submitAsset(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -905,6 +1259,8 @@ function FileOverview({
       await uploadAsset(node.id, file);
       onFeedback(`Asset uploaded: ${file.name}`);
       event.currentTarget.reset();
+      await assetStateQuery.refetch();
+      await publishSummaryQuery.refetch();
       await onRefresh();
     } catch (error) {
       onFeedback(
@@ -917,6 +1273,8 @@ function FileOverview({
     try {
       await deleteAsset(assetId);
       onFeedback("Asset deleted.");
+      await assetStateQuery.refetch();
+      await publishSummaryQuery.refetch();
       await onRefresh();
     } catch (error) {
       onFeedback(formatAdminActionError(error, "Delete asset failed. Try again."));
@@ -1019,30 +1377,50 @@ function FileOverview({
 
       {activeTab === "content" ? (
         <section className="workspace-tab-panel" aria-label="Write">
-          <div className="button-row">
-            {node.status === "draft" ? (
-              <button
-                className="primary-button"
-                type="button"
-                onClick={() => togglePublish("published")}
-              >
-                Publish
-              </button>
-            ) : null}
-            {node.status === "published" ? (
-              <button
-                className="glass-button"
-                type="button"
-                onClick={() => togglePublish("draft")}
-              >
-                Unpublish
-              </button>
+          <div className="status-panel compact-status" aria-label="Autosave status">
+            <p className="eyebrow">Autosave</p>
+            <h3>{autosave.state}</h3>
+            <p className="muted">
+              {autosave.state === "Save failed"
+                ? "Save failed; typed text is preserved as a local draft."
+                : autosave.state === "Conflict"
+                  ? "Conflict. Reload latest or Copy my changes."
+                  : autosave.state === "Unpublished changes"
+                    ? "Unpublished changes are saved in Current but not Published."
+                    : autosave.lastSavedAt
+                      ? `Saved ${autosave.lastSavedAt}`
+                      : "Saved"}
+            </p>
+            {autosave.localDraft ? <p className="muted">Local draft preserved.</p> : null}
+            {autosave.state === "Conflict" ? (
+              <div className="button-row">
+                <button className="glass-button" type="button" onClick={reloadLatest}>
+                  Reload latest
+                </button>
+                <button className="glass-button" type="button" onClick={copyMyChanges}>
+                  Copy my changes
+                </button>
+              </div>
             ) : null}
           </div>
+
+          <PublishControls
+            node={node}
+            versionState={versionQuery.data}
+            summary={publishSummaryQuery.data}
+            onPublish={() => togglePublish("published")}
+            onUnpublish={() => togglePublish("draft")}
+          />
+
           <form className="admin-form" onSubmit={submitContent}>
             <label>
               Format
-              <select name="content_format" defaultValue={contentFormat}>
+              <select
+                name="content_format"
+                value={autosave.contentFormat}
+                onChange={(event) => autosave.markEditing({ contentFormat: event.target.value as ContentFormat })}
+                onBlur={() => void autosave.saveNow("blur")}
+              >
                 <option value="markdown">Markdown</option>
                 <option value="html_document">HTML</option>
               </select>
@@ -1051,17 +1429,21 @@ function FileOverview({
               Keywords
               <input
                 name="keywords"
-                defaultValue={keywords}
+                value={autosave.keywordsText}
                 placeholder="comma separated"
+                onChange={(event) => autosave.markEditing({ keywordsText: event.target.value })}
+                onBlur={() => void autosave.saveNow("blur")}
               />
             </label>
             <label>
               Body
               <textarea
                 name="body_raw"
-                defaultValue={bodyRaw}
+                value={autosave.bodyRaw}
                 rows={12}
                 placeholder="Write your draft here"
+                onChange={(event) => autosave.markEditing({ bodyRaw: event.target.value })}
+                onBlur={() => void autosave.saveNow("blur")}
               />
             </label>
             <div className="button-row">
@@ -1070,6 +1452,9 @@ function FileOverview({
               </button>
             </div>
           </form>
+
+          <VersionPanel versionState={versionQuery.data} onRestore={restorePrevious} />
+          <PreviewSplit preview={draftPreviewQuery.data} />
         </section>
       ) : null}
 
@@ -1080,6 +1465,7 @@ function FileOverview({
               Asset
               <input name="asset" type="file" />
             </label>
+            <p className="muted">Draft uploads are not public until Publish.</p>
             <div className="button-row">
               <button className="primary-button" type="submit">
                 <Upload size={16} aria-hidden="true" />
@@ -1087,35 +1473,11 @@ function FileOverview({
               </button>
             </div>
           </form>
-          {detail?.assets.length ? (
-            <div className="admin-asset-list">
-              {detail.assets.map((asset) => (
-                <article className="asset-link" key={asset.id}>
-                  <span>{asset.filename}</span>
-                  <small>
-                    {asset.mime_type} · {formatBytes(asset.size_bytes)}
-                  </small>
-                  <a
-                    className="glass-button"
-                    href={asset.public_url}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Open
-                  </a>
-                  <button
-                    className="glass-button danger-button"
-                    type="button"
-                    onClick={() => removeAsset(asset.id)}
-                  >
-                    Delete
-                  </button>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <p className="muted">No assets yet.</p>
-          )}
+          <AssetStatePanel
+            draftAssets={assetStateQuery.data?.draft_assets ?? versionQuery.data?.draft_assets ?? detail?.assets ?? []}
+            publishedAssets={assetStateQuery.data?.published_assets ?? versionQuery.data?.published_assets ?? []}
+            onDelete={removeAsset}
+          />
         </section>
       ) : null}
 
