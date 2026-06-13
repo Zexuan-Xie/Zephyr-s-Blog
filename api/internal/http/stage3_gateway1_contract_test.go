@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -27,7 +28,7 @@ func TestStage3Gateway1AdminRoutesExposeVersionPreviewAndAssetContracts(t *testi
 	router := NewRouter(Dependencies{
 		AuthService:      authService,
 		Tokens:           tokens,
-		LifecycleService: tree.NewLifecycleService(newFakeLifecycleRepository()),
+		LifecycleService: tree.NewLifecycleService(&stage3RouterLifecycleRepo{fileID: fileID}),
 	})
 
 	tests := []struct {
@@ -71,4 +72,51 @@ func TestStage3Gateway1DraftPreviewDeniedToReader(t *testing.T) {
 	if res.Code != http.StatusForbidden {
 		t.Fatalf("reader draft preview status = %d, want %d; body=%s", res.Code, http.StatusForbidden, res.Body.String())
 	}
+}
+
+type stage3RouterLifecycleRepo struct {
+	fileID uuid.UUID
+}
+
+func (r *stage3RouterLifecycleRepo) GetNode(_ context.Context, nodeID uuid.UUID) (tree.Node, error) {
+	if nodeID != r.fileID {
+		return tree.Node{}, tree.ErrNodeNotFound
+	}
+	return tree.Node{ID: nodeID, Kind: tree.NodeKindFile, Name: "Post", Path: "/post"}, nil
+}
+
+func (r *stage3RouterLifecycleRepo) GetFileContent(_ context.Context, nodeID uuid.UUID) (tree.FileContent, error) {
+	if nodeID != r.fileID {
+		return tree.FileContent{}, tree.ErrFileContentNotFound
+	}
+	return tree.FileContent{NodeID: nodeID, ContentFormat: tree.ContentFormatMarkdown, Status: tree.PublishStatusDraft}, nil
+}
+
+func (r *stage3RouterLifecycleRepo) UpsertFileContent(_ context.Context, nodeID uuid.UUID, input tree.UpsertFileContentInput) (tree.FileContent, error) {
+	return tree.FileContent{NodeID: nodeID, ContentFormat: input.ContentFormat, BodyRaw: input.BodyRaw, Keywords: input.Keywords, Status: tree.PublishStatusDraft}, nil
+}
+
+func (r *stage3RouterLifecycleRepo) PublishFile(_ context.Context, nodeID uuid.UUID) (tree.FileContent, error) {
+	return tree.FileContent{NodeID: nodeID, ContentFormat: tree.ContentFormatMarkdown, Status: tree.PublishStatusPublished}, nil
+}
+
+func (r *stage3RouterLifecycleRepo) UnpublishFile(_ context.Context, nodeID uuid.UUID) (tree.FileContent, error) {
+	return tree.FileContent{NodeID: nodeID, ContentFormat: tree.ContentFormatMarkdown, Status: tree.PublishStatusDraft}, nil
+}
+
+func (r *stage3RouterLifecycleRepo) DeleteNode(context.Context, uuid.UUID) error { return nil }
+func (r *stage3RouterLifecycleRepo) HasPublishedDescendantFiles(context.Context, uuid.UUID) (bool, error) {
+	return false, nil
+}
+func (r *stage3RouterLifecycleRepo) HasChildNodes(context.Context, uuid.UUID) (bool, error) {
+	return false, nil
+}
+func (r *stage3RouterLifecycleRepo) PublishedDescendantFilePaths(context.Context, uuid.UUID) ([]tree.PublishedFilePath, error) {
+	return nil, nil
+}
+func (r *stage3RouterLifecycleRepo) UpdateRedirectTargets(context.Context, uuid.UUID, string) error {
+	return nil
+}
+func (r *stage3RouterLifecycleRepo) UpsertPathRedirect(context.Context, string, string, uuid.UUID) error {
+	return nil
 }
