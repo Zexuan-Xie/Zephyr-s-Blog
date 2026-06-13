@@ -71,7 +71,7 @@ export function App() {
       />
       <main className="main-content">
         <Routes>
-          <Route path="/" element={<RootPage />} />
+          <Route path="/" element={<RootPage currentUser={currentUser} />} />
           <Route path="/recent" element={<RecentPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/login" element={<AuthPage mode="login" onAuthenticated={resetIdentity} />} />
@@ -104,7 +104,7 @@ export function App() {
                       )
             }
           />
-          <Route path="/*" element={<ContentResolverPage />} />
+          <Route path="/*" element={<ContentResolverPage currentUser={currentUser} />} />
         </Routes>
       </main>
     </div>

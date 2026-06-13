@@ -4,8 +4,9 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { resolveContentPath } from '../lib/api';
 import { FilePage } from '../components/FilePage';
 import { DirectoryPage } from './DirectoryPage';
+import type { CurrentUser } from '../lib/types';
 
-export function ContentResolverPage() {
+export function ContentResolverPage({ currentUser }: { currentUser: CurrentUser | null }) {
   const location = useLocation();
   const navigate = useNavigate();
   const path = location.pathname;
@@ -44,8 +45,8 @@ export function ContentResolverPage() {
   }
 
   if ('content_format' in resolveQuery.data) {
-    return <FilePage file={resolveQuery.data} />;
+    return <FilePage file={resolveQuery.data} currentUser={currentUser} />;
   }
 
-  return <DirectoryPage directory={resolveQuery.data} />;
+  return <DirectoryPage directory={resolveQuery.data} currentUser={currentUser} />;
 }

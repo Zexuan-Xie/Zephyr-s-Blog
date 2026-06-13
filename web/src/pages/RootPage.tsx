@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchRootDirectory } from '../lib/api';
 import { DirectoryPage } from './DirectoryPage';
+import type { CurrentUser } from '../lib/types';
 
-export function RootPage() {
+export function RootPage({ currentUser }: { currentUser: CurrentUser | null }) {
   const rootQuery = useQuery({
     queryKey: ['tree', 'root'],
     queryFn: fetchRootDirectory,
@@ -16,5 +17,5 @@ export function RootPage() {
     return <section className="glass status-panel error">Unable to load root directory.</section>;
   }
 
-  return <DirectoryPage directory={rootQuery.data} isRoot />;
+  return <DirectoryPage directory={rootQuery.data} isRoot currentUser={currentUser} />;
 }

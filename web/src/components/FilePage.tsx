@@ -13,11 +13,12 @@ import {
 } from '../lib/api';
 import { getToken } from '../lib/auth';
 import { renderSafeMarkdown, sanitizeServerHtml } from '../lib/renderMarkdown';
-import type { CommentItem, FilePayload, LikeState } from '../lib/types';
+import type { CommentItem, CurrentUser, FilePayload, LikeState } from '../lib/types';
 import { Breadcrumb } from './Breadcrumb';
 
 interface FilePageProps {
   file: FilePayload;
+  currentUser: CurrentUser | null;
 }
 
 interface ReplyTarget {
@@ -26,7 +27,7 @@ interface ReplyTarget {
   displayName: string;
 }
 
-export function FilePage({ file }: FilePageProps) {
+export function FilePage({ file, currentUser }: FilePageProps) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [fileLikeState, setFileLikeState] = useState<LikeState>({
@@ -38,6 +39,7 @@ export function FilePage({ file }: FilePageProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const token = getToken();
   const isAuthenticated = Boolean(token);
+  const isAuthor = currentUser?.role === 'admin';
   const commentsQuery = useQuery({
     queryKey: ['comments', file.id],
     queryFn: () => fetchCommentThread(file.id),
@@ -134,6 +136,12 @@ export function FilePage({ file }: FilePageProps) {
           {file.read_time_minutes ? ` · ${file.read_time_minutes} min read` : ''}
         </p>
       </section>
+
+      {isAuthor ? (
+        <div className="action-row" aria-label="作者文件操作">
+          <Link className="glass-button" to={`/admin?target=${encodeURIComponent(file.id)}`}>编辑文件</Link>
+        </div>
+      ) : null}
 
       {file.content_format === 'markdown' ? (
         <section className="glass file-reading-card" dangerouslySetInnerHTML={{ __html: markdownHtml }} />
