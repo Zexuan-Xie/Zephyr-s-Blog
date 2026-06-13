@@ -1,19 +1,11 @@
 import os from "node:os";
 import path from "node:path";
 
-export interface BlogMcpConfig {
-  enabled: boolean;
-  killSwitch: boolean;
-  auditLogPath: string;
-  apiBaseUrl: string;
-  adminToken?: string;
-}
-
-function parseBool(value: string | undefined): boolean {
+function parseBool(value) {
   return value === "true" || value === "1" || value === "yes";
 }
 
-export function loadConfig(env: NodeJS.ProcessEnv = process.env): BlogMcpConfig {
+export function loadConfig(env = process.env) {
   return {
     enabled: parseBool(env.BLOG_MCP_ENABLED),
     killSwitch: parseBool(env.BLOG_MCP_KILL_SWITCH),
@@ -24,7 +16,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BlogMcpConfig 
   };
 }
 
-export function assertEnabled(config: Pick<BlogMcpConfig, "enabled" | "killSwitch">): void {
+export function assertEnabled(config) {
   if (!config.enabled) {
     throw new Error("Blog MCP disabled: set BLOG_MCP_ENABLED=true to allow tool calls");
   }

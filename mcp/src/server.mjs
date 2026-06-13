@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { BlogBackendClient } from "./backendClient.js";
-import { loadConfig } from "./config.js";
-import { buildToolDefinitions } from "./tools.js";
+import { BlogBackendClient } from "./backendClient.mjs";
+import { loadConfig } from "./config.mjs";
+import { buildToolDefinitions } from "./tools.mjs";
 
 export function createServer() {
   const config = loadConfig();
@@ -25,7 +25,7 @@ export function createServer() {
   return server;
 }
 
-export async function main(): Promise<void> {
+export async function main() {
   const server = createServer();
   const transport = new StdioServerTransport();
   await server.connect(transport);

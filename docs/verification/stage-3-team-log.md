@@ -358,7 +358,7 @@ PASS disposable restore: pg_restore succeeded into xlab_blog_restore_stage3_2026
 
 Verdict: **Gateway 0/1/2/3/4 PASS; backend security repair PASS; MCP and final closeout pending**
 
-Current coordinator worktree HEAD observed by worker-2: `f50fb4d`.
+Current coordinator worktree HEAD observed by worker-2: `8e95ce3`.
 
 Task state reconciliation from OMX task JSON:
 
@@ -399,3 +399,32 @@ Policy check before this update:
 ```text
 PASS git status/node_modules policy precheck: clean and no tracked web/node_modules.
 ```
+
+
+## MCP Gateway 6 skeleton update — 2026-06-14 00:05 CST
+
+Verdict: **Task 16 in progress; skeleton package added; tool slices/acceptance/security still pending**
+
+Leader created the MCP chain after the 23:48 ledger reconciliation:
+
+- Task 16 Gateway 6 MCP research and server skeleton: **in_progress** on worker-2.
+- Task 17 Gateway 6 MCP tool implementation slices: **pending**, blocked by task 16.
+- Task 18 Gateway 6 MCP acceptance smoke/evidence: **pending**, blocked by tasks 16/17.
+- Task 19 Gateway 6 MCP security review: **pending**, blocked by tasks 16/17.
+- Task 20 final integrated acceptance/closeout: **pending**, blocked by tasks 18/19.
+
+Task 16 first-slice implementation created a separate `mcp/` package with a
+server-local stdio skeleton, explicit `BLOG_MCP_ENABLED` gate, per-call
+`BLOG_MCP_KILL_SWITCH`, JSONL audit writer, backend API-client boundary, and a
+single non-destructive `health_check` tool to prove the registration/guard/audit
+pattern. Evidence is recorded in
+`docs/verification/stage-3-mcp-gateway6-skeleton.md`.
+
+Boundary notes:
+
+- No public HTTP/SSE MCP transport is introduced; the entrypoint uses stdio only.
+- The MCP package is separate from `web/`; no `web/node_modules`, `web/dist`, or
+  `.omx` runtime artifacts are part of the implementation.
+- Real blog tools, backup/export behavior for destructive batches, black-box
+  stdio transcripts, and MCP security PASS are explicitly deferred to tasks
+  17-19.

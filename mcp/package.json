@@ -5,10 +5,10 @@
   "type": "module",
   "description": "Server-local stdio Model Context Protocol server for xLab Blog author operations.",
   "bin": {
-    "xlab-blog-mcp": "./dist/server.js"
+    "xlab-blog-mcp": "./src/server.mjs"
   },
   "scripts": {
-    "build": "tsc --noEmit",
+    "build": "node scripts/check-syntax.mjs",
     "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {

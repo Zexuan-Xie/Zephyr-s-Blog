@@ -23,6 +23,7 @@ Current task reconciliation (2026-06-13 23:48 CST): tasks 1,3,4,5,6,7,8,9,10,11,
 Evidence ledger:
 
 - Coordinator log: `docs/verification/stage-3-team-log.md`.
+- MCP Gateway 6 skeleton evidence: `docs/verification/stage-3-mcp-gateway6-skeleton.md`.
 - Acceptance plan: `docs/verification/stage-3-acceptance.md`.
 - Security plan/review: `docs/verification/stage-3-security.md`.
 - Frontend readiness plan: `docs/verification/stage-3-frontend-readiness.md`.
