@@ -10,7 +10,11 @@ import (
 type LifecycleRepository interface {
 	GetNode(ctx context.Context, nodeID uuid.UUID) (Node, error)
 	GetFileContent(ctx context.Context, nodeID uuid.UUID) (FileContent, error)
+	GetFileVersionState(ctx context.Context, nodeID uuid.UUID) (FileVersionState, error)
 	UpsertFileContent(ctx context.Context, nodeID uuid.UUID, input UpsertFileContentInput) (FileContent, error)
+	RestorePreviousContent(ctx context.Context, nodeID uuid.UUID, expectedRevision int) (FileVersionState, error)
+	PublishCurrentSnapshot(ctx context.Context, nodeID uuid.UUID, expectedRevision int) (PublishResult, error)
+	PublishedContent(ctx context.Context, nodeID uuid.UUID) (PublishedContent, error)
 	PublishFile(ctx context.Context, nodeID uuid.UUID) (FileContent, error)
 	UnpublishFile(ctx context.Context, nodeID uuid.UUID) (FileContent, error)
 	DeleteNode(ctx context.Context, nodeID uuid.UUID) error
@@ -48,6 +52,12 @@ func (s *LifecycleService) UpsertFileContent(ctx context.Context, nodeID uuid.UU
 	if err == nil && existing.Status == PublishStatusPublished && existing.ContentFormat != input.ContentFormat {
 		return FileContent{}, ErrPublishedContentFormatChange
 	}
+	if err == nil && input.ExpectedRevision > 0 && existing.Revision > 0 && input.ExpectedRevision != existing.Revision {
+		return FileContent{}, ErrLostUpdate
+	}
+	if err == nil && input.ExpectedRevision == 0 {
+		input.ExpectedRevision = existing.Revision
+	}
 
 	input.Keywords = normalizeKeywords(input.Keywords)
 	if strings.TrimSpace(input.SearchText) == "" {
@@ -64,10 +74,27 @@ func (s *LifecycleService) PublishFile(ctx context.Context, nodeID uuid.UUID) (F
 	if node.Kind != NodeKindFile {
 		return FileContent{}, ErrNodeIsNotFile
 	}
-	if _, err := s.repo.GetFileContent(ctx, nodeID); err != nil {
+	current, err := s.repo.GetFileContent(ctx, nodeID)
+	if err != nil {
 		return FileContent{}, err
 	}
+	result, err := s.repo.PublishCurrentSnapshot(ctx, nodeID, current.Revision)
+	if err == nil {
+		return result.Current, nil
+	}
 	return s.repo.PublishFile(ctx, nodeID)
+}
+
+func (s *LifecycleService) GetFileVersionState(ctx context.Context, nodeID uuid.UUID) (FileVersionState, error) {
+	return s.repo.GetFileVersionState(ctx, nodeID)
+}
+
+func (s *LifecycleService) RestorePreviousContent(ctx context.Context, nodeID uuid.UUID, expectedRevision int) (FileVersionState, error) {
+	return s.repo.RestorePreviousContent(ctx, nodeID, expectedRevision)
+}
+
+func (s *LifecycleService) PublishCurrentSnapshot(ctx context.Context, nodeID uuid.UUID, expectedRevision int) (PublishResult, error) {
+	return s.repo.PublishCurrentSnapshot(ctx, nodeID, expectedRevision)
 }
 
 func (s *LifecycleService) UnpublishFile(ctx context.Context, nodeID uuid.UUID) (FileContent, error) {
