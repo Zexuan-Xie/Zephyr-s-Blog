@@ -1,6 +1,6 @@
 # xLab Blog Progress
 
-Last updated: 2026-06-13 13:42 CST
+Last updated: 2026-06-13 13:59 CST
 
 This is the durable resume point. Keep it concise and update it after every key milestone.
 
@@ -9,10 +9,10 @@ This is the durable resume point. Keep it concise and update it after every key 
 - Branch: `main`; local commits are ahead of `origin/main`.
 - Active plan: `docs/plans/SECOND_DEVELOPMENT.md`.
 - Active Team: `execute-approved-xlab-015f30a9` launched with the exact approved command `omx team 5 "Execute approved xLab Blog second-development Stage 2 DAG"`.
-- Current breakpoint: Gateway 0 launch/decomposition audit is PASS at `cabf9a4`; `decomposition_source=dag_sidecar`, active DAG `cmp` passed, five-seat mapping is recorded, and no launch role override such as `5:executor` was used.
-- Stage 2 implementation has not started. Next gate: worker-4 Gateway 1 backup/restore proof and `/stage-2-acceptance` fixture after task 6 completes.
-- Current product baseline before Stage 2 implementation: `cabf9a497a7ce1253e99824b6eb8605ba029d813`.
-- Runtime services at Gateway 0: API `127.0.0.1:8080` and web `127.0.0.1:5173` are offline; restart before fixture/API/browser verification.
+- Current breakpoint: Gateway 1 backup/restore/fixture is PASS and merged on leader at `4f992c7`; Gateway 0 also PASS with `decomposition_source=dag_sidecar`, active DAG `cmp` passed, five-seat mapping recorded, and no launch role override such as `5:executor` was used.
+- Stage 2 product implementation has started at Gateway 2: worker-2 is working on OpenAPI-first backend Red contracts in task 8.
+- Current product baseline before Stage 2 implementation: `cabf9a497a7ce1253e99824b6eb8605ba029d813`; Gateway 1 fixture commit is `4363dd0` and merge commit is `4f992c7`.
+- Runtime services at Gateway 1: API health PASS, database PASS, web dev server PASS during fixture evidence. Fixture root `/stage-2-acceptance` is ready.
 
 ## Active delivery stages
 
@@ -115,6 +115,8 @@ For runtime/auth/tree/publication changes, also run native PostgreSQL API smoke 
 ## Latest planning review
 
 
+- 2026-06-13: Gateway 1 backup/restore/fixture passed and was merged. Evidence: `docs/verification/stage-2-backup-and-fixture.md` and `docs/verification/stage-2-acceptance.md`. Backup directory: `~/.local/share/xlab-blog/backups/stage-2-gateway1-20260613T134736+0800`; disposable restore passed; fixture root `/stage-2-acceptance` recorded; public draft isolation smoke passed. Gateway 2 backend OpenAPI/Red contracts is now active.
+
 - 2026-06-13: Stage 2 Team `execute-approved-xlab-015f30a9` Gateway 0 launch/decomposition audit passed. Evidence is in `docs/verification/stage-2-team-log.md`; next gate is Gateway 1 backup/fixture, and product implementation remains blocked until the gate chain clears.
 
 - 2026-06-13: Second Critic probe round returned `REVISE`; fixes applied in working tree: clarified Stage 2 has only `草稿` / `已发布` and defers `有未发布修改` / `发布更新`; chose conservative deletion rule blocking every non-empty Directory; made `GET /admin/tree` the complete protected Stage 2 tree; strengthened OpenAPI field/error requirements; aligned active specs; rewrote ignored `.omx` Stage 2 PRD/packet DAG runtime copies to current Author Workspace scope.
@@ -124,10 +126,10 @@ For runtime/auth/tree/publication changes, also run native PostgreSQL API smoke 
 
 ## Immediate next steps
 
-1. Complete coordinator task 6 and hand off Gateway 1 to worker-4; do not implement feature code before Gateway 1 passes.
-2. Worker-4 Gateway 1: record database/uploads backup state, disposable restore proof or explicit N/A reason, `/stage-2-acceptance` fixture IDs/paths, and baseline content preservation.
-3. After Gateway 1, backend task 8 must update OpenAPI first and add backend Red contracts before any Green implementation.
-4. Before coding, reread `AGENTS.md`, this file, `docs/plans/SECOND_DEVELOPMENT.md`, `docs/specs/CONTEXT.md`, relevant specs, and `docs/api/openapi.yaml` for API changes.
+1. Monitor worker-2 task 8: OpenAPI must be updated first, then backend Red contract tests added before Green implementation.
+2. After task 8 completes, task 9 may implement protected Author tree/detail/minimal create APIs; task 11 may begin frontend Red/UI contracts.
+3. Keep worker-3 blocked until task 8 completes; keep acceptance/security/review blocked until their dependencies clear.
+4. Before API coding/review, reread `AGENTS.md`, this file, `docs/plans/SECOND_DEVELOPMENT.md`, `docs/specs/CONTEXT.md`, relevant specs, and `docs/api/openapi.yaml`.
 5. Update `PROGRESS.md` and `docs/verification/` at every key milestone and before stopping.
 
 ## Key evidence and history

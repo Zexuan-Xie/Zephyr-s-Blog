@@ -1,6 +1,6 @@
 # Stage 2 Team Log
 
-Status: Gateway 0 PASS; Gateway 1 pending
+Status: Gateway 1 PASS; Gateway 2 in progress
 
 Team: `execute-approved-xlab-015f30a9`
 Coordinator: `worker-1`
@@ -49,15 +49,15 @@ omx team api await-event --input '{"team_name":"execute-approved-xlab-015f30a9",
 | `bootstrap-backend` | 2 | worker-2 | executor | completed |
 | `bootstrap-frontend` | 3 | worker-3 | designer | completed |
 | `bootstrap-acceptance` | 4 | worker-4 | test-engineer | completed |
-| `bootstrap-security` | 5 | worker-5 | code-reviewer | in_progress |
+| `bootstrap-security` | 5 | worker-5 | code-reviewer | completed |
 
 ## Stage 2 packet task audit
 
 | Task | Symbolic packet | Owner | Dependencies | Status | Requires code change |
 |---:|---|---|---|---|---|
-| 6 | `s2-00-launch-control` | worker-1 | — | in_progress | false |
-| 7 | `s2-01-data-fixture` | worker-4 | 6 | pending | false |
-| 8 | `s2-02-backend-red-openapi` | worker-2 | 7 | pending | true |
+| 6 | `s2-00-launch-control` | worker-1 | — | completed | false |
+| 7 | `s2-01-data-fixture` | worker-4 | 6 | completed | false |
+| 8 | `s2-02-backend-red-openapi` | worker-2 | 7 | in_progress | true |
 | 9 | `s2-03-backend-tree-create` | worker-2 | 8 | pending | true |
 | 10 | `s2-04-backend-reorder-move-delete` | worker-2 | 9 | pending | true |
 | 11 | `s2-05-frontend-red-contracts` | worker-3 | 8 | pending | true |
@@ -75,8 +75,8 @@ omx team api await-event --input '{"team_name":"execute-approved-xlab-015f30a9",
 
 | Task | Owner | Source SHA | Integration SHA | Verification reset | Evidence | Status |
 |---|---|---|---|---|---|---|
-| 6 — Gateway 0 launch control and decomposition audit | worker-1 | pending | pending | pending | `docs/verification/stage-2-team-log.md` | in_progress |
-| 7 — Gateway 1 backup restore and Stage 2 fixture | worker-4 | pending | pending | pending | `docs/verification/stage-2-acceptance.md` / backup fixture docs | pending |
+| 6 — Gateway 0 launch control and decomposition audit | worker-1 | `4a17333` | `d6b8949` | PASS | `docs/verification/stage-2-team-log.md` | completed |
+| 7 — Gateway 1 backup restore and Stage 2 fixture | worker-4 | `4363dd0` | `4f992c7` | PASS | `docs/verification/stage-2-backup-and-fixture.md`; `docs/verification/stage-2-acceptance.md` | completed |
 | 8 — Gateway 2 OpenAPI and backend Red contracts | worker-2 | pending | pending | pending | task result / source commit | pending |
 | 9 — Protected Author tree detail and minimal create APIs | worker-2 | pending | pending | pending | task result / source commit | pending |
 | 10 — Same-parent reorder move preview commit and delete constraints | worker-2 | pending | pending | pending | task result / source commit | pending |
@@ -108,3 +108,16 @@ omx team api await-event --input '{"team_name":"execute-approved-xlab-015f30a9",
 - Database backup/restore and `/stage-2-acceptance` fixture: Gateway 1, owned by worker-4 after this task completes.
 - Browser desktop/mobile acceptance and security abuse testing: downstream integrated SHA gates.
 - External DashScope embeddings and Docker Compose/server deployment: outside this native Stage 2 launch gate.
+
+## Gateway 1 data safety and fixture checkpoint — 2026-06-13 13:55 CST
+
+Verdict: **PASS**
+
+- Source commit: `4363dd0a2ac2541221568144bb10e1e30dc50b93`; leader merge: `4f992c762c0d997c81a54e63aa41b1d0a26dcd98`.
+- Evidence: `docs/verification/stage-2-backup-and-fixture.md` and `docs/verification/stage-2-acceptance.md`.
+- Backup directory: `~/.local/share/xlab-blog/backups/stage-2-gateway1-20260613T134736+0800`; `xlab_blog.dump`, `uploads.tgz`, and `SHA256SUMS.txt` recorded.
+- Disposable restore proof: PASS (`xlab_blog_restore_stage2_20260613134917`, counts verified, then dropped).
+- Fixture root: `/stage-2-acceptance`; root/draft branch/draft file/published file IDs are recorded in the backup fixture evidence.
+- Public smoke: published fixture resolves; draft fixture returns HTTP 404 publicly.
+- Baseline preservation: non-stage2 path list unchanged; only four Stage 2 fixture nodes added.
+- Gateway 2 status: worker-2 claimed task 8 and is working on OpenAPI-first backend Red contracts.
