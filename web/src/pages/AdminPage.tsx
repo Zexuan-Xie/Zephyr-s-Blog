@@ -1,212 +1,108 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import {
-  ApiError,
-  createAdminNode,
-  deleteAdminNode,
-  deleteAsset,
-  fetchCurrentUser,
   fetchAdminNode,
-  fetchRootDirectory,
-  publishFile,
-  rebuildSearchIndex,
-  refreshEmbedding,
-  unpublishFile,
-  updateAdminNode,
-  uploadAsset,
-  upsertFileContent,
-  type CreateAdminNodeInput,
+  fetchAdminTree,
+  fetchCurrentUser,
 } from '../lib/api';
 import { getToken } from '../lib/auth';
-import type { AdminNodeDetail, ContentEntry, ContentFormat, FileAsset, NodeKind } from '../lib/types';
+import type { AdminNodeDetail, AdminTreeNode } from '../lib/types';
+
+const selectionStorageKey = 'xlab-author-workspace:selected-node';
+const expandedStorageKey = 'xlab-author-workspace:expanded-directories';
 
 export function AdminPage({ onLogout }: { onLogout: () => void }) {
   const token = getToken();
+  const [searchParams] = useSearchParams();
+  const requestedTarget = searchParams.get('target') ?? searchParams.get('node') ?? searchParams.get('select') ?? '';
+  const [selectedId, setSelectedId] = useState(() => requestedTarget || readStoredString(selectionStorageKey));
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set(readStoredList(expandedStorageKey)));
+
   const viewerQuery = useQuery({
     queryKey: ['auth', 'me', 'admin'],
     queryFn: fetchCurrentUser,
     enabled: Boolean(token),
     retry: false,
   });
-  const rootQuery = useQuery({ queryKey: ['admin-root-tree'], queryFn: fetchRootDirectory });
-  const [selectedId, setSelectedId] = useState('');
-  const [detail, setDetail] = useState<AdminNodeDetail | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
+  const adminTreeQuery = useQuery({
+    queryKey: ['admin', 'content-tree'],
+    queryFn: fetchAdminTree,
+    enabled: Boolean(token) && viewerQuery.data?.role === 'admin',
+  });
 
-  const selectedFileId = detail?.node.kind === 'file' ? detail.node.id : selectedId.trim();
+  const flatTree = useMemo(() => flattenTree(adminTreeQuery.data?.roots ?? []), [adminTreeQuery.data]);
+  const selectedNode = flatTree.find((node) => node.id === selectedId) ?? null;
+
+  const detailQuery = useQuery({
+    queryKey: ['admin', 'node-detail', selectedId],
+    queryFn: () => fetchAdminNode(selectedId),
+    enabled: Boolean(selectedId) && Boolean(selectedNode),
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (requestedTarget) {
+      setSelectedId(requestedTarget);
+    }
+  }, [requestedTarget]);
+
+  useEffect(() => {
+    if (selectedId) {
+      window.localStorage.setItem(selectionStorageKey, selectedId);
+    }
+  }, [selectedId]);
+
+  useEffect(() => {
+    window.localStorage.setItem(expandedStorageKey, JSON.stringify([...expandedIds]));
+  }, [expandedIds]);
+
+  useEffect(() => {
+    if (!adminTreeQuery.data || flatTree.length === 0) return;
+
+    if (requestedTarget && flatTree.some((node) => node.id === requestedTarget)) {
+      setSelectedId(requestedTarget);
+      setExpandedIds((current) => expandAncestors(current, requestedTarget, adminTreeQuery.data.roots));
+      return;
+    }
+
+    if (selectedId && flatTree.some((node) => node.id === selectedId)) {
+      setExpandedIds((current) => expandAncestors(current, selectedId, adminTreeQuery.data.roots));
+      return;
+    }
+
+    const firstDirectory = flatTree.find((node) => node.kind === 'directory') ?? flatTree[0];
+    setSelectedId(firstDirectory.id);
+    setExpandedIds((current) => firstDirectory.kind === 'directory' ? new Set([...current, firstDirectory.id]) : current);
+  }, [adminTreeQuery.data, flatTree, requestedTarget, selectedId]);
 
   if (!token) {
     return <Navigate to="/login?return_to=%2Fadmin" replace />;
   }
   if (viewerQuery.isLoading) {
-    return <section className="glass status-panel">Checking administrator access…</section>;
+    return <section className="glass status-panel">正在确认作者权限…</section>;
   }
   if (viewerQuery.isError || viewerQuery.data?.role !== 'admin') {
     return <Navigate to="/login?return_to=%2Fadmin" replace />;
   }
 
-  async function loadNode(nodeId = selectedId.trim()) {
-    if (!nodeId) {
-      setStatus('Enter or select a node id first.');
-      return;
-    }
-    try {
-      const loaded = await fetchAdminNode(nodeId);
-      setDetail(loaded);
-      setSelectedId(loaded.node.id);
-      setStatus(`Loaded ${loaded.node.path}.`);
-    } catch {
-      setStatus('Load failed. Check admin login and node id.');
+  function selectNode(node: AdminTreeNode) {
+    setSelectedId(node.id);
+    if (node.kind === 'directory') {
+      setExpandedIds((current) => new Set([...current, node.id]));
     }
   }
 
-  async function submitCreate(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const createForm = event.currentTarget;
-    const form = new FormData(createForm);
-    const parent = stringValue(form, 'parent_id');
-    const kind = stringValue(form, 'kind') as NodeKind;
-    const input: CreateAdminNodeInput = {
-      parent_id: parent || null,
-      kind,
-      name: stringValue(form, 'name'),
-      slug: stringValue(form, 'slug'),
-      sort_order: numberValue(form, 'sort_order'),
-      content_format: kind === 'file' ? stringValue(form, 'content_format') as ContentFormat : undefined,
-    };
-    let created: AdminNodeDetail;
-    try {
-      created = await createAdminNode(input);
-    } catch (error) {
-      setStatus(formatAdminCreateError(error));
-      return;
-    }
-
-    setDetail(created);
-    setSelectedId(created.node.id);
-    setStatus(`${created.node.kind === 'directory' ? 'Directory' : 'File'} created at ${created.node.path}.`);
-    createForm.reset();
-    void rootQuery.refetch();
-  }
-
-  async function submitNodeUpdate(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!detail) return;
-    const form = new FormData(event.currentTarget);
-    const nextParent = stringValue(form, 'parent_id');
-    const nextSlug = stringValue(form, 'slug');
-    const movingPublished = detail.content?.status === 'published' && (nextParent !== (detail.node.parent_id ?? '') || nextSlug !== detail.node.slug);
-    if (movingPublished && !window.confirm('This published path change can create redirects. Continue?')) {
-      return;
-    }
-    try {
-      const updated = await updateAdminNode(detail.node.id, {
-        parent_id: nextParent || null,
-        name: stringValue(form, 'name'),
-        slug: nextSlug,
-        sort_order: numberValue(form, 'sort_order'),
-      });
-      setDetail(updated);
-      setStatus(`Updated ${updated.node.path}.`);
-    } catch {
-      setStatus('Update failed. Check URL Path uniqueness, reserved root paths, and move constraints.');
-    }
-  }
-
-  async function submitContent(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!detail || detail.node.kind !== 'file') return;
-    const form = new FormData(event.currentTarget);
-    const contentFormat = stringValue(form, 'content_format') as ContentFormat;
-    if (detail.content?.status === 'published' && contentFormat !== detail.content.content_format) {
-      setStatus('Published files cannot directly change content_format. Unpublish or create a new File.');
-      return;
-    }
-    try {
-      const content = await upsertFileContent(detail.node.id, {
-        content_format: contentFormat,
-        body_raw: stringValue(form, 'body_raw'),
-        body_html: contentFormat === 'html_document' ? stringValue(form, 'body_raw') : null,
-        keywords: splitKeywords(stringValue(form, 'keywords')),
-      });
-      setDetail({ ...detail, content });
-      setStatus('Content saved. Embedding status reset for refresh/fallback.');
-    } catch {
-      setStatus('Save failed. Check content format and admin login.');
-    }
-  }
-
-  async function changePublishState(action: 'publish' | 'unpublish') {
-    if (!detail || detail.node.kind !== 'file') return;
-    if (action === 'unpublish' && !window.confirm('Unpublish hides the public file and its assets. Continue?')) return;
-    try {
-      const content = action === 'publish' ? await publishFile(detail.node.id) : await unpublishFile(detail.node.id);
-      setDetail({ ...detail, content });
-      setStatus(action === 'publish' ? 'File published.' : 'File unpublished.');
-    } catch {
-      setStatus(`${action} failed. Ensure file content exists and admin login is valid.`);
-    }
-  }
-
-  async function removeSelectedNode() {
-    if (!detail) return;
-    if (!window.confirm(`Delete ${detail.node.path}? Published files/directories with published descendants are protected.`)) return;
-    try {
-      await deleteAdminNode(detail.node.id);
-      setDetail(null);
-      setStatus('Node deleted.');
-    } catch {
-      setStatus('Delete failed. Published content is protected or login expired.');
-    }
-  }
-
-  async function submitUpload(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    const file = data.get('file');
-    if (!(file instanceof File) || !selectedFileId) {
-      setStatus('Choose a file and select or enter a File node id.');
-      return;
-    }
-    try {
-      const uploaded = await uploadAsset(selectedFileId, file);
-      setDetail((current) => current ? { ...current, assets: [uploaded, ...current.assets.filter((asset) => asset.id !== uploaded.id)] } : current);
-      setStatus(`Uploaded ${uploaded.filename}.`);
-      event.currentTarget.reset();
-    } catch {
-      setStatus('Upload failed. Check admin login, MIME type, file size, or SVG safety.');
-    }
-  }
-
-  async function removeAsset(assetId: string) {
-    try {
-      await deleteAsset(assetId);
-      setDetail((current) => current ? { ...current, assets: current.assets.filter((asset) => asset.id !== assetId) } : current);
-      setStatus('Asset deleted.');
-    } catch {
-      setStatus('Delete failed. Check admin login and asset id.');
-    }
-  }
-
-  async function refreshSelectedEmbedding() {
-    if (!detail || detail.node.kind !== 'file') return;
-    try {
-      const state = await refreshEmbedding(detail.node.id);
-      setStatus(state.status === 'failed' ? `Embedding failed and full-text fallback remains active: ${state.error ?? 'unknown error'}` : 'Embedding refreshed.');
-    } catch {
-      setStatus('Embedding refresh failed.');
-    }
-  }
-
-  async function rebuildSearch() {
-    if (!window.confirm('Rebuild search_text/embeddings for all published files?')) return;
-    try {
-      await rebuildSearchIndex();
-      setStatus('Search rebuild accepted.');
-    } catch {
-      setStatus('Search rebuild failed.');
-    }
+  function toggleDirectory(nodeId: string) {
+    setExpandedIds((current) => {
+      const next = new Set(current);
+      if (next.has(nodeId)) {
+        next.delete(nodeId);
+      } else {
+        next.add(nodeId);
+      }
+      return next;
+    });
   }
 
   function logoutAuthor() {
@@ -215,186 +111,228 @@ export function AdminPage({ onLogout }: { onLogout: () => void }) {
   }
 
   return (
-    <section className="page-stack admin-manager-page">
-      <section className="glass status-panel admin-hero">
-        <p className="eyebrow">ADMIN</p>
-        <h1>Tree Manager</h1>
-        <p>Create, edit, move, publish, unpublish, upload assets, and refresh hybrid-search embeddings from one Packet I workspace.</p>
-        <button className="glass-button" type="button" onClick={logoutAuthor}>Logout</button>
-        {status ? <p className="muted">{status}</p> : null}
+    <section className="page-stack admin-manager-page author-workspace-page">
+      <section className="glass status-panel admin-hero author-workspace-hero">
+        <p className="eyebrow">作者工作台</p>
+        <h1>内容树</h1>
+        <p>管理受保护的目录、草稿文件和已发布文件。URL Path 由系统展示，主要操作不暴露实现标识。</p>
+        <div className="button-row">
+          <button className="glass-button" type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>返回内容树</button>
+          <button className="glass-button" type="button" onClick={logoutAuthor}>退出登录</button>
+        </div>
       </section>
 
-      <section className="admin-grid">
-        <aside className="glass admin-sidebar">
-          <h2>Tree browser</h2>
-          {rootQuery.isLoading ? <p className="muted">Loading root…</p> : null}
-          {rootQuery.data ? <TreeList entries={rootQuery.data.children} onSelect={(id) => { setSelectedId(id); void loadNode(id); }} /> : null}
-          <form className="auth-form compact-form" onSubmit={(event) => { event.preventDefault(); void loadNode(); }}>
-            <label>
-              Node id
-              <input value={selectedId} onChange={(event) => setSelectedId(event.target.value)} placeholder="Directory or File node id" />
-            </label>
-            <button className="primary-button" type="submit">Load selected node</button>
-          </form>
+      <section className="admin-grid author-workspace-grid">
+        <aside className="glass admin-sidebar author-tree-panel" aria-label="内容树">
+          <div className="panel-heading-row">
+            <div>
+              <p className="eyebrow">Content Tree</p>
+              <h2>受保护内容树</h2>
+            </div>
+            <button className="glass-button" type="button" onClick={() => adminTreeQuery.refetch()}>刷新</button>
+          </div>
+          {adminTreeQuery.isLoading ? <p className="muted">正在加载目录、草稿和已发布文件…</p> : null}
+          {adminTreeQuery.isError ? <p className="form-error">内容树加载失败。请刷新或重新登录。</p> : null}
+          {adminTreeQuery.data && adminTreeQuery.data.roots.length === 0 ? <p className="muted">暂无内容。</p> : null}
+          {adminTreeQuery.data ? (
+            <TreeList
+              nodes={adminTreeQuery.data.roots}
+              expandedIds={expandedIds}
+              selectedId={selectedId}
+              onSelect={selectNode}
+              onToggle={toggleDirectory}
+            />
+          ) : null}
         </aside>
 
-        <main className="admin-workspace">
-          <CreateNodePanel parentId={detail?.node.kind === 'directory' ? detail.node.id : detail?.node.parent_id ?? ''} onCreate={submitCreate} />
-          {detail ? (
-            <>
-              <NodeEditor detail={detail} onSubmit={submitNodeUpdate} onDelete={removeSelectedNode} />
-              {detail.node.kind === 'file' ? (
-                <>
-                  <ContentEditor key={`${detail.node.id}:${detail.content?.content_format ?? 'markdown'}`} detail={detail} onSubmit={submitContent} onPublish={() => changePublishState('publish')} onUnpublish={() => changePublishState('unpublish')} onRefreshEmbedding={refreshSelectedEmbedding} onRebuildSearch={rebuildSearch} />
-                  <AssetPanel assets={detail.assets} onUpload={submitUpload} onDelete={removeAsset} />
-                </>
-              ) : null}
-            </>
-          ) : <section className="glass status-panel">Select or load a node to edit.</section>}
+        <main className="admin-workspace author-detail-panel">
+          {selectedNode ? (
+            <WorkspaceDetail
+              node={selectedNode}
+              detail={detailQuery.data ?? null}
+              isLoading={detailQuery.isLoading}
+              isError={detailQuery.isError}
+              onReturnToDirectory={() => {
+                const parent = selectedNode.parent_id ? flatTree.find((node) => node.id === selectedNode.parent_id) : null;
+                if (parent) selectNode(parent);
+              }}
+            />
+          ) : (
+            <section className="glass status-panel">请选择内容树中的目录或文件。</section>
+          )}
         </main>
       </section>
     </section>
   );
 }
 
-function TreeList({ entries, onSelect }: { entries: ContentEntry[]; onSelect: (id: string) => void }) {
-  if (entries.length === 0) {
-    return <p className="muted">No visible root entries yet. Draft files can still be loaded by id.</p>;
-  }
+function TreeList({ nodes, expandedIds, selectedId, onSelect, onToggle }: {
+  nodes: AdminTreeNode[];
+  expandedIds: Set<string>;
+  selectedId: string;
+  onSelect: (node: AdminTreeNode) => void;
+  onToggle: (nodeId: string) => void;
+}) {
   return (
-    <div className="admin-tree-list">
-      {entries.map((entry) => (
-        <button className="tree-row" key={entry.id} type="button" onClick={() => onSelect(entry.id)}>
-          <span>{entry.kind === 'directory' ? '📁' : '📄'} {entry.name}</span>
-          <small>{entry.path}</small>
-        </button>
+    <div className="admin-tree-list author-tree-list">
+      {nodes.map((node) => (
+        <TreeNodeRow
+          key={node.id}
+          node={node}
+          depth={0}
+          expandedIds={expandedIds}
+          selectedId={selectedId}
+          onSelect={onSelect}
+          onToggle={onToggle}
+        />
       ))}
     </div>
   );
 }
 
-function CreateNodePanel({ parentId, onCreate }: { parentId?: string | null; onCreate: (event: FormEvent<HTMLFormElement>) => void }) {
-  const [kind, setKind] = useState<NodeKind>('directory');
+function TreeNodeRow({ node, depth, expandedIds, selectedId, onSelect, onToggle }: {
+  node: AdminTreeNode;
+  depth: number;
+  expandedIds: Set<string>;
+  selectedId: string;
+  onSelect: (node: AdminTreeNode) => void;
+  onToggle: (nodeId: string) => void;
+}) {
+  const hasChildren = node.children.length > 0;
+  const expanded = expandedIds.has(node.id);
+  const selected = selectedId === node.id;
   return (
-    <section className="glass admin-panel">
-      <h2>Create Directory / File</h2>
-      <form className="admin-form" onSubmit={onCreate}>
-        <label>Parent id<input name="parent_id" defaultValue={parentId ?? ''} placeholder="blank for root" /></label>
-        <label>Name<input name="name" required placeholder="Research Notes" /></label>
-        <label>URL Path<input name="slug" required placeholder="research-notes" /></label>
-        <label>Sort order<input name="sort_order" type="number" defaultValue="0" /></label>
-        <label>Kind<select name="kind" value={kind} onChange={(event) => setKind(event.target.value as NodeKind)}><option value="directory">Directory</option><option value="file">File</option></select></label>
-        {kind === 'file' ? <label>Content format<select name="content_format" defaultValue="markdown"><option value="markdown">Markdown</option><option value="html_document">HTML Document</option></select></label> : null}
-        <button className="primary-button" type="submit">Create</button>
-      </form>
+    <div className="author-tree-node">
+      <div className={`tree-row author-tree-row${selected ? ' is-selected' : ''}`} style={{ paddingLeft: `${0.65 + depth * 1.1}rem` }}>
+        {node.kind === 'directory' ? (
+          <button className="tree-toggle" type="button" aria-label={expanded ? '收起目录' : '展开目录'} onClick={() => onToggle(node.id)}>
+            {hasChildren ? (expanded ? '▾' : '▸') : '•'}
+          </button>
+        ) : <span className="tree-toggle" aria-hidden="true">•</span>}
+        <button className="tree-select-button" type="button" onClick={() => onSelect(node)}>
+          <span>{node.kind === 'directory' ? '📁' : '📄'} {node.name}</span>
+          <small>{node.path} · {node.status === 'published' ? '已发布' : '草稿'}</small>
+        </button>
+      </div>
+      {node.kind === 'directory' && expanded && hasChildren ? (
+        <div className="author-tree-children">
+          {node.children.map((child) => (
+            <TreeNodeRow
+              key={child.id}
+              node={child}
+              depth={depth + 1}
+              expandedIds={expandedIds}
+              selectedId={selectedId}
+              onSelect={onSelect}
+              onToggle={onToggle}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function WorkspaceDetail({ node, detail, isLoading, isError, onReturnToDirectory }: {
+  node: AdminTreeNode;
+  detail: AdminNodeDetail | null;
+  isLoading: boolean;
+  isError: boolean;
+  onReturnToDirectory: () => void;
+}) {
+  const children = node.children;
+  return (
+    <section className="glass admin-panel author-workspace-card">
+      <div className="panel-heading-row">
+        <div>
+          <p className="eyebrow">{node.kind === 'directory' ? '目录概览' : '文件工作区'}</p>
+          <h2>{node.name}</h2>
+          <p className="path-text">URL Path：{node.path}</p>
+        </div>
+        <span className={`status-pill ${node.status}`}>{node.status === 'published' ? '已发布' : '草稿'}</span>
+      </div>
+
+      {node.kind === 'file' ? <button className="glass-button" type="button" onClick={onReturnToDirectory}>返回目录</button> : null}
+      {isLoading ? <p className="muted">正在加载工作区详情…</p> : null}
+      {isError ? <p className="form-error">工作区详情加载失败。可继续使用左侧内容树。</p> : null}
+
+      {node.kind === 'directory' ? (
+        <DirectoryOverview node={node} children={children} />
+      ) : (
+        <FileOverview node={node} detail={detail} />
+      )}
     </section>
   );
 }
 
-function NodeEditor({ detail, onSubmit, onDelete }: { detail: AdminNodeDetail; onSubmit: (event: FormEvent<HTMLFormElement>) => void; onDelete: () => void }) {
+function DirectoryOverview({ node, children }: { node: AdminTreeNode; children: AdminTreeNode[] }) {
   return (
-    <section className="glass admin-panel">
-      <h2>Edit node</h2>
-      <p className="path-text">{detail.node.kind} · {detail.node.path}</p>
-      <form className="admin-form" onSubmit={onSubmit}>
-        <label>Parent id<input name="parent_id" defaultValue={detail.node.parent_id ?? ''} placeholder="blank for root" /></label>
-        <label>Name<input name="name" defaultValue={detail.node.name} required /></label>
-        <label>URL Path<input name="slug" defaultValue={detail.node.slug} required /></label>
-        <label>Sort order<input name="sort_order" type="number" defaultValue={detail.node.sort_order} /></label>
-        <div className="button-row"><button className="primary-button" type="submit">Save node</button><button className="glass-button danger-button" type="button" onClick={onDelete}>Delete node</button></div>
-      </form>
-    </section>
-  );
-}
-
-function ContentEditor({ detail, onSubmit, onPublish, onUnpublish, onRefreshEmbedding, onRebuildSearch }: { detail: AdminNodeDetail; onSubmit: (event: FormEvent<HTMLFormElement>) => void; onPublish: () => void; onUnpublish: () => void; onRefreshEmbedding: () => void; onRebuildSearch: () => void }) {
-  const content = detail.content;
-  const initialFormat = content?.content_format ?? 'markdown';
-  const [format, setFormat] = useState<ContentFormat>(initialFormat);
-  const keywords = useMemo(() => content?.keywords.join(', ') ?? '', [content?.keywords]);
-  return (
-    <section className="glass admin-panel">
-      <h2>File editor</h2>
-      <p className="muted">Status: {content?.status ?? 'draft'} · Embedding: {content?.embedding_status ?? 'pending'}{content?.embedding_error ? ` · ${content.embedding_error}` : ''}</p>
-      <form className="admin-form" onSubmit={onSubmit}>
-        <label>Content format<select name="content_format" value={format} onChange={(event) => setFormat(event.target.value as ContentFormat)} disabled={content?.status === 'published'}><option value="markdown">Markdown</option><option value="html_document">HTML Document</option></select></label>
-        <label>Keywords<input name="keywords" defaultValue={keywords} placeholder="go, search, notes" /></label>
-        <label>{format === 'html_document' ? 'Full HTML document' : 'Markdown body'}<textarea name="body_raw" defaultValue={content?.body_raw ?? ''} rows={14} placeholder={format === 'html_document' ? '<!doctype html>…' : '# Markdown'} /></label>
-        <div className="button-row"><button className="primary-button" type="submit">Save content</button><button className="glass-button" type="button" onClick={onPublish}>Publish</button><button className="glass-button" type="button" onClick={onUnpublish}>Unpublish</button><button className="glass-button" type="button" onClick={onRefreshEmbedding}>Refresh embedding</button><button className="glass-button" type="button" onClick={onRebuildSearch}>Rebuild search</button></div>
-      </form>
-      {format === 'html_document' ? <iframe className="admin-preview-frame" title="HTML preview" sandbox="allow-scripts" srcDoc={content?.body_raw ?? ''} /> : <pre className="markdown-preview">{content?.body_raw ?? 'Markdown preview appears here after save.'}</pre>}
-    </section>
-  );
-}
-
-function AssetPanel({ assets, onUpload, onDelete }: { assets: FileAsset[]; onUpload: (event: FormEvent<HTMLFormElement>) => void; onDelete: (assetId: string) => void }) {
-  return (
-    <section className="glass admin-panel admin-assets-panel">
-      <h2>Assets</h2>
-      <form className="auth-form asset-upload-form" onSubmit={onUpload}>
-        <input name="file" type="file" required />
-        <button className="primary-button" type="submit">Upload asset</button>
-      </form>
-      <div className="asset-list admin-asset-list">
-        {assets.map((asset) => (
-          <div className="asset-link" key={asset.id}>
-            <span>{asset.filename}</span>
-            <small>{asset.mime_type} · {formatBytes(asset.size_bytes)}</small>
-            <a className="glass-button" href={asset.public_url}>Open</a>
-            <button className="glass-button" type="button" onClick={() => onDelete(asset.id)}>Delete</button>
-          </div>
+    <div className="directory-overview">
+      <p className="muted">此目录包含 {children.length} 个直接子项。新建与移动操作将在后续工作包中接入。</p>
+      {children.length === 0 ? <p className="muted">此目录暂无子项。</p> : null}
+      <div className="admin-child-card-grid">
+        {children.map((child) => (
+          <article className="admin-child-card" key={child.id}>
+            <strong>{child.kind === 'directory' ? '📁' : '📄'} {child.name}</strong>
+            <span>{child.path}</span>
+            <small>{child.status === 'published' ? '已发布' : '草稿'}</small>
+          </article>
         ))}
       </div>
-    </section>
+      <p className="muted">当前目录：{node.path}</p>
+    </div>
   );
 }
 
-function stringValue(form: FormData, key: string) {
-  return String(form.get(key) ?? '').trim();
+function FileOverview({ node, detail }: { node: AdminTreeNode; detail: AdminNodeDetail | null }) {
+  return (
+    <div className="file-overview">
+      <div className="admin-tabs" aria-label="文件工作区标签">
+        <button className="primary-button" type="button">内容</button>
+        <button className="glass-button" type="button">资源</button>
+        <button className="glass-button" type="button">设置</button>
+      </div>
+      <p className="muted">文件状态：{node.status === 'published' ? '已发布' : '草稿'}</p>
+      {detail?.content ? <p className="muted">格式：{detail.content.content_format === 'html_document' ? 'HTML Document' : 'Markdown'}</p> : null}
+      <p className="muted">编辑、资源和设置操作将在后续工作包中接入；此处先提供稳定的作者工作区骨架。</p>
+    </div>
+  );
 }
 
-function numberValue(form: FormData, key: string) {
-  const raw = stringValue(form, key);
-  return raw ? Number.parseInt(raw, 10) || 0 : 0;
+function flattenTree(nodes: AdminTreeNode[]): AdminTreeNode[] {
+  return nodes.flatMap((node) => [node, ...flattenTree(node.children)]);
 }
 
-function splitKeywords(value: string) {
-  return value.split(',').map((keyword) => keyword.trim()).filter(Boolean);
-}
-
-function formatAdminCreateError(error: unknown) {
-  if (error instanceof ApiError) {
-    if (error.status === 401) {
-      return 'Your session expired. Log in again.';
-    }
-    if (error.status === 403) {
-      return 'Author access is required to create content.';
-    }
-    if (error.status === 409 && /reserved/i.test(error.message)) {
-      return 'This URL path is reserved. Choose another URL path.';
-    }
-    if (error.status === 409) {
-      return 'This URL path is already in use. Choose another URL path.';
-    }
-    if (error.status === 404 || /parent|destination/i.test(error.message)) {
-      return 'The destination Directory no longer exists. Refresh the Content Tree and try again.';
-    }
-    if (/name is required/i.test(error.message)) {
-      return 'Enter a Name for the new Directory or File.';
-    }
-    if (/slug|path/i.test(error.message)) {
-      return 'Enter a valid URL path using a single path segment.';
-    }
-    if (/kind|content format/i.test(error.message)) {
-      return 'Choose a valid content type and format, then try again.';
-    }
+function expandAncestors(current: Set<string>, selectedId: string, roots: AdminTreeNode[]): Set<string> {
+  const next = new Set(current);
+  const path = findPathToNode(roots, selectedId);
+  for (const node of path) {
+    if (node.kind === 'directory') next.add(node.id);
   }
-
-  return 'Could not create this item. Check the connection and try again.';
+  return next;
 }
 
-function formatBytes(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 102.4) / 10} KB`;
-  return `${Math.round(bytes / 1024 / 102.4) / 10} MB`;
+function findPathToNode(nodes: AdminTreeNode[], selectedId: string, ancestors: AdminTreeNode[] = []): AdminTreeNode[] {
+  for (const node of nodes) {
+    const path = [...ancestors, node];
+    if (node.id === selectedId) return path;
+    const childPath = findPathToNode(node.children, selectedId, path);
+    if (childPath.length > 0) return childPath;
+  }
+  return [];
+}
+
+function readStoredString(key: string) {
+  if (typeof window === 'undefined') return '';
+  return window.localStorage.getItem(key) ?? '';
+}
+
+function readStoredList(key: string) {
+  if (typeof window === 'undefined') return [];
+  try {
+    const parsed: unknown = JSON.parse(window.localStorage.getItem(key) ?? '[]');
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
+  } catch {
+    return [];
+  }
 }
