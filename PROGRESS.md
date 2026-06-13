@@ -1,6 +1,6 @@
 # xLab Blog Progress
 
-Last updated: 2026-06-13 02:10 CST
+Last updated: 2026-06-13 02:34 CST
 
 This is the durable resume point. Keep it concise and update it after every key milestone.
 
@@ -104,11 +104,18 @@ npm run build
 
 For runtime/auth/tree/publication changes, also run native PostgreSQL API smoke and browser acceptance. Stage 2 requires desktop Author workflow acceptance plus mobile no-regression sanity. Record evidence under `docs/verification/`.
 
+
+## Current execution plan artifact
+
+- Stage 2 Team execution plan: `docs/plans/STAGE_2_TEAM_EXECUTION.md` (tracked canonical copy).
+- Required seats: coordinator/gateway, backend developer, frontend developer, acceptance, security, repair/stabilization, plus independent architect and code-reviewer gates.
+- Gateway flow: launch readiness → data/fixture safety → OpenAPI/backend Red → backend Green → frontend Red → frontend Green → integrated acceptance → security → independent review/closeout.
+
 ## Immediate next steps
 
-1. Await explicit user instruction before Stage 2 implementation.
-2. Before coding, reread `AGENTS.md`, this file, `docs/plans/SECOND_DEVELOPMENT.md`, `docs/specs/CONTEXT.md`, relevant specs, and `docs/api/openapi.yaml` for API changes.
-3. For Stage 2 start: back up local database/uploads, create/refresh the `/stage-2-acceptance` fixture, update OpenAPI first for protected Author Workspace APIs, then implement backend/frontend in small verified packets.
+1. Review `docs/plans/STAGE_2_TEAM_EXECUTION.md`, then await explicit user instruction before Stage 2 implementation.
+2. If the user approves execution, launch OMX Team from that plan, starting with Gateway 0/1: clean status check, local database/uploads backup, and `/stage-2-acceptance` fixture setup.
+3. Before coding, reread `AGENTS.md`, this file, `docs/plans/SECOND_DEVELOPMENT.md`, `docs/specs/CONTEXT.md`, relevant specs, and `docs/api/openapi.yaml` for API changes.
 4. Update `PROGRESS.md` and `docs/verification/` at every key milestone and before stopping.
 
 ## Key evidence and history
