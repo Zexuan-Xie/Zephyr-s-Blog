@@ -1,6 +1,6 @@
 # xLab Blog Progress
 
-Last updated: 2026-06-13 14:05 CST
+Last updated: 2026-06-13 15:13 CST
 
 This is the durable resume point. Keep it concise and update it after every key milestone.
 
@@ -9,10 +9,12 @@ This is the durable resume point. Keep it concise and update it after every key 
 - Branch: `main`; local commits are ahead of `origin/main`.
 - Active plan: `docs/plans/SECOND_DEVELOPMENT.md`.
 - Active Team: `execute-approved-xlab-015f30a9` launched with the exact approved command `omx team 5 "Execute approved xLab Blog second-development Stage 2 DAG"`.
-- Current breakpoint: Gateway 2 OpenAPI/backend Red contracts is PASS and integrated on leader (`83dc5f4` OpenAPI, `020c85d` Red tests). Gateway 1 backup/restore/fixture is PASS at `4f992c7`.
-- Active implementation now: worker-2 task 9 protected Author tree/detail/minimal create APIs; worker-3 task 11 frontend Red/UI contracts.
-- Current product baseline before Stage 2 implementation: `cabf9a497a7ce1253e99824b6eb8605ba029d813`; Gateway 1 fixture commit is `4363dd0`; Gateway 2 Red contract commit is `020c85d`.
-- Runtime services at Gateway 1: API health PASS, database PASS, web dev server PASS during fixture evidence. Fixture root `/stage-2-acceptance` is ready.
+- Stage 2 implementation tasks 9-15 are integrated. A small integration repair `59311dd` fixed a duplicate lifecycle test fake method and restored backend `go test`/`go vet`/gofmt.
+- Gateway 6 integrated acceptance (task 16) is **FAILED** and documented in `docs/verification/stage-2-acceptance.md`. Backend/frontend gates and native runtime smoke passed, but Author Workspace desktop/mobile acceptance is blocked because `/api/admin/tree` returns `{ nodes, url_path }` while the frontend expects `{ roots, path, children }`, causing `内容树加载失败`.
+- Active repair: task 21 `Repair Gateway 6 admin tree contract drift` is claimed by worker-2. After repair integration, create/reopen a fresh Gateway 6 rerun task for worker-4 because task 16 is terminal failed.
+- Active review: task 17 `Gateway 7 integrated security and abuse review` is still in progress on worker-5.
+- Blocked downstream: tasks 18-20 remain pending until the repaired Gateway 6 rerun and Gateway 7 both pass.
+- Current product baseline before Stage 2 implementation: `cabf9a497a7ce1253e99824b6eb8605ba029d813`; Gateway 1 fixture root `/stage-2-acceptance` remains the native acceptance fixture.
 
 ## Active delivery stages
 
@@ -128,11 +130,11 @@ For runtime/auth/tree/publication changes, also run native PostgreSQL API smoke 
 
 ## Immediate next steps
 
-1. Monitor worker-2 task 9: implement protected Author tree/detail/minimal create APIs without broadening into task 10 semantics.
-2. Monitor worker-3 task 11: frontend Red/UI contracts should remain tests-first and not implement UI yet.
-3. Keep task 10, frontend Green tasks, acceptance/security/review blocked until their dependencies clear.
-4. Before API coding/review, reread `AGENTS.md`, this file, `docs/plans/SECOND_DEVELOPMENT.md`, `docs/specs/CONTEXT.md`, relevant specs, and `docs/api/openapi.yaml`.
-5. Update `PROGRESS.md` and `docs/verification/` at every key milestone and before stopping.
+1. Monitor worker-2 task 21: fix the protected Author tree contract drift (`/api/admin/tree` response shape vs frontend parser), add regression coverage, and run relevant backend/frontend gates.
+2. Monitor worker-5 task 17: finish integrated security/abuse review and record `docs/verification/stage-2-security.md`.
+3. After task 21 is integrated, create a fresh Gateway 6 rerun task for worker-4, rerun desktop/mobile acceptance on the repaired HEAD, and replace the current failed acceptance result with rerun evidence.
+4. Only after repaired Gateway 6 and Gateway 7 pass, unblock worker-1 tasks 18-20 for architecture review, code review, final gates, progress closeout, and user acceptance handoff.
+5. Keep `PROGRESS.md` and `docs/verification/` updated at every key milestone and before stopping.
 
 ## Key evidence and history
 
