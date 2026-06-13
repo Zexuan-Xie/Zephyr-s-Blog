@@ -168,14 +168,14 @@ type PublishedContent struct {
 }
 
 type PublicFileContent struct {
-	NodeID         uuid.UUID     `json:"node_id"`
-	ContentFormat  ContentFormat `json:"content_format"`
-	Keywords       []string      `json:"keywords"`
-	BodyRaw        string        `json:"body_raw"`
-	BodyHTML       *string       `json:"body_html"`
-	SearchText     string        `json:"search_text"`
-	PublishedAt    time.Time     `json:"published_at"`
-	UpdatedAt      time.Time     `json:"updated_at"`
+	NodeID        uuid.UUID     `json:"node_id"`
+	ContentFormat ContentFormat `json:"content_format"`
+	Keywords      []string      `json:"keywords"`
+	BodyRaw       string        `json:"body_raw"`
+	BodyHTML      *string       `json:"body_html"`
+	SearchText    string        `json:"search_text"`
+	PublishedAt   time.Time     `json:"published_at"`
+	UpdatedAt     time.Time     `json:"updated_at"`
 }
 
 type FileVersionState struct {

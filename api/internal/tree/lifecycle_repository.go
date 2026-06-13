@@ -307,7 +307,6 @@ func (r *SQLRepository) UnpublishFile(ctx context.Context, nodeID uuid.UUID, exp
 	return content, nil
 }
 
-
 func (r *SQLRepository) DeleteNode(ctx context.Context, nodeID uuid.UUID) error {
 	commandTag, err := r.pool.Exec(ctx, `delete from nodes where id = $1`, nodeID)
 	if err != nil {

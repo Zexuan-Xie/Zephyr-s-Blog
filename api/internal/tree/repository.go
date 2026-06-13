@@ -283,7 +283,6 @@ func scanFilePageContent(row rowScanner) (PublicFileContent, int, int, error) {
 	return content, likeCount, commentCount, nil
 }
 
-
 func readingTimeMinutes(text string) int {
 	words := len(strings.Fields(text))
 	if words == 0 {
