@@ -15,6 +15,7 @@ type LifecycleRepository interface {
 	UnpublishFile(ctx context.Context, nodeID uuid.UUID) (FileContent, error)
 	DeleteNode(ctx context.Context, nodeID uuid.UUID) error
 	HasPublishedDescendantFiles(ctx context.Context, directoryID uuid.UUID) (bool, error)
+	HasChildNodes(ctx context.Context, directoryID uuid.UUID) (bool, error)
 	PublishedDescendantFilePaths(ctx context.Context, directoryID uuid.UUID) ([]PublishedFilePath, error)
 	UpdateRedirectTargets(ctx context.Context, nodeID uuid.UUID, finalPath string) error
 	UpsertPathRedirect(ctx context.Context, oldPath, newPath string, nodeID uuid.UUID) error
@@ -97,6 +98,13 @@ func (s *LifecycleService) DeleteNode(ctx context.Context, nodeID uuid.UUID) err
 		return s.repo.DeleteNode(ctx, nodeID)
 	}
 
+	hasChildren, err := s.repo.HasChildNodes(ctx, nodeID)
+	if err != nil {
+		return err
+	}
+	if hasChildren {
+		return ErrNonEmptyDirectoryDelete
+	}
 	hasPublished, err := s.repo.HasPublishedDescendantFiles(ctx, nodeID)
 	if err != nil {
 		return err

@@ -336,3 +336,95 @@ func intArg(value *int) any {
 	}
 	return *value
 }
+
+func (r *SQLRepository) ReorderChildren(ctx context.Context, parentID uuid.UUID, input ReorderChildrenInput) (ReorderChildrenResult, error) {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return ReorderChildrenResult{}, err
+	}
+	defer tx.Rollback(ctx)
+	if err := validateParent(ctx, tx, &parentID); err != nil {
+		return ReorderChildrenResult{}, err
+	}
+	rows, err := tx.Query(ctx, `select id from nodes where parent_id = $1 order by sort_order, name, slug for update`, parentID)
+	if err != nil {
+		return ReorderChildrenResult{}, err
+	}
+	current := map[uuid.UUID]struct{}{}
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			rows.Close()
+			return ReorderChildrenResult{}, err
+		}
+		current[id] = struct{}{}
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return ReorderChildrenResult{}, err
+	}
+	rows.Close()
+	if len(current) != len(input.ChildIDs) {
+		return ReorderChildrenResult{}, ErrInvalidNodeInput
+	}
+	seen := map[uuid.UUID]struct{}{}
+	for idx, childID := range input.ChildIDs {
+		if _, ok := current[childID]; !ok {
+			return ReorderChildrenResult{}, ErrParentNotDirectory
+		}
+		if _, dup := seen[childID]; dup {
+			return ReorderChildrenResult{}, ErrInvalidNodeInput
+		}
+		seen[childID] = struct{}{}
+		if _, err := tx.Exec(ctx, `update nodes set sort_order = $2, updated_at = now() where id = $1 and parent_id = $3`, childID, idx, parentID); err != nil {
+			return ReorderChildrenResult{}, err
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return ReorderChildrenResult{}, mapAdminRepositoryError(err)
+	}
+	return ReorderChildrenResult{ParentID: parentID, ChildIDs: append([]uuid.UUID(nil), input.ChildIDs...), Version: input.ExpectedVersion + 1}, nil
+}
+
+func (r *SQLRepository) PreviewMove(ctx context.Context, nodeID uuid.UUID, input MoveNodeInput) (MovePreview, error) {
+	node, err := r.GetNode(ctx, nodeID)
+	if err != nil {
+		return MovePreview{}, err
+	}
+	destinationParentPath := "/"
+	if input.NewParentID != nil {
+		parent, err := r.findDirectoryByID(ctx, *input.NewParentID)
+		if err != nil {
+			return MovePreview{}, ErrParentNotDirectory
+		}
+		if parent.ID == nodeID {
+			return MovePreview{}, ErrNodeCycle
+		}
+		destinationParentPath = parent.Path
+	}
+	destinationPath := normalizePath(destinationParentPath + "/" + node.Slug)
+	preview := MovePreview{NodeID: nodeID, DestinationPath: destinationPath, AffectedPaths: []string{}, Redirects: []PathRedirectPreview{}, BlockedReasons: []string{}}
+	if node.Kind == NodeKindFile {
+		preview.AffectedPaths = append(preview.AffectedPaths, destinationPath)
+		content, err := r.GetFileContent(ctx, nodeID)
+		if err == nil && content.Status == PublishStatusPublished {
+			preview.Redirects = append(preview.Redirects, PathRedirectPreview{OldPath: node.Path, NewPath: destinationPath, NodeID: nodeID})
+		}
+		return preview, nil
+	}
+	files, err := r.PublishedDescendantFilePaths(ctx, nodeID)
+	if err != nil {
+		return MovePreview{}, err
+	}
+	for _, file := range files {
+		newPath := replacePathPrefix(file.Path, node.Path, destinationPath)
+		preview.AffectedPaths = append(preview.AffectedPaths, newPath)
+		preview.Redirects = append(preview.Redirects, PathRedirectPreview{OldPath: file.Path, NewPath: newPath, NodeID: file.NodeID})
+	}
+	return preview, nil
+}
+
+func (r *SQLRepository) MoveNode(ctx context.Context, nodeID uuid.UUID, input MoveNodeInput) (AdminNodeDetail, error) {
+	update := UpdateNodeInput{ParentID: input.NewParentID, ParentIDSet: true}
+	return r.UpdateNode(ctx, nodeID, update)
+}

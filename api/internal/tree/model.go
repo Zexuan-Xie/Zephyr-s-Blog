@@ -16,6 +16,7 @@ var (
 	ErrDirectoryHasPublishedDescendants = errors.New("directory with published descendants cannot be hard-deleted")
 	ErrNonEmptyDirectoryDelete          = errors.New("non-empty directory cannot be hard-deleted")
 	ErrDuplicatePath                    = errors.New("duplicate url path")
+	ErrLostUpdate                       = errors.New("lost update")
 	ErrInvalidPathChange                = errors.New("old and new paths must be non-empty")
 )
 

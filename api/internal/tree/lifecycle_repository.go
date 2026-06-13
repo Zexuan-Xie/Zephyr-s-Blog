@@ -91,6 +91,12 @@ func (r *SQLRepository) DeleteNode(ctx context.Context, nodeID uuid.UUID) error 
 	return nil
 }
 
+func (r *SQLRepository) HasChildNodes(ctx context.Context, directoryID uuid.UUID) (bool, error) {
+	var exists bool
+	err := r.pool.QueryRow(ctx, `select exists(select 1 from nodes where parent_id = $1)`, directoryID).Scan(&exists)
+	return exists, err
+}
+
 func (r *SQLRepository) HasPublishedDescendantFiles(ctx context.Context, directoryID uuid.UUID) (bool, error) {
 	const query = `
 		with recursive descendants as (
