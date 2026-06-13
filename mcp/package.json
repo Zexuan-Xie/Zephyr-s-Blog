@@ -1,0 +1,26 @@
+{
+  "name": "xlab-blog-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Server-local stdio Model Context Protocol server for xLab Blog author operations.",
+  "bin": {
+    "xlab-blog-mcp": "./dist/server.js"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.20.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.22.0",
+    "typescript": "6.0.3"
+  },
+  "engines": {
+    "node": "22.22.3",
+    "npm": "10.9.8"
+  }
+}
