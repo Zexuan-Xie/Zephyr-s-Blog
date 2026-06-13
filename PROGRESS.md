@@ -1,6 +1,6 @@
 # xLab Blog Progress
 
-Last updated: 2026-06-13 13:55 CST
+Last updated: 2026-06-13 13:42 CST
 
 This is the durable resume point. Keep it concise and update it after every key milestone.
 
@@ -8,10 +8,11 @@ This is the durable resume point. Keep it concise and update it after every key 
 
 - Branch: `main`; local commits are ahead of `origin/main`.
 - Active plan: `docs/plans/SECOND_DEVELOPMENT.md`.
-- Current breakpoint: Stage 2 plan completed one Critic review and was revised for launch consistency. It is ready for execution planning/Team launch when the user explicitly instructs. Do not start implementation yet.
-- Stage 1 engineering is complete and reviewed, but user acceptance did not pass because Author Workspace UX was inadequate; its blockers are now Stage 2 scope.
-- Current product baseline before Stage 2 implementation: Stage 1 closeout commits through `9b45f6b` documentation updates; recheck `git log` before starting.
-- Runtime services were healthy at the Stage 1 handoff; recheck before verification.
+- Active Team: `execute-approved-xlab-015f30a9` launched with the exact approved command `omx team 5 "Execute approved xLab Blog second-development Stage 2 DAG"`.
+- Current breakpoint: Gateway 0 launch/decomposition audit is PASS at `cabf9a4`; `decomposition_source=dag_sidecar`, active DAG `cmp` passed, five-seat mapping is recorded, and no launch role override such as `5:executor` was used.
+- Stage 2 implementation has not started. Next gate: worker-4 Gateway 1 backup/restore proof and `/stage-2-acceptance` fixture after task 6 completes.
+- Current product baseline before Stage 2 implementation: `cabf9a497a7ce1253e99824b6eb8605ba029d813`.
+- Runtime services at Gateway 0: API `127.0.0.1:8080` and web `127.0.0.1:5173` are offline; restart before fixture/API/browser verification.
 
 ## Active delivery stages
 
@@ -114,6 +115,8 @@ For runtime/auth/tree/publication changes, also run native PostgreSQL API smoke 
 ## Latest planning review
 
 
+- 2026-06-13: Stage 2 Team `execute-approved-xlab-015f30a9` Gateway 0 launch/decomposition audit passed. Evidence is in `docs/verification/stage-2-team-log.md`; next gate is Gateway 1 backup/fixture, and product implementation remains blocked until the gate chain clears.
+
 - 2026-06-13: Second Critic probe round returned `REVISE`; fixes applied in working tree: clarified Stage 2 has only `草稿` / `已发布` and defers `有未发布修改` / `发布更新`; chose conservative deletion rule blocking every non-empty Directory; made `GET /admin/tree` the complete protected Stage 2 tree; strengthened OpenAPI field/error requirements; aligned active specs; rewrote ignored `.omx` Stage 2 PRD/packet DAG runtime copies to current Author Workspace scope.
 - 2026-06-13: Wrong Team launch abort: a free-form Stage 2 launch produced `legacy_text` decomposition and was force-shutdown before integration; worker diffs were empty/noop. Plan launch guard now requires the exact approved Stage 2 DAG hint and decomposition-source verification before implementation.
 - 2026-06-13: Ran a Critic probe on the Stage 2 plan. Verdict was `REVISE`, not implementation-blocking after fixes.
@@ -121,10 +124,11 @@ For runtime/auth/tree/publication changes, also run native PostgreSQL API smoke 
 
 ## Immediate next steps
 
-1. Await explicit user instruction before Stage 2 implementation.
-2. If the user approves execution after final plan confirmation, activate the Stage 2 DAG and launch exactly: `omx team 5 "Execute approved xLab Blog second-development Stage 2 DAG"`. Gateway 0 must verify approved DAG import, not `legacy_text`, before any implementation. Then continue with clean status check, local database/uploads backup, disposable restore proof when cleanup/schema work applies, and `/stage-2-acceptance` fixture setup.
-3. Before coding, reread `AGENTS.md`, this file, `docs/plans/SECOND_DEVELOPMENT.md`, `docs/specs/CONTEXT.md`, relevant specs, and `docs/api/openapi.yaml` for API changes.
-4. Update `PROGRESS.md` and `docs/verification/` at every key milestone and before stopping.
+1. Complete coordinator task 6 and hand off Gateway 1 to worker-4; do not implement feature code before Gateway 1 passes.
+2. Worker-4 Gateway 1: record database/uploads backup state, disposable restore proof or explicit N/A reason, `/stage-2-acceptance` fixture IDs/paths, and baseline content preservation.
+3. After Gateway 1, backend task 8 must update OpenAPI first and add backend Red contracts before any Green implementation.
+4. Before coding, reread `AGENTS.md`, this file, `docs/plans/SECOND_DEVELOPMENT.md`, `docs/specs/CONTEXT.md`, relevant specs, and `docs/api/openapi.yaml` for API changes.
+5. Update `PROGRESS.md` and `docs/verification/` at every key milestone and before stopping.
 
 ## Key evidence and history
 
