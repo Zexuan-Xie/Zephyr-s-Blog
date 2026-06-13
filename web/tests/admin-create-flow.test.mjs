@@ -27,10 +27,10 @@ test('Stage 2 minimal create is slugless and opens the returned node after tree 
   assert.doesNotMatch(createFlow, /sort_order:/);
 });
 
-test('Stage 2 create UI is Chinese, minimal, and hides implementation controls', () => {
-  assert.match(adminPageSource, /新建目录/);
-  assert.match(adminPageSource, /新建文件/);
-  assert.match(adminPageSource, /创建并打开/);
+test('Stage 2 create UI is simple, minimal, and hides implementation controls', () => {
+  assert.match(adminPageSource, /Directory/);
+  assert.match(adminPageSource, /File/);
+  assert.match(adminPageSource, /Create/);
   assert.match(adminPageSource, /URL Path preview/);
   assert.match(adminPageSource, /readOnly/);
   assert.doesNotMatch(adminPageSource, />Slug</);
@@ -39,11 +39,11 @@ test('Stage 2 create UI is Chinese, minimal, and hides implementation controls',
   assert.doesNotMatch(adminPageSource, /Sort order/i);
 });
 
-test('Stage 2 create failures use Chinese actionable feedback', () => {
+test('Stage 2 create failures use simple actionable feedback', () => {
   assert.match(adminPageSource, /formatAdminCreateError\(error\)/);
-  assert.match(adminPageSource, /登录已过期，请重新登录/);
-  assert.match(adminPageSource, /需要作者权限才能创建内容/);
-  assert.match(adminPageSource, /目标目录不存在/);
-  assert.match(adminPageSource, /URL Path 已存在/);
-  assert.match(adminPageSource, /创建失败，请检查网络后重试/);
+  assert.match(adminPageSource, /Sign in again/);
+  assert.match(adminPageSource, /Author access is required/);
+  assert.match(adminPageSource, /Target directory was not found/);
+  assert.match(adminPageSource, /URL Path already exists/);
+  assert.match(adminPageSource, /Create failed/);
 });

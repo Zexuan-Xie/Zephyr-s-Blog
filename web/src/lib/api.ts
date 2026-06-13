@@ -487,6 +487,13 @@ export function fetchRootDirectory(): Promise<DirectoryPayload> {
   return requestJson("/tree", directorySchema);
 }
 
+export function fetchDirectoryChildren(nodeId: string): Promise<DirectoryPayload> {
+  return requestJson(
+    `/tree/${encodeURIComponent(nodeId)}/children`,
+    directorySchema,
+  );
+}
+
 export function resolveContentPath(path: string): Promise<ResolvePayload> {
   return requestJson(
     `/tree/resolve?path=${encodeURIComponent(normalizeBrowserPath(path))}`,

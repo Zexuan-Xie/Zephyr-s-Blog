@@ -30,11 +30,11 @@ export function ContentResolverPage({ currentUser }: { currentUser: CurrentUser 
     return (
       <section className="glass status-panel error">
         <p className="eyebrow">404</p>
-        <h1>Path not found</h1>
-        <p>{path} does not map to a published directory or file.</p>
+        <h1>Not found</h1>
+        <p>{path} is not published.</p>
         <div className="action-row">
-          <Link className="primary-button" to="/">Return root</Link>
-          <Link className="glass-button" to={`/search?q=${encodeURIComponent(path)}`}>Search this path</Link>
+          <Link className="primary-button" to="/">Home</Link>
+          <Link className="glass-button" to={`/search?q=${encodeURIComponent(path)}`}>Search</Link>
         </div>
       </section>
     );

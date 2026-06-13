@@ -17,11 +17,10 @@ export function DirectoryPage({ directory, isRoot = false, currentUser }: Direct
       <Breadcrumb items={directory.breadcrumb} currentPath={directory.path} />
       {isRoot ? (
         <section className="glass hero-panel">
-          <p className="eyebrow">Knowledge space</p>
-          <h1>Warm technical notes in a Unix-like content tree.</h1>
+          <p className="eyebrow">Aeolian</p>
+          <h1 className="hero-title">Notes the wind leaves behind.</h1>
           <p>
-            Browse directories, read Markdown files, and open sandboxed HTML documents without leaving the
-            Glass Ricepaper shell.
+            Stray currents of thought, caught and written down.
           </p>
         </section>
       ) : (
@@ -32,12 +31,12 @@ export function DirectoryPage({ directory, isRoot = false, currentUser }: Direct
         </header>
       )}
       {isAuthor ? (
-        <div className="action-row" aria-label="作者目录操作">
-          <Link className="glass-button" to={`/admin?target=${encodeURIComponent(directory.id)}`}>管理此目录</Link>
+        <div className="action-row" aria-label="Author directory actions">
+          <Link className="glass-button" to={`/admin?target=${encodeURIComponent(directory.id)}`}>Manage</Link>
         </div>
       ) : null}
       {directory.children.length === 0 ? (
-        <section className="glass empty-panel">No files yet / 暂无内容</section>
+        <section className="glass empty-panel">No files yet.</section>
       ) : (
         <div className="entry-grid">
           {directory.children.map((entry) => (

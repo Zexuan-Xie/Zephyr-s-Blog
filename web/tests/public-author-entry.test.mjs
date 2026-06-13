@@ -24,15 +24,15 @@ test('Task 15 threads confirmed identity into public directory and file surfaces
 test('Task 15 directory manage entry is Author-only and targets Admin selection', () => {
   assert.match(directoryPageSource, /const isAuthor = currentUser\?\.role === ['"]admin['"]/);
   assert.match(directoryPageSource, /isAuthor \?/);
-  assert.match(directoryPageSource, /管理此目录/);
+  assert.match(directoryPageSource, /Manage/);
   assert.match(directoryPageSource, /\/admin\?target=\$\{encodeURIComponent\(directory\.id\)\}/);
-  assert.doesNotMatch(directoryPageSource, /currentUser\?\.role === ['"]reader['"][\s\S]{0,160}管理此目录/);
+  assert.doesNotMatch(directoryPageSource, /currentUser\?\.role === ['"]reader['"][\s\S]{0,160}Manage/);
 });
 
 test('Task 15 file edit entry is Author-only and targets Admin selection', () => {
   assert.match(filePageSource, /const isAuthor = currentUser\?\.role === ['"]admin['"]/);
   assert.match(filePageSource, /isAuthor \?/);
-  assert.match(filePageSource, /编辑文件/);
+  assert.match(filePageSource, /Edit/);
   assert.match(filePageSource, /\/admin\?target=\$\{encodeURIComponent\(file\.id\)\}/);
-  assert.doesNotMatch(filePageSource, /currentUser\?\.role === ['"]reader['"][\s\S]{0,160}编辑文件/);
+  assert.doesNotMatch(filePageSource, /currentUser\?\.role === ['"]reader['"][\s\S]{0,160}Edit/);
 });

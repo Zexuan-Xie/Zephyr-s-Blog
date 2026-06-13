@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, Navigate, Route, Routes } from 'react-router-dom';
 import { DirectoryDrawer } from './components/DirectoryDrawer';
 import { GlassNav } from './components/GlassNav';
-import { ApiError, fetchCurrentUser, fetchRootDirectory } from './lib/api';
+import { ApiError, fetchAdminTree, fetchCurrentUser, fetchRootDirectory } from './lib/api';
 import { clearToken, getToken } from './lib/auth';
 import { AdminPage } from './pages/AdminPage';
 import { AuthPage } from './pages/AuthPages';
@@ -44,6 +44,13 @@ export function App() {
       ? 'error'
       : 'loading';
 
+  const adminTreeQuery = useQuery({
+    queryKey: ['admin', 'content-tree', 'drawer'],
+    queryFn: fetchAdminTree,
+    enabled: currentUser?.role === 'admin',
+    staleTime: 30_000,
+  });
+
   function resetIdentity() {
     queryClient.removeQueries({ queryKey: ['auth', 'current-user'] });
     setIdentityToken(getToken());
@@ -65,6 +72,7 @@ export function App() {
         retryIdentity={() => void identityQuery.refetch()}
       />
       <DirectoryDrawer
+        adminEntries={currentUser?.role === 'admin' ? adminTreeQuery.data?.roots : undefined}
         entries={rootQuery.data?.children ?? []}
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}

@@ -1,5 +1,17 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import {
+  FormEvent,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import {
+  FileText,
+  Folder,
+  GripVertical,
+  Plus,
+  Upload,
+} from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate, useSearchParams } from "react-router-dom";
 import {
   ApiError,
@@ -48,6 +60,8 @@ export function AdminPage({ onLogout }: { onLogout: () => void }) {
     () => new Set(readStoredList(expandedStorageKey)),
   );
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [rootCreateOpen, setRootCreateOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   const viewerQuery = useQuery({
     queryKey: ["auth", "me", "admin"],
@@ -100,7 +114,7 @@ export function AdminPage({ onLogout }: { onLogout: () => void }) {
     return <Navigate to="/login?return_to=%2Fadmin" replace />;
   }
   if (viewerQuery.isLoading) {
-    return <section className="glass status-panel">正在确认作者权限…</section>;
+    return <section className="glass status-panel">Checking author access…</section>;
   }
   if (viewerQuery.isError || viewerQuery.data?.role !== "admin") {
     return <Navigate to="/login?return_to=%2Fadmin" replace />;
@@ -125,15 +139,21 @@ export function AdminPage({ onLogout }: { onLogout: () => void }) {
     });
   }
 
+  async function refreshPublicDirectoryCache() {
+    await queryClient.invalidateQueries({ queryKey: ["tree"] });
+    await queryClient.invalidateQueries({ queryKey: ["admin", "content-tree"] });
+  }
+
   async function refreshWorkspace() {
     await adminTreeQuery.refetch();
     await detailQuery.refetch();
+    await refreshPublicDirectoryCache();
   }
 
   async function submitCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedNode || selectedNode.kind !== "directory") {
-      setStatusMessage("请先选择一个目录。");
+      setStatusMessage("Pick a directory first.");
       return;
     }
 
@@ -163,26 +183,64 @@ export function AdminPage({ onLogout }: { onLogout: () => void }) {
       (current) => new Set([...current, selectedNode.id, created.node.id]),
     );
     setStatusMessage(
-      `${created.node.kind === "directory" ? "目录" : "文件"}已创建：${created.node.path}`,
+      `${created.node.kind === "directory" ? "Directory" : "File"} created: ${created.node.path}`,
     );
     createForm.reset();
     await adminTreeQuery.refetch();
+    await refreshPublicDirectoryCache();
+  }
+
+  async function submitRootCreate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const createForm = event.currentTarget;
+    const form = new FormData(createForm);
+    const kind = stringValue(form, "kind") as NodeKind;
+    const input: CreateAdminNodeInput = {
+      parent_id: null,
+      kind,
+      name: stringValue(form, "name"),
+      content_format:
+        kind === "file"
+          ? (stringValue(form, "content_format") as ContentFormat)
+          : undefined,
+    };
+
+    let created: AdminNodeDetail;
+    try {
+      created = await createAdminNode(input);
+    } catch (error) {
+      setStatusMessage(formatAdminCreateError(error));
+      return;
+    }
+
+    setSelectedId(created.node.id);
+    if (created.node.kind === "directory") {
+      setExpandedIds((current) => new Set([...current, created.node.id]));
+    }
+    setStatusMessage(
+      `${created.node.kind === "directory" ? "Directory" : "File"} created: ${created.node.path}`,
+    );
+    setRootCreateOpen(false);
+    createForm.reset();
+    await adminTreeQuery.refetch();
+    await refreshPublicDirectoryCache();
   }
 
   async function deleteDirectory(node: AdminTreeNode) {
     if (node.children.length > 0) {
-      setStatusMessage("非空目录不能删除，请先移动或删除子项。");
+      setStatusMessage("This directory is not empty. Move or remove its items first.");
       return;
     }
 
     try {
       await deleteAdminNode(node.id);
-      setStatusMessage(`目录已删除：${node.path}`);
+      setStatusMessage(`Directory deleted: ${node.path}`);
       if (node.parent_id) setSelectedId(node.parent_id);
       await refreshWorkspace();
     } catch (error) {
       setStatusMessage(
-        formatAdminActionError(error, "删除目录失败，请检查状态后重试。"),
+        formatAdminActionError(error, "Delete failed. Check the item state and try again."),
       );
     }
   }
@@ -193,11 +251,11 @@ export function AdminPage({ onLogout }: { onLogout: () => void }) {
         child_ids: childIds,
         expected_version: 0,
       });
-      setStatusMessage("同级排序已保存。");
+      setStatusMessage("Order saved.");
       await refreshWorkspace();
     } catch (error) {
       setStatusMessage(
-        formatAdminActionError(error, "排序保存失败，请刷新内容树后重试。"),
+        formatAdminActionError(error, "Order save failed. Refresh and try again."),
       );
     }
   }
@@ -210,11 +268,10 @@ export function AdminPage({ onLogout }: { onLogout: () => void }) {
   return (
     <section className="page-stack admin-manager-page author-workspace-page">
       <section className="glass status-panel admin-hero author-workspace-hero">
-        <p className="eyebrow">作者工作台</p>
-        <h1>内容树</h1>
+        <p className="eyebrow">Author Workspace</p>
+        <h1>Tree</h1>
         <p>
-          管理受保护的目录、草稿文件和已发布文件。URL Path
-          由系统展示，主要操作不暴露实现标识。
+          Create, write, publish, and reorder your content with only the controls you need.
         </p>
         <div className="button-row">
           <button
@@ -222,10 +279,10 @@ export function AdminPage({ onLogout }: { onLogout: () => void }) {
             type="button"
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           >
-            返回内容树
+            Top
           </button>
           <button className="glass-button" type="button" onClick={logoutAuthor}>
-            退出登录
+            Sign out
           </button>
         </div>
       </section>
@@ -233,29 +290,44 @@ export function AdminPage({ onLogout }: { onLogout: () => void }) {
       <section className="admin-grid author-workspace-grid">
         <aside
           className="glass admin-sidebar author-tree-panel"
-          aria-label="内容树"
+          aria-label="Tree"
         >
           <div className="panel-heading-row">
             <div>
               <p className="eyebrow">Content Tree</p>
-              <h2>受保护内容树</h2>
+              <h2>Content Tree</h2>
             </div>
-            <button
-              className="glass-button"
-              type="button"
-              onClick={() => adminTreeQuery.refetch()}
-            >
-              刷新
-            </button>
+            <div className="button-row compact-actions">
+              <button
+                className="glass-button"
+                type="button"
+                onClick={() => setRootCreateOpen((open) => !open)}
+              >
+                New root
+              </button>
+              <button
+                className="glass-button"
+                type="button"
+                onClick={() => adminTreeQuery.refetch()}
+              >
+                Refresh
+              </button>
+            </div>
           </div>
+          {rootCreateOpen ? (
+            <RootCreatePanel
+              onCreate={submitRootCreate}
+              onCancel={() => setRootCreateOpen(false)}
+            />
+          ) : null}
           {adminTreeQuery.isLoading ? (
-            <p className="muted">正在加载目录、草稿和已发布文件…</p>
+            <p className="muted">Loading your tree…</p>
           ) : null}
           {adminTreeQuery.isError ? (
-            <p className="form-error">内容树加载失败。请刷新或重新登录。</p>
+            <p className="form-error">Tree failed to load. Refresh or sign in again.</p>
           ) : null}
           {adminTreeQuery.data && adminTreeQuery.data.roots.length === 0 ? (
-            <p className="muted">暂无内容。</p>
+            <p className="muted">Nothing here yet. Create your first item on the right.</p>
           ) : null}
           {adminTreeQuery.data ? (
             <TreeList
@@ -264,6 +336,7 @@ export function AdminPage({ onLogout }: { onLogout: () => void }) {
               selectedId={effectiveSelectedId}
               onSelect={selectNode}
               onToggle={toggleDirectory}
+              onReorderChildren={reorderChildren}
             />
           ) : null}
         </aside>
@@ -280,7 +353,6 @@ export function AdminPage({ onLogout }: { onLogout: () => void }) {
               onCreate={submitCreate}
               onCancelCreate={() => setStatusMessage(null)}
               onDeleteDirectory={deleteDirectory}
-              onReorderChildren={reorderChildren}
               onFeedback={setStatusMessage}
               onRefresh={refreshWorkspace}
               onReturnToDirectory={() => {
@@ -291,12 +363,95 @@ export function AdminPage({ onLogout }: { onLogout: () => void }) {
               }}
             />
           ) : (
-            <section className="glass status-panel">
-              请选择内容树中的目录或文件。
-            </section>
+            <EmptyRootWorkspace
+              statusMessage={statusMessage}
+              onCreate={submitRootCreate}
+              onCancelCreate={() => setStatusMessage(null)}
+            />
           )}
         </main>
       </section>
+    </section>
+  );
+}
+
+function EmptyRootWorkspace({
+  statusMessage,
+  onCreate,
+  onCancelCreate,
+}: {
+  statusMessage: string | null;
+  onCreate: (event: FormEvent<HTMLFormElement>) => void;
+  onCancelCreate: () => void;
+}) {
+  return (
+    <section className="glass admin-panel author-workspace-card">
+      <div className="panel-heading-row">
+        <div>
+          <p className="eyebrow">Start here</p>
+          <h2>Create your first item</h2>
+          <p className="path-text">
+            Your tree is empty. Start with a directory, or create a file at the root.
+          </p>
+        </div>
+      </div>
+      {statusMessage ? <p className="muted">{statusMessage}</p> : null}
+      <RootCreatePanel onCreate={onCreate} onCancel={onCancelCreate} />
+    </section>
+  );
+}
+
+function RootCreatePanel({
+  onCreate,
+  onCancel,
+}: {
+  onCreate: (event: FormEvent<HTMLFormElement>) => void;
+  onCancel: () => void;
+}) {
+  const [kind, setKind] = useState<NodeKind>("directory");
+  const previewName = kind === "directory" ? "New directory" : "New file";
+
+  return (
+    <section className="nested-create-panel root-create-panel" aria-label="Create root item">
+      <h3>{kind === "directory" ? "New root directory" : "New root file"}</h3>
+      <form className="admin-form root-create-form" onSubmit={onCreate}>
+        <input type="hidden" name="kind" value={kind} />
+        <label>
+          Type
+          <select
+            value={kind}
+            onChange={(event) => setKind(event.target.value as NodeKind)}
+          >
+            <option value="directory">Directory</option>
+            <option value="file">File</option>
+          </select>
+        </label>
+        <label>
+          Name
+          <input name="name" required placeholder={previewName} />
+        </label>
+        {kind === "file" ? (
+          <label>
+            Format
+            <select name="content_format" defaultValue="markdown">
+              <option value="markdown">Markdown</option>
+              <option value="html_document">HTML</option>
+            </select>
+          </label>
+        ) : null}
+        <label>
+          URL Path preview
+          <input readOnly value={`/${previewName}`} />
+        </label>
+        <div className="button-row">
+          <button className="primary-button" type="submit">
+            Create
+          </button>
+          <button className="glass-button" type="button" onClick={onCancel}>
+            Cancel
+          </button>
+        </div>
+      </form>
     </section>
   );
 }
@@ -307,24 +462,59 @@ function TreeList({
   selectedId,
   onSelect,
   onToggle,
+  onReorderChildren,
 }: {
   nodes: AdminTreeNode[];
   expandedIds: Set<string>;
   selectedId: string;
   onSelect: (node: AdminTreeNode) => void;
   onToggle: (nodeId: string) => void;
+  onReorderChildren: (parent: AdminTreeNode, childIds: string[]) => void;
 }) {
+  const [draggedNode, setDraggedNode] = useState<{
+    id: string;
+    parentId: string | null;
+  } | null>(null);
+  const [dragOverNodeId, setDragOverNodeId] = useState<string | null>(null);
+
+  function reorderWithinParent(
+    parent: AdminTreeNode | null,
+    siblings: AdminTreeNode[],
+    targetId: string,
+  ) {
+    if (!parent || !draggedNode || draggedNode.parentId !== parent.id) return;
+    if (draggedNode.id === targetId) return;
+    const childIds = siblings.map((child) => child.id);
+    const from = childIds.indexOf(draggedNode.id);
+    const to = childIds.indexOf(targetId);
+    if (from < 0 || to < 0) return;
+    const [moved] = childIds.splice(from, 1);
+    childIds.splice(to, 0, moved);
+    onReorderChildren(parent, childIds);
+  }
+
   return (
-    <div className="admin-tree-list author-tree-list">
+    <div className="admin-tree-list author-tree-list" aria-label="Draggable content tree">
       {nodes.map((node) => (
         <TreeNodeRow
           key={node.id}
           node={node}
+          parent={null}
+          siblings={nodes}
           depth={0}
           expandedIds={expandedIds}
           selectedId={selectedId}
+          draggedNode={draggedNode}
+          dragOverNodeId={dragOverNodeId}
           onSelect={onSelect}
           onToggle={onToggle}
+          onDragStartNode={setDraggedNode}
+          onDragOverNode={setDragOverNodeId}
+          onDropNode={reorderWithinParent}
+          onDragEnd={() => {
+            setDraggedNode(null);
+            setDragOverNodeId(null);
+          }}
         />
       ))}
     </div>
@@ -333,33 +523,84 @@ function TreeList({
 
 function TreeNodeRow({
   node,
+  parent,
+  siblings,
   depth,
   expandedIds,
   selectedId,
+  draggedNode,
+  dragOverNodeId,
   onSelect,
   onToggle,
+  onDragStartNode,
+  onDragOverNode,
+  onDropNode,
+  onDragEnd,
 }: {
   node: AdminTreeNode;
+  parent: AdminTreeNode | null;
+  siblings: AdminTreeNode[];
   depth: number;
   expandedIds: Set<string>;
   selectedId: string;
+  draggedNode: { id: string; parentId: string | null } | null;
+  dragOverNodeId: string | null;
   onSelect: (node: AdminTreeNode) => void;
   onToggle: (nodeId: string) => void;
+  onDragStartNode: (node: { id: string; parentId: string | null }) => void;
+  onDragOverNode: (nodeId: string | null) => void;
+  onDropNode: (
+    parent: AdminTreeNode | null,
+    siblings: AdminTreeNode[],
+    targetId: string,
+  ) => void;
+  onDragEnd: () => void;
 }) {
   const hasChildren = node.children.length > 0;
   const expanded = expandedIds.has(node.id);
   const selected = selectedId === node.id;
+  const canDrag = Boolean(parent);
+  const canDropHere = Boolean(
+    parent && draggedNode && draggedNode.parentId === parent.id,
+  );
+  const depthClass = `tree-depth-${Math.min(depth, 3)}`;
   return (
     <div className="author-tree-node">
       <div
-        className={`tree-row author-tree-row${selected ? " is-selected" : ""}`}
-        style={{ paddingLeft: `${0.65 + depth * 1.1}rem` }}
+        className={`tree-row author-tree-row ${depthClass}${selected ? " is-selected" : ""}${draggedNode?.id === node.id ? " is-dragging" : ""}${dragOverNodeId === node.id && canDropHere ? " is-drop-target" : ""}`}
+        draggable={canDrag}
+        onDragStart={(event) => {
+          if (!canDrag) return;
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("text/plain", node.id);
+          onDragStartNode({ id: node.id, parentId: parent?.id ?? null });
+        }}
+        onDragEnter={() => {
+          if (canDropHere) onDragOverNode(node.id);
+        }}
+        onDragOver={(event) => {
+          if (!canDropHere) return;
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "move";
+          onDragOverNode(node.id);
+        }}
+        onDragLeave={() => onDragOverNode(null)}
+        onDrop={(event) => {
+          event.preventDefault();
+          onDropNode(parent, siblings, node.id);
+          onDragEnd();
+        }}
+        onDragEnd={onDragEnd}
+        style={{ paddingLeft: `${0.55 + depth * 0.95}rem` }}
       >
+        <span className="tree-drag-handle" aria-hidden="true">
+          {canDrag ? <GripVertical size={14} /> : null}
+        </span>
         {node.kind === "directory" ? (
           <button
             className="tree-toggle"
             type="button"
-            aria-label={expanded ? "收起目录" : "展开目录"}
+            aria-label={expanded ? "Collapse directory" : "Expand directory"}
             onClick={() => onToggle(node.id)}
           >
             {hasChildren ? (expanded ? "▾" : "▸") : "•"}
@@ -375,10 +616,10 @@ function TreeNodeRow({
           onClick={() => onSelect(node)}
         >
           <span>
-            {node.kind === "directory" ? "目录" : "文件"} {node.name}
+            {node.kind === "directory" ? "Directory" : "File"} {node.name}
           </span>
           <small>
-            {node.path} · {node.status === "published" ? "已发布" : "草稿"}
+            {node.path} · {node.status === "published" ? "Live" : "Draft"}
           </small>
         </button>
       </div>
@@ -388,11 +629,19 @@ function TreeNodeRow({
             <TreeNodeRow
               key={child.id}
               node={child}
+              parent={node}
+              siblings={node.children}
               depth={depth + 1}
               expandedIds={expandedIds}
               selectedId={selectedId}
+              draggedNode={draggedNode}
+              dragOverNodeId={dragOverNodeId}
               onSelect={onSelect}
               onToggle={onToggle}
+              onDragStartNode={onDragStartNode}
+              onDragOverNode={onDragOverNode}
+              onDropNode={onDropNode}
+              onDragEnd={onDragEnd}
             />
           ))}
         </div>
@@ -411,7 +660,6 @@ function WorkspaceDetail({
   onCreate,
   onCancelCreate,
   onDeleteDirectory,
-  onReorderChildren,
   onFeedback,
   onRefresh,
   onReturnToDirectory,
@@ -425,7 +673,6 @@ function WorkspaceDetail({
   onCreate: (event: FormEvent<HTMLFormElement>) => void;
   onCancelCreate: () => void;
   onDeleteDirectory: (node: AdminTreeNode) => void;
-  onReorderChildren: (parent: AdminTreeNode, childIds: string[]) => void;
   onFeedback: (message: string | null) => void;
   onRefresh: () => Promise<void>;
   onReturnToDirectory: () => void;
@@ -436,13 +683,13 @@ function WorkspaceDetail({
       <div className="panel-heading-row">
         <div>
           <p className="eyebrow">
-            {node.kind === "directory" ? "目录概览" : "文件工作区"}
+            {node.kind === "directory" ? "Directory" : "File"}
           </p>
           <h2>{node.name}</h2>
           <p className="path-text">URL Path：{node.path}</p>
         </div>
         <span className={`status-pill ${node.status}`}>
-          {node.status === "published" ? "已发布" : "草稿"}
+          {node.status === "published" ? "Live" : "Draft"}
         </span>
       </div>
 
@@ -452,13 +699,13 @@ function WorkspaceDetail({
           type="button"
           onClick={onReturnToDirectory}
         >
-          返回目录
+          Back to directory
         </button>
       ) : null}
       {statusMessage ? <p className="muted">{statusMessage}</p> : null}
-      {isLoading ? <p className="muted">正在加载工作区详情…</p> : null}
+      {isLoading ? <p className="muted">Loading details…</p> : null}
       {isError ? (
-        <p className="form-error">工作区详情加载失败。可继续使用左侧内容树。</p>
+        <p className="form-error">Details failed to load. You can still use the tree.</p>
       ) : null}
 
       {node.kind === "directory" ? (
@@ -468,7 +715,6 @@ function WorkspaceDetail({
           onCreate={onCreate}
           onCancelCreate={onCancelCreate}
           onDeleteDirectory={onDeleteDirectory}
-          onReorderChildren={onReorderChildren}
         />
       ) : (
         <FileOverview
@@ -489,64 +735,62 @@ function DirectoryOverview({
   onCreate,
   onCancelCreate,
   onDeleteDirectory,
-  onReorderChildren,
 }: {
   node: AdminTreeNode;
   children: AdminTreeNode[];
   onCreate: (event: FormEvent<HTMLFormElement>) => void;
   onCancelCreate: () => void;
   onDeleteDirectory: (node: AdminTreeNode) => void;
-  onReorderChildren: (parent: AdminTreeNode, childIds: string[]) => void;
 }) {
   const [kind, setKind] = useState<NodeKind>("directory");
-  const [draggedChildId, setDraggedChildId] = useState<string | null>(null);
-  const previewName = kind === "directory" ? "新目录" : "新文件";
+  const previewName = kind === "directory" ? "New directory" : "New file";
   const previewPath = `${node.path.replace(/\/$/, "")}/${previewName}`.replace(
     /^$/,
     "/",
   );
 
-  function dropOnChild(targetId: string) {
-    if (!draggedChildId || draggedChildId === targetId) return;
-    const childIds = children.map((child) => child.id);
-    const from = childIds.indexOf(draggedChildId);
-    const to = childIds.indexOf(targetId);
-    if (from < 0 || to < 0) return;
-    const [moved] = childIds.splice(from, 1);
-    childIds.splice(to, 0, moved);
-    onReorderChildren(node, childIds);
-    setDraggedChildId(null);
-  }
-
   return (
     <div className="directory-overview">
-      <p className="muted">
-        此目录包含 {children.length} 个直接子项。可在当前目录中新建目录或文件。
-      </p>
-      <section className="nested-create-panel" aria-label="新建目录或文件">
-        <h3>{kind === "directory" ? "新建目录" : "新建文件"}</h3>
+      <div className="workspace-action-strip" aria-label="Create content">
+        <div>
+          <p className="eyebrow">Create</p>
+          <h3>{kind === "directory" ? "New directory" : "New file"}</h3>
+        </div>
+        <div className="segmented-control" aria-label="Choose item type">
+          <button
+            className={kind === "directory" ? "is-active" : ""}
+            type="button"
+            onClick={() => setKind("directory")}
+            aria-pressed={kind === "directory"}
+          >
+            <Folder size={16} aria-hidden="true" />
+            Directory
+          </button>
+          <button
+            className={kind === "file" ? "is-active" : ""}
+            type="button"
+            onClick={() => setKind("file")}
+            aria-pressed={kind === "file"}
+          >
+            <FileText size={16} aria-hidden="true" />
+            File
+          </button>
+        </div>
+      </div>
+      <section className="nested-create-panel compact-create-panel" aria-label="Create item">
+        <h3>{kind === "directory" ? "Directory" : "File"}</h3>
         <form className="admin-form" onSubmit={onCreate}>
           <input type="hidden" name="kind" value={kind} />
           <label>
-            类型
-            <select
-              value={kind}
-              onChange={(event) => setKind(event.target.value as NodeKind)}
-            >
-              <option value="directory">新建目录</option>
-              <option value="file">新建文件</option>
-            </select>
-          </label>
-          <label>
-            名称
+            Name
             <input name="name" required placeholder={previewName} />
           </label>
           {kind === "file" ? (
             <label>
-              格式
+              Format
               <select name="content_format" defaultValue="markdown">
                 <option value="markdown">Markdown</option>
-                <option value="html_document">HTML Document</option>
+                <option value="html_document">HTML</option>
               </select>
             </label>
           ) : null}
@@ -556,56 +800,33 @@ function DirectoryOverview({
           </label>
           <div className="button-row">
             <button className="primary-button" type="submit">
-              创建并打开
+              <Plus size={16} aria-hidden="true" />
+              Create
             </button>
             <button
               className="glass-button"
               type="button"
               onClick={onCancelCreate}
             >
-              取消
+              Cancel
             </button>
           </div>
         </form>
       </section>
-      <section className="danger-zone" aria-label="目录危险操作">
-        <h3>危险操作</h3>
+      <section className="danger-zone" aria-label="Directory danger actions">
+        <h3>Danger</h3>
         <p className="muted">
-          非空目录不能删除。请先移动或删除所有子项后再删除目录。
+          Delete is blocked while items remain inside.
         </p>
         <button
           className="glass-button danger-button"
           type="button"
           onClick={() => onDeleteDirectory(node)}
         >
-          {children.length > 0 ? "非空目录不能删除" : "删除空目录"}
+          {children.length > 0 ? "Not empty" : "Delete directory"}
         </button>
       </section>
-      {children.length === 0 ? <p className="muted">此目录暂无子项。</p> : null}
-      {children.length > 1 ? (
-        <p className="muted">
-          桌面端同级拖拽排序：只能调整当前目录内的子项顺序，不会移动到其他目录。
-        </p>
-      ) : null}
-      <div className="admin-child-card-grid">
-        {children.map((child) => (
-          <article
-            className="admin-child-card"
-            draggable
-            key={child.id}
-            onDragStart={() => setDraggedChildId(child.id)}
-            onDragOver={(event) => event.preventDefault()}
-            onDrop={() => dropOnChild(child.id)}
-          >
-            <strong>
-              {child.kind === "directory" ? "目录" : "文件"} {child.name}
-            </strong>
-            <span>{child.path}</span>
-            <small>{child.status === "published" ? "已发布" : "草稿"}</small>
-          </article>
-        ))}
-      </div>
-      <p className="muted">当前目录：{node.path}</p>
+      <p className="muted">Current path: {node.path}</p>
     </div>
   );
 }
@@ -648,10 +869,10 @@ function FileOverview({
           .map((item) => item.trim())
           .filter(Boolean),
       });
-      onFeedback("内容已手动保存。");
+      onFeedback("Saved.");
       await onRefresh();
     } catch (error) {
-      onFeedback(formatAdminActionError(error, "内容保存失败，请检查后重试。"));
+      onFeedback(formatAdminActionError(error, "Save failed. Check the content and try again."));
     }
   }
 
@@ -659,15 +880,15 @@ function FileOverview({
     try {
       if (nextStatus === "published") {
         await publishFile(node.id);
-        onFeedback("文件已发布。");
+        onFeedback("Published.");
       } else {
         await unpublishFile(node.id);
-        onFeedback("文件已撤回发布，当前为草稿。");
+        onFeedback("Unpublished. This file is now a draft.");
       }
       await onRefresh();
     } catch (error) {
       onFeedback(
-        formatAdminActionError(error, "发布状态更新失败，请稍后重试。"),
+        formatAdminActionError(error, "Publish state update failed. Try again."),
       );
     }
   }
@@ -677,17 +898,17 @@ function FileOverview({
     const form = new FormData(event.currentTarget);
     const file = form.get("asset");
     if (!(file instanceof File)) {
-      onFeedback("请选择要上传的资源。");
+      onFeedback("Choose a file to upload.");
       return;
     }
     try {
       await uploadAsset(node.id, file);
-      onFeedback(`资源已上传：${file.name}`);
+      onFeedback(`Asset uploaded: ${file.name}`);
       event.currentTarget.reset();
       await onRefresh();
     } catch (error) {
       onFeedback(
-        formatAdminActionError(error, "资源上传失败，请检查文件后重试。"),
+        formatAdminActionError(error, "Upload failed. Check the file and try again."),
       );
     }
   }
@@ -695,10 +916,10 @@ function FileOverview({
   async function removeAsset(assetId: string) {
     try {
       await deleteAsset(assetId);
-      onFeedback("资源已删除。");
+      onFeedback("Asset deleted.");
       await onRefresh();
     } catch (error) {
-      onFeedback(formatAdminActionError(error, "资源删除失败，请稍后重试。"));
+      onFeedback(formatAdminActionError(error, "Delete asset failed. Try again."));
     }
   }
 
@@ -710,11 +931,11 @@ function FileOverview({
         name: stringValue(form, "name"),
         url_path: stringValue(form, "url_path"),
       });
-      onFeedback("基础信息已保存。");
+      onFeedback("Settings saved.");
       await onRefresh();
     } catch (error) {
       onFeedback(
-        formatAdminActionError(error, "基础信息保存失败，请检查 URL Path。"),
+        formatAdminActionError(error, "Settings save failed. Check the URL Path."),
       );
     }
   }
@@ -730,9 +951,9 @@ function FileOverview({
       });
       setMovePreview(preview);
       setMoveDestinationId(newParentId || null);
-      onFeedback(`移动预览已生成：${preview.destination_path}`);
+      onFeedback(`Move preview: ${preview.destination_path}`);
     } catch (error) {
-      onFeedback(formatAdminActionError(error, "移动预览失败，请换一个目录。"));
+      onFeedback(formatAdminActionError(error, "Move preview failed. Pick another directory."));
     }
   }
 
@@ -742,30 +963,30 @@ function FileOverview({
         new_parent_id: moveDestinationId,
         expected_version: 0,
       });
-      onFeedback("位置已移动。");
+      onFeedback("Moved.");
       setMovePreview(null);
       setMoveDestinationId(null);
       await onRefresh();
     } catch (error) {
-      onFeedback(formatAdminActionError(error, "移动失败，请重新生成预览。"));
+      onFeedback(formatAdminActionError(error, "Move failed. Preview again."));
     }
   }
 
   async function deleteFile() {
     try {
       await deleteAdminNode(node.id);
-      onFeedback(`文件已删除：${node.path}`);
+      onFeedback(`File deleted: ${node.path}`);
       await onRefresh();
     } catch (error) {
       onFeedback(
-        formatAdminActionError(error, "已发布文件不能直接删除，请先撤回发布。"),
+        formatAdminActionError(error, "Live files cannot be deleted. Unpublish first."),
       );
     }
   }
 
   return (
     <div className="file-overview">
-      <div className="admin-tabs" aria-label="文件工作区标签">
+      <div className="admin-tabs" aria-label="File tabs">
         <button
           className={
             activeTab === "content" ? "primary-button" : "glass-button"
@@ -773,14 +994,14 @@ function FileOverview({
           type="button"
           onClick={() => setActiveTab("content")}
         >
-          内容
+          Write
         </button>
         <button
           className={activeTab === "assets" ? "primary-button" : "glass-button"}
           type="button"
           onClick={() => setActiveTab("assets")}
         >
-          资源
+          Assets
         </button>
         <button
           className={
@@ -789,15 +1010,15 @@ function FileOverview({
           type="button"
           onClick={() => setActiveTab("settings")}
         >
-          设置
+          Settings
         </button>
       </div>
       <p className="muted">
-        文件状态：{node.status === "published" ? "已发布" : "草稿"}
+        Status: {node.status === "published" ? "Live" : "Draft"}
       </p>
 
       {activeTab === "content" ? (
-        <section className="workspace-tab-panel" aria-label="内容">
+        <section className="workspace-tab-panel" aria-label="Write">
           <div className="button-row">
             {node.status === "draft" ? (
               <button
@@ -805,7 +1026,7 @@ function FileOverview({
                 type="button"
                 onClick={() => togglePublish("published")}
               >
-                发布
+                Publish
               </button>
             ) : null}
             {node.status === "published" ? (
@@ -814,38 +1035,38 @@ function FileOverview({
                 type="button"
                 onClick={() => togglePublish("draft")}
               >
-                撤回发布
+                Unpublish
               </button>
             ) : null}
           </div>
           <form className="admin-form" onSubmit={submitContent}>
             <label>
-              格式
+              Format
               <select name="content_format" defaultValue={contentFormat}>
                 <option value="markdown">Markdown</option>
-                <option value="html_document">HTML Document</option>
+                <option value="html_document">HTML</option>
               </select>
             </label>
             <label>
-              关键词
+              Keywords
               <input
                 name="keywords"
                 defaultValue={keywords}
-                placeholder="用逗号分隔"
+                placeholder="comma separated"
               />
             </label>
             <label>
-              正文
+              Body
               <textarea
                 name="body_raw"
                 defaultValue={bodyRaw}
                 rows={12}
-                placeholder="在这里手动编辑草稿内容"
+                placeholder="Write your draft here"
               />
             </label>
             <div className="button-row">
               <button className="primary-button" type="submit">
-                手动保存
+                Save
               </button>
             </div>
           </form>
@@ -853,15 +1074,16 @@ function FileOverview({
       ) : null}
 
       {activeTab === "assets" ? (
-        <section className="workspace-tab-panel" aria-label="资源">
+        <section className="workspace-tab-panel" aria-label="Assets">
           <form className="admin-form" onSubmit={submitAsset}>
             <label>
-              上传资源
+              Asset
               <input name="asset" type="file" />
             </label>
             <div className="button-row">
               <button className="primary-button" type="submit">
-                上传资源
+                <Upload size={16} aria-hidden="true" />
+                Upload
               </button>
             </div>
           </form>
@@ -879,29 +1101,29 @@ function FileOverview({
                     target="_blank"
                     rel="noreferrer"
                   >
-                    打开
+                    Open
                   </a>
                   <button
                     className="glass-button danger-button"
                     type="button"
                     onClick={() => removeAsset(asset.id)}
                   >
-                    删除
+                    Delete
                   </button>
                 </article>
               ))}
             </div>
           ) : (
-            <p className="muted">暂无资源。</p>
+            <p className="muted">No assets yet.</p>
           )}
         </section>
       ) : null}
 
       {activeTab === "settings" ? (
-        <section className="workspace-tab-panel" aria-label="设置">
+        <section className="workspace-tab-panel" aria-label="Settings">
           <form className="admin-form" onSubmit={submitSettings}>
             <label>
-              名称
+              Name
               <input name="name" defaultValue={node.name} required />
             </label>
             <label>
@@ -910,13 +1132,13 @@ function FileOverview({
             </label>
             <div className="button-row">
               <button className="primary-button" type="submit">
-                保存基础信息
+                Save settings
               </button>
             </div>
           </form>
 
-          <section className="nested-create-panel" aria-label="位置">
-            <h3>位置</h3>
+          <section className="nested-create-panel" aria-label="Move">
+            <h3>Move</h3>
             <form className="admin-form" onSubmit={submitMovePreview}>
               <label>
                 Directory Picker
@@ -924,7 +1146,7 @@ function FileOverview({
                   name="new_parent_id"
                   defaultValue={node.parent_id ?? ""}
                 >
-                  <option value="">根目录</option>
+                  <option value="">Root</option>
                   {availableDestinations.map((directory) => (
                     <option value={directory.id} key={directory.id}>
                       {directory.path}
@@ -934,20 +1156,20 @@ function FileOverview({
               </label>
               <div className="button-row">
                 <button className="glass-button" type="submit">
-                  预览移动
+                  Preview move
                 </button>
               </div>
             </form>
             {movePreview ? (
               <div className="move-preview-panel">
-                <p>目标路径：{movePreview.destination_path}</p>
-                <p>影响路径：{movePreview.affected_paths.length || 0} 个</p>
+                <p>New path: {movePreview.destination_path}</p>
+                <p>Affected paths: {movePreview.affected_paths.length || 0}</p>
                 {movePreview.redirects.length > 0 ? (
-                  <p>将创建 {movePreview.redirects.length} 条公开文件跳转。</p>
+                  <p>Creates {movePreview.redirects.length} public redirects.</p>
                 ) : null}
                 {movePreview.blocked_reasons.length > 0 ? (
                   <p className="form-error">
-                    阻止原因：{movePreview.blocked_reasons.join("，")}
+                    Blocked: {movePreview.blocked_reasons.join("，")}
                   </p>
                 ) : null}
                 <button
@@ -956,23 +1178,23 @@ function FileOverview({
                   disabled={movePreview.blocked_reasons.length > 0}
                   onClick={commitMove}
                 >
-                  确认移动
+                  Move here
                 </button>
               </div>
             ) : null}
           </section>
 
-          <section className="danger-zone" aria-label="危险操作">
-            <h3>危险操作</h3>
+          <section className="danger-zone" aria-label="Danger">
+            <h3>Danger</h3>
             <p className="muted">
-              已发布文件会被后端阻止删除。请先使用撤回发布。
+              Live files are protected. Unpublish before deleting.
             </p>
             <button
               className="glass-button danger-button"
               type="button"
               onClick={deleteFile}
             >
-              删除文件
+              Delete file
             </button>
           </section>
         </section>
@@ -1018,21 +1240,21 @@ function stringValue(form: FormData, key: string) {
 
 function formatAdminCreateError(error: unknown) {
   if (error instanceof ApiError) {
-    if (error.status === 401) return "登录已过期，请重新登录。";
-    if (error.status === 403) return "需要作者权限才能创建内容。";
-    if (error.status === 404) return "目标目录不存在，请刷新内容树后重试。";
-    if (error.status === 409) return "URL Path 已存在，请换一个名称。";
-    if (/name is required/i.test(error.message)) return "请输入名称。";
+    if (error.status === 401) return "Sign in again.";
+    if (error.status === 403) return "Author access is required.";
+    if (error.status === 404) return "Target directory was not found. Refresh the tree.";
+    if (error.status === 409) return "URL Path already exists. Try another name.";
+    if (/name is required/i.test(error.message)) return "Name is required.";
   }
-  return "创建失败，请检查网络后重试。";
+  return "Create failed. Check the network and try again.";
 }
 
 function formatAdminActionError(error: unknown, fallback: string) {
   if (error instanceof ApiError) {
-    if (error.status === 401) return "登录已过期，请重新登录。";
-    if (error.status === 403) return "需要作者权限才能执行此操作。";
-    if (error.status === 404) return "目标内容不存在，请刷新内容树。";
-    if (error.status === 409) return error.message || "当前状态不允许此操作。";
+    if (error.status === 401) return "Sign in again.";
+    if (error.status === 403) return "Author access is required.";
+    if (error.status === 404) return "Target item was not found. Refresh the tree.";
+    if (error.status === 409) return error.message || "This action is blocked.";
   }
   return fallback;
 }

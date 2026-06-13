@@ -12,15 +12,15 @@ const typesSource = source('../src/lib/types.ts');
 
 test('Task 14 file workspace exposes manual save, assets, settings, and publish controls', () => {
   assert.match(adminPageSource, /type FileWorkspaceTab = ["']content["'] \| ["']assets["'] \| ["']settings["']/);
-  assert.match(adminPageSource, />内容<|aria-label="内容"/);
-  assert.match(adminPageSource, />资源<|aria-label="资源"/);
-  assert.match(adminPageSource, />设置<|aria-label="设置"/);
-  assert.match(adminPageSource, /手动保存/);
-  assert.match(adminPageSource, /内容已手动保存/);
-  assert.match(adminPageSource, /发布/);
-  assert.match(adminPageSource, /撤回发布/);
-  assert.match(adminPageSource, /草稿/);
-  assert.match(adminPageSource, /已发布/);
+  assert.match(adminPageSource, />Write<|aria-label="Write"/);
+  assert.match(adminPageSource, />Assets<|aria-label="Assets"/);
+  assert.match(adminPageSource, />Settings<|aria-label="Settings"/);
+  assert.match(adminPageSource, /Save/);
+  assert.match(adminPageSource, /Saved/);
+  assert.match(adminPageSource, /Publish/);
+  assert.match(adminPageSource, /Unpublish/);
+  assert.match(adminPageSource, /Draft/);
+  assert.match(adminPageSource, /Live/);
 });
 
 test('Task 14 API helpers bind Stage 2 workspace endpoints without widening create input', () => {
@@ -39,11 +39,11 @@ test('Task 14 API helpers bind Stage 2 workspace endpoints without widening crea
   assert.match(typesSource, /status:\s*'draft' \| 'published'/);
 });
 
-test('Task 14 directory settings include guarded delete and same-parent desktop drag wording', () => {
-  assert.match(adminPageSource, /非空目录不能删除/);
+test('Task 14 directory settings include guarded delete and tree-based same-parent drag', () => {
+  assert.match(adminPageSource, /Not empty|Delete is blocked/);
   assert.match(adminPageSource, /deleteAdminNode\(node\.id\)/);
   assert.match(adminPageSource, /draggable/);
-  assert.match(adminPageSource, /同级拖拽排序/);
+  assert.doesNotMatch(adminPageSource, /Drag cards/);
   assert.match(adminPageSource, /reorderAdminChildren/);
   assert.doesNotMatch(adminPageSource, /有未发布修改|发布更新|Draft Preview|Autosave/);
 });
@@ -52,7 +52,7 @@ test('Task 14 settings provide Directory Picker move preview and danger feedback
   assert.match(adminPageSource, /Directory Picker/);
   assert.match(adminPageSource, /previewAdminMove/);
   assert.match(adminPageSource, /moveAdminNode/);
-  assert.match(adminPageSource, /移动预览已生成/);
-  assert.match(adminPageSource, /确认移动/);
-  assert.match(adminPageSource, /已发布文件不能直接删除，请先撤回发布/);
+  assert.match(adminPageSource, /Move preview/);
+  assert.match(adminPageSource, /Move here/);
+  assert.match(adminPageSource, /Live files cannot be deleted|Live files are protected/);
 });

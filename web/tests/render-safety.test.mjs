@@ -83,10 +83,10 @@ test('Stage 2 Author Workspace shell wires protected tree and keeps HTML sandbox
   assert.match(apiSource, /\/admin\/tree/);
   assert.match(apiSource, /fetchAdminNode/);
   assert.match(apiSource, /fetchCurrentUser/);
-  assert.match(adminPageSource, /作者工作台/);
-  assert.match(adminPageSource, /内容树/);
+  assert.match(adminPageSource, /Author Workspace/);
+  assert.match(adminPageSource, /Content Tree/);
   assert.match(adminPageSource, /Navigate to="\/login\?return_to=%2Fadmin"/);
-  assert.match(adminPageSource, /草稿/);
-  assert.match(adminPageSource, /已发布/);
+  assert.match(adminPageSource, /Draft/);
+  assert.match(adminPageSource, /Live/);
   assert.doesNotMatch(adminPageSource, /sandbox="allow-scripts"/);
 });

@@ -21,10 +21,10 @@ Use `Author`, `Reader`, `Anonymous Visitor`, `Author Workspace`, `Content Tree`,
 The active work is staged:
 
 1. Reliability, navigation, and identity — engineering complete; user acceptance feedback is folded into Stage 2.
-2. Chinese Author Workspace and protected Content Tree — current target. Desktop-first; mobile is no-regression sanity only.
+2. Simple-English Author Workspace and protected Content Tree — current target. Desktop-first; mobile is no-regression sanity only.
 3. Autosave, version history, publication snapshots, Draft Preview, Draft/Published Assets, and a server-local stdio Blog MCP Server.
 
-Stage 2 must replace the form-heavy Admin page with a Chinese, graphical, operation-first Author Workspace. It must keep code readable, extensible, and architecturally clear for project presentation/defense.
+Stage 2 must replace the form-heavy Admin page with a simple-English, graphical, operation-first Author Workspace. It must keep code readable, extensible, and architecturally clear for project presentation/defense.
 
 Do not redesign public homepage, Recent cards, public Directory/File reading, comments/Likes, or the Glass Ricepaper system except to repair regressions or add required Author-only public manage/edit entry.
 

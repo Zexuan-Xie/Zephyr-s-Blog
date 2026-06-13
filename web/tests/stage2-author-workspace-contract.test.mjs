@@ -13,16 +13,19 @@ const rootPageSource = source('../src/pages/RootPage.tsx');
 const directoryPageSource = source('../src/pages/DirectoryPage.tsx');
 const contentResolverSource = source('../src/pages/ContentResolverPage.tsx');
 const filePageSource = source('../src/components/FilePage.tsx');
+const glassNavSource = source('../src/components/GlassNav.tsx');
 
-test('Stage 2 replaces old Admin chrome with Chinese Author Workspace and protected Content Tree language', () => {
+test('Stage 2 polish uses Aeolian brand and simple Author Workspace language', () => {
   assert.doesNotMatch(adminPageSource, />ADMIN</);
   assert.doesNotMatch(adminPageSource, /Tree Manager/);
   assert.doesNotMatch(adminPageSource, /Tree browser/);
   assert.doesNotMatch(adminPageSource, /Node id/);
   assert.doesNotMatch(adminPageSource, /Load selected node/);
-  assert.match(adminPageSource, /作者工作台|Author Workspace/);
-  assert.match(adminPageSource, /内容树|Content Tree/);
-  assert.match(adminPageSource, /目录概览/);
+  assert.match(glassNavSource, /Aeolian/);
+  assert.doesNotMatch(glassNavSource, /xLab Blog/);
+  assert.match(adminPageSource, /Author Workspace/);
+  assert.match(adminPageSource, /Content Tree/);
+  assert.match(adminPageSource, /Create, write, publish, and reorder/);
 });
 
 test('Stage 2 minimal create flow is slugless and opens the returned node after tree refresh', () => {
@@ -41,9 +44,27 @@ test('Stage 2 minimal create flow is slugless and opens the returned node after 
   assert.match(adminPageSource, /detail=\{detailQuery\.data \?\? null\}/);
   assert.match(createFlow, /adminTreeQuery\.refetch\(\)/);
   assert.match(createFlow, /created\.node\.path|created\.node\.url_path/);
-  assert.match(adminPageSource, /新建目录/);
-  assert.match(adminPageSource, /新建文件/);
+  assert.match(adminPageSource, /Directory/);
+  assert.match(adminPageSource, /File/);
   assert.match(adminPageSource, /URL Path/);
+});
+
+test('Stage 2 empty Author Workspace can create the first root content item', () => {
+  assert.match(adminPageSource, /EmptyRootWorkspace/);
+  assert.match(adminPageSource, /Start here/);
+  assert.match(adminPageSource, /Create your first item/);
+  assert.match(adminPageSource, /Nothing here yet. Create your first item on the right./);
+  assert.match(adminPageSource, /async function submitRootCreate/);
+  assert.match(adminPageSource, /New root/);
+  assert.match(adminPageSource, /rootCreateOpen/);
+  assert.match(adminPageSource, /parent_id:\s*null/);
+  assert.doesNotMatch(
+    adminPageSource.slice(
+      adminPageSource.indexOf('async function submitRootCreate'),
+      adminPageSource.indexOf('async function deleteDirectory'),
+    ),
+    /slug:|sort_order:/,
+  );
 });
 
 test('Stage 2 primary UI hides implementation identifiers and Stage 3 publication concepts', () => {
@@ -60,25 +81,34 @@ test('Stage 2 primary UI hides implementation identifiers and Stage 3 publicatio
     assert.doesNotMatch(adminPageSource, forbidden);
   }
 
-  assert.match(adminPageSource, /草稿/);
-  assert.match(adminPageSource, /已发布/);
-  assert.match(adminPageSource, /撤回发布/);
+  assert.match(adminPageSource, /Draft/);
+  assert.match(adminPageSource, /Live/);
+  assert.match(adminPageSource, /Unpublish/);
 });
 
 test('Stage 2 workspace provides explicit return controls for subflows', () => {
-  assert.match(adminPageSource, /返回目录/);
-  assert.match(adminPageSource, /返回内容树/);
-  assert.match(adminPageSource, /取消/);
+  assert.match(adminPageSource, /Back to directory/);
+  assert.match(adminPageSource, /Top/);
+  assert.match(adminPageSource, /Cancel/);
 });
 
 test('Stage 2 public Author entries are role-gated and open admin with selected target', () => {
   const publicSources = [rootPageSource, directoryPageSource, contentResolverSource, filePageSource].join('\n');
 
   assert.match(publicSources, /currentUser\?\.role === ['"]admin['"]|isAuthor/);
-  assert.match(publicSources, /管理此目录/);
-  assert.match(publicSources, /编辑文件/);
+  assert.match(publicSources, /Manage/);
+  assert.match(publicSources, /Edit/);
   assert.match(publicSources, /\/admin\?[^`'"]*(target|node|select)=/);
-  assert.doesNotMatch(publicSources, /currentUser\?\.role === ['"]reader['"][\s\S]{0,160}(管理此目录|编辑文件)/);
+  assert.doesNotMatch(publicSources, /currentUser\?\.role === ['"]reader['"][\s\S]{0,160}(Manage|Edit)/);
+});
+
+test('Stage 2 polish exposes tree-based same-parent drag', () => {
+  assert.doesNotMatch(adminPageSource, /Drag cards/);
+  assert.match(adminPageSource, /draggable/);
+  assert.match(adminPageSource, /onDragStart/);
+  assert.match(adminPageSource, /onDropNode=\{reorderWithinParent\}/);
+  assert.match(adminPageSource, /GripVertical/);
+  assert.match(adminPageSource, /author-tree-row/);
 });
 
 test('Stage 2 frontend types model the protected tree and draft/published-only statuses', () => {
@@ -101,4 +131,16 @@ test('Stage 2 public resolver decodes browser pathname before API query encoding
   assert.match(apiSource, /function normalizeBrowserPath/);
   assert.match(apiSource, /decodeURIComponent\(path\)/);
   assert.match(apiSource, /encodeURIComponent\(normalizeBrowserPath\(path\)\)/);
+});
+
+
+test('Stage 2 drawer exposes expandable public tree', () => {
+  const drawerSource = source('../src/components/DirectoryDrawer.tsx');
+  assert.match(apiSource, /fetchDirectoryChildren/);
+  assert.match(apiSource, /\/tree\/\$\{encodeURIComponent\(nodeId\)\}\/children/);
+  assert.match(drawerSource, /DrawerTreeItem/);
+  assert.match(drawerSource, /expandedIds/);
+  assert.match(drawerSource, /fetchDirectoryChildren\(entry\.id\)/);
+  assert.match(drawerSource, /ChevronRight/);
+  assert.match(drawerSource, /to=\{entry\.path\}/);
 });

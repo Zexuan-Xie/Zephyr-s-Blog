@@ -1,4 +1,4 @@
-import { BookOpen, FolderTree, LogOut, Search, UserRound } from 'lucide-react';
+import { FolderTree, LogOut, Search, UserRound } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { clearToken } from '../lib/auth';
@@ -44,9 +44,9 @@ export function GlassNav({
   return (
     <header className="site-header">
       <nav className="glass glass-nav" aria-label="Primary navigation">
-        <Link className="brand" to="/" aria-label="xLab Blog root">
-          <BookOpen size={18} aria-hidden="true" />
-          <span>xLab Blog</span>
+        <Link className="brand" to="/" aria-label="Aeolian root">
+          <span className="brand-dot" aria-hidden="true" />
+          <span>Aeolian</span>
         </Link>
         <div className="nav-links">
           <NavLink to="/recent">Recent</NavLink>

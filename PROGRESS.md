@@ -1,43 +1,42 @@
 # Progress
 
-Last updated: 2026-06-13 18:18 CST
+Last updated: 2026-06-13 20:48 CST
 
 ## Current breakpoint
 
-Stage 2 implementation is complete and repaired after the Gateway 6 protected-tree contract drift. The previous OMX team `execute-approved-xlab-015f30a9` is no longer active; main-thread verification took over.
-
-Current HEAD: `cfbc487` (`fix: handle Chinese public URL paths`).
+Stage 2 functional polish plus the Aeolian visual polish are implemented and verified. This is a pre-Stage-3 user-acceptance checkpoint.
 
 Completed in this checkpoint:
 
-- Backend gates pass:
-  - `cd api && CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go test -count=1 ./...`
-  - `cd api && CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go vet ./...`
-  - `cd api && test -z "$(gofmt -l .)"`
-- Frontend gates pass:
-  - `cd web && node --test tests/*.test.mjs`
-  - `cd web && npm run lint`
-  - `cd web && npm run build`
-- Native PostgreSQL API smoke passed for Stage 2 protected tree, minimal create, save, publish, unpublish, and delete constraints.
-- Browser smoke passed for Author Workspace load, immediate create refresh/select/open, public `编辑文件` entry, public Chinese URL Path, and mobile no-regression sanity.
-- A new Stage 2 bug was fixed: public browser paths containing Chinese were double-encoded before `/api/tree/resolve`. `resolveContentPath()` now decodes browser pathname once before encoding the API query.
+- Brand changed from `xLab Blog` to `Aeolian` in top navigation and browser title/theme metadata.
+- Author Workspace product UI uses simple, direct English.
+- Author Workspace layout was simplified: shorter hero, tighter two-column shell, segmented Directory/File create control, fewer explanatory paragraphs.
+- Directory workspace has a graphical `Arrange` board with draggable cards, drag handles, Directory/File icons, hover/drop states, and pointer-based same-parent sorting.
+- Browser smoke confirmed same-parent card drag sends `PUT /api/admin/nodes/:id/children/order`, shows `Order saved.`, and persists order.
+- Public Author entries use simple English: `Manage` and `Edit`.
+- Public root/404/empty copy received light English polish.
+- New visual polish references `/mnt/c/Users/Alex-/Downloads/Aeolian (fixed).html` while preserving the existing layout: cool paper background, frosted glass cards/nav, aqua crystal accent, self-hosted Instrument Serif only for the `Aeolian` brand mark, with all other UI text restored to the original font stack; refined buttons/tags/code surfaces.
+- Tests were updated from the previous Chinese Stage 2 copy contract to the new simple-English polish contract.
 
-Evidence:
+Verification evidence:
 
-- `docs/verification/stage-2-acceptance.md`
-- `docs/verification/stage-2-security.md`
-- `docs/verification/stage-2-code-review.md`
-- `docs/verification/stage-2-browser-20260613/`
+- `docs/verification/stage-2-polish-20260613/summary.md`
+- `docs/verification/stage-2-polish-20260613/visual-admin.png`
 
-Manual user acceptance focus:
+Verification passed:
 
-1. Create Directory/File in `/admin` and confirm left Content Tree updates immediately.
-2. Save, publish, open public File, click `编辑文件`, return to selected File.
-3. Click `撤回发布` and verify public File becomes 404.
-4. Check Settings move/URL Path/delete prompts.
-5. Try same-parent desktop drag reorder.
+- `cd api && CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go test -count=1 ./...`
+- `cd api && CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go vet ./...`
+- `cd api && test -z "$(gofmt -l .)"`
+- `cd web && node --test tests/*.test.mjs`
+- `cd web && npm run lint`
+- `cd web && npm run build`
+- Browser smoke: `/admin` title is `Aeolian`, nav/Author Workspace render with the new visual system, layout remains the same.
+- Hotfix: `/admin` Directory create form no longer lets hidden inputs consume grid cells; `Name` and `URL Path preview` are separated into stable rows. Frontend gates and browser smoke rerun.
+- Hotfix: Author Workspace now has `New root` for creating sibling root Directories/Files under `/` even after one root exists; top Directory drawer now renders an expandable tree, and for Author uses the protected full admin tree so draft directories/files are visible. Frontend gates and browser smoke rerun.
+- Hotfix: left Content Tree now visually differentiates hierarchy levels, keeps directory collapse/expand, supports same-parent drag sorting directly in the tree, and removes the right-side `Drag cards`/Arrange panel. Frontend gates and browser smoke rerun.
 
-Next action: ask user to accept Stage 2. After acceptance, begin Stage 3: autosave, Content Versions, Published Content snapshots, Draft Preview, Draft/Published Assets, and server-local stdio Blog MCP Server.
+Next action: ask user to manually accept Stage 2 polish. If accepted, commit the Stage 2 clean-slate + polish changes, then begin Stage 3: autosave, Content Versions, Published Content snapshots, Draft Preview, Draft/Published Assets, and server-local stdio Blog MCP Server.
 
 
 ## Previous notes

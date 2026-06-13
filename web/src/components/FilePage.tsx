@@ -138,8 +138,8 @@ export function FilePage({ file, currentUser }: FilePageProps) {
       </section>
 
       {isAuthor ? (
-        <div className="action-row" aria-label="作者文件操作">
-          <Link className="glass-button" to={`/admin?target=${encodeURIComponent(file.id)}`}>编辑文件</Link>
+        <div className="action-row" aria-label="Author file actions">
+          <Link className="glass-button" to={`/admin?target=${encodeURIComponent(file.id)}`}>Edit</Link>
         </div>
       ) : null}
 
@@ -192,7 +192,7 @@ export function FilePage({ file, currentUser }: FilePageProps) {
         <div className="comments-heading">
           <div>
             <p className="eyebrow">COMMENTS</p>
-            <h2>Reader discussion</h2>
+            <h2>Discussion</h2>
           </div>
           {!isAuthenticated ? <Link className="glass-button" to={`/login?return_to=${encodeURIComponent(file.path)}`}>Log in to comment</Link> : null}
         </div>
@@ -209,7 +209,7 @@ export function FilePage({ file, currentUser }: FilePageProps) {
               id="comment-composer"
               name="body"
               maxLength={5000}
-              placeholder="Write a plain-text comment…"
+              placeholder="Write a comment…"
               value={commentBody}
               onChange={(event) => setCommentBody(event.target.value)}
             />

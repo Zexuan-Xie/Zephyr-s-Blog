@@ -131,3 +131,47 @@ These are implemented and covered by source/API tests, but manual UX judgment is
 
 - Exhaustive drag-and-drop visual persistence by browser automation.
 - Full manual UX acceptance by the user.
+
+## 2026-06-13 clean-slate user acceptance rerun
+
+Context: after the user requested clearing the blog content, the local content tables were empty (`nodes = 0`, `file_contents = 0`) while users remained. A browser acceptance rerun found one clean-slate regression and fixed it.
+
+Fix applied:
+
+- Empty Author Workspace now shows a right-side root creation panel (`从根目录开始` / `创建第一个内容`) instead of only `暂无内容` and `请选择内容树中的目录或文件`.
+- Root creation uses the same slugless minimal contract as directory creation: `parent_id: null`, `kind`, `name`, optional `content_format`; no `slug` or `sort_order` in product UI.
+- Regression contract added: `Stage 2 empty Author Workspace can create the first root content item`.
+
+Browser rerun covered:
+
+| Requirement | Result | Note |
+|---|---:|---|
+| Empty local content tree opens Author Workspace without load failure | PASS | `/admin` shows Chinese Author Workspace and empty root create panel. |
+| Create first root Directory from an empty Content Tree | PASS | Created `验收目录`; left Content Tree updated immediately and selected/opened it. |
+| Create File under the new Directory | PASS | Created `验收文件`; left Content Tree updated immediately and selected/opened File workspace. |
+| Manual save API/UI logic | PASS with automation caveat | DOM `requestSubmit()` sent `PUT /api/admin/files/:id/content` and DB stored body/keywords. `agent-browser click` on the form submit button did not dispatch the submit in this run, so the physical click should be manually sampled. |
+| Publish | PASS | Browser click sent `POST /publish`, left tree status changed to `已发布`, DB status became `published`. |
+| Public Chinese URL Path | PASS | `/验收目录/验收文件` rendered the published File and Chinese path resolved correctly. |
+| Public `编辑文件` entry | PASS | Returned to `/admin?target=...` with `验收文件` selected. |
+| Unpublish | PASS with automation caveat | DOM click sent `POST /unpublish`, DB status became `draft`, public resolver returned 404. `agent-browser click` on the off-screen/low viewport button was flaky, so the physical click should be manually sampled. |
+
+Additional observations for Stage 2 polish / manual acceptance:
+
+- Login, public 404, comments, and some navigation labels still contain English (`Welcome back`, `Login`, `Path not found`, `Return root`, `Reader discussion`, etc.). This is outside the clean-slate blocker but conflicts with the broader Chinese-copy preference and should be queued if full Chinese polish is required before presentation.
+- The old `start-local.sh` nohup Vite process exited during one run; running `conda run --no-capture-output -n blogenv npm run dev -- --host 127.0.0.1` directly kept Vite stable for acceptance. Recheck local launcher reliability if it recurs.
+
+Verification after the clean-slate fix:
+
+```bash
+cd api
+CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go test -count=1 ./...
+CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go vet ./...
+test -z "$(gofmt -l .)"
+
+cd web
+node --test tests/*.test.mjs
+npm run lint
+npm run build
+```
+
+Result: **PASS**.
