@@ -1,8 +1,11 @@
 # Stage 3 Security and Abuse Review
 
-Status: Gateway 0/1 planning complete; implementation review pending
+Status: Gateway 0/1 planning complete; Gateway 2/3/4 implementation review completed with blockers
 
 Reviewed at Stage 3 start on `73bcc9e` (`checkpoint: stage 2 polish before stage 3`).
+
+Updated implementation review on `9b51d36` after backend Gateway 2/3 and
+frontend Gateway 4 landed.
 
 This document is the security lane source of truth for Stage 3. It covers the
 initial Gateway 0/1 threat model and the security requirements that must be
@@ -127,166 +130,148 @@ surface.
 - MCP disabled state refuses all tools; MCP enabled state audits and backs up
   destructive operations.
 
-## Current verdict
+## Gateway 2/3/4 implementation review
 
-Gateway 0/1 may proceed if the coordinator, backend, and verifier incorporate the
-requirements above into OpenAPI and red tests before implementation. Stage 3 is
-not security-approved until later gates provide migration, API, browser, asset,
-and MCP evidence against this checklist.
+### Review verdict
 
-## Gateway 1 contract review — OpenAPI and red tests
+**REQUEST CHANGES before Stage 3 security approval.** The implemented backend and
+frontend preserve the high-level admin route boundary, but two asset/DTO issues
+can leak draft implementation details or draft bytes, and MCP is not implemented
+yet. Treat the frontend Gateway 4 UI as functionally complete but not as a
+security closeout until the asset and MCP gates below are fixed and verified.
 
-Reviewed after backend task 3 completed on `91d5f57` with Gateway 1 red-test
-commits reported as `66d5829`, `8b03e62`, and `91d5f57`.
+### Findings
 
-### Positive findings
+#### HIGH — Public asset route can serve draft-only assets for already published files
 
-- OpenAPI now defines Author-only Current/Previous/Published version surfaces:
-  `GET/PUT /admin/files/{file_id}/content`, Previous restore, publish summary,
-  publish, unpublish, and Draft Preview.
-- Save and Publish requests require `expected_revision`, and the save conflict
-  response documents a machine-readable `revision_conflict` with
-  `current_revision`.
-- Draft Preview is explicitly admin-routed and documents 401/403 denial for
-  Anonymous Visitor and Reader access.
-- Draft/Published Asset surfaces are now modeled, including an Author-only draft
-  asset byte route and copy that public `/assets` routes serve only Published
-  Assets.
-- Expected-red tests cover key missing implementation seams: revision fields,
-  lifecycle repository methods, migration tokens, public tree/search source switch
-  to `published_file_contents`, draft/published asset repository methods, admin
-  route exposure, Reader denial for Draft Preview, and lost-update error mapping.
+Evidence:
 
-### Security findings to carry into Gateway 2/3
+- Public asset route `/api/assets/{asset_id}/{filename}` is mounted outside
+  `/api/admin` and calls `AssetHandler.ServePublished`.
+- `api/internal/assets/repository.go` `FindPublishedAsset` checks only that the
+  asset belongs to a file with a visible `published_file_contents` row; it does
+  **not** require the asset itself to be in the published snapshot:
+  `join published_file_contents pfc on pfc.node_id = n.id and pfc.visible`.
+- Stage 3 publish writes a separate `published_file_assets` snapshot in
+  `api/internal/tree/lifecycle_repository.go`, but the public asset lookup does
+  not read that table.
 
-1. **Public file schema still references mutable `FileContent`.**
-   `FilePage.content` still points at `FileContent`, which is now the Current
-   Content schema and includes revision/autosave/embedding fields. Public file
-   responses should use `PublishedContent` or a dedicated public content DTO so
-   Readers never receive Current Content metadata or an implementation contract
-   that encourages public reads from mutable content.
-2. **Unpublish lacks an optimistic-concurrency request.**
-   Publish has `expected_revision`, but Unpublish has no request body. Because
-   Unpublish is a public-visibility destructive operation, Gateway 2/3 should
-   either require an expected revision/version or document why it is safe without
-   one.
-3. **Draft asset DTO requires `public_url`.**
-   `FileAsset.public_url` is required for every asset state, including draft
-   assets. This risks client misuse or accidental leakage. Draft assets should
-   expose either no URL or an explicitly protected admin preview URL that cannot
-   be fetched by Anonymous/Reader.
-4. **Draft asset byte route needs denial/path tests.**
-   OpenAPI defines `GET /admin/assets/{asset_id}/{filename}`, but Gateway 1 tests
-   do not yet prove Anonymous/Reader denial, filename mismatch handling, or path
-   traversal rejection for this route.
-5. **Conflict implementation must return structured details.**
-   The new handler test correctly expects `ErrLostUpdate` to map to 409 with
-   `revision_conflict`. Gateway 2/3 should also include `current_revision` in the
-   response so the frontend can implement Reload latest / Copy my changes without
-   guessing.
-6. **Search/tree red tests are source-token guards.**
-   They are useful as early red tests, but Gateway 2 acceptance still needs DB/API
-   tests proving autosaved Current changes do not appear in public file/tree,
-   recent, search, comments/likes existence checks, or asset responses until
-   Publish.
-7. **MCP remains unreviewed.**
-   Task 3 did not implement or contract MCP. The initial MCP requirements above
-   remain open for the later MCP gateway.
+Risk:
 
-### Gateway 1 security verdict
+- If an Author uploads a new draft asset to a file that is already visible, the
+  new asset row has `state='draft'`, but the file still has visible Published
+  Content. A guessed or leaked `/api/assets/<draft_asset_id>/<filename>` URL can
+  be served publicly before Publish, violating Draft Asset isolation and the
+  acceptance requirement that Draft uploads are not public until Publish.
 
-PASS for proceeding to Gateway 2 with follow-up findings. The contracts and red
-suite now cover the core Stage 3 abuse cases, but the seven findings above must
-be resolved or explicitly risk-accepted before final Stage 3 security approval.
+Required fix:
 
-## Gateway 2/3 backend implementation security review
+- Change public asset lookup to join `published_file_assets` by
+  `published_asset_id`/`asset_id`/filename or otherwise prove membership in the
+  last Published Asset snapshot, not merely file visibility.
+- Add a regression test where a published file receives a draft-only upload and
+  the public asset endpoint returns 404 until Publish.
 
-Reviewed after backend tasks 9 and 10 completed on `main` at `db1633c`
-(latest backend checkpoint reported by task 10: `657e669`). Scope was backend
-migration/core model plus HTTP/Draft Preview/draft-asset routes. Frontend and MCP
-security remain pending.
+#### HIGH — Public/admin asset DTOs expose `storage_key`
 
-### Verdict: REVISE
+Evidence:
 
-The backend moved public tree/search/recent/file reads substantially toward the
-Published Content model, and Draft Preview routing is protected by `RequireAdmin`.
-However, the implementation still has security/contract blockers before this gate
-can pass.
+- `api/internal/assets/types.go` and `api/internal/tree/types.go` expose
+  `StorageKey` with `json:"storage_key"`.
+- `scanAsset` returns that field from repositories, and handlers return the asset
+  structs directly for upload, list, preview, and public file assets.
+- `docs/api/openapi.yaml` also documents `storage_key` on `FileAsset`.
 
-### Blocking findings
+Risk:
 
-1. **HIGH — Draft assets for visible published files can be fetched through the
-   public asset route before Publish.**
-   `api/internal/assets/repository.go:55-61` only checks that the owning File has
-   visible Published Content; it does not require the asset itself to be in a
-   published state or in `published_file_assets`. Newly uploaded draft assets on a
-   published File receive `PublicURL` in `scanAsset` (`api/internal/assets/repository.go:150`)
-   and are returned from Author draft state. A guessed or leaked `/api/assets/{id}/{filename}`
-   URL can therefore expose draft bytes before Publish. Public asset serving must
-   join the published asset snapshot/state, not only visible Published Content.
+- Even though `LocalStorage.pathForKey` rejects traversal and absolute paths,
+  provider-neutral storage keys are internal implementation details. Returning
+  them in public file payloads, draft preview payloads, and Author asset lists
+  widens the information surface and makes future object-storage migration or
+  signed URL policies harder to secure.
 
-2. **HIGH — Publish can bypass the required `expected_revision`.**
-   `api/internal/http/handlers/tree_lifecycle.go:158-176` silently ignores JSON
-   decode errors and falls back to `PublishFile` when `expected_revision` is absent
-   or zero. That defeats the OpenAPI contract and allows stale clients to publish
-   the latest Current Content without proving they observed the current revision.
-   This undermines the stale-tab protection Stage 3 requires. Invalid JSON should
-   be 400, and Publish should require a positive expected revision.
+Required fix:
 
-3. **HIGH — Public comment/like existence checks still use mutable
-   `file_contents.status='published'`.**
-   `api/internal/comments/repository.go:24-30` and
-   `api/internal/likes/repository.go:21-27` were not migrated to
-   `published_file_contents.visible`. After autosaving changes to a published File,
-   Current status becomes `unpublished_changes` while Published Content remains
-   visible, so Readers may be incorrectly blocked from commenting/liking public
-   content. Conversely, these checks are no longer the single public visibility
-   source of truth. They must use Published Content visibility.
+- Introduce public/admin DTOs that omit `storage_key`; keep storage keys internal
+  to repository/service/storage layers.
+- Update OpenAPI and frontend schemas to consume only `id`, `filename`,
+  `mime_type`, `size_bytes`, `public_url`, and state metadata that is truly
+  needed by the Author UI.
 
-4. **MEDIUM — `revision_conflict` responses omit `current_revision`.**
-   `api/internal/http/handlers/tree_lifecycle.go:221-222` returns structured
-   `reason: revision_conflict`, but omits the documented `current_revision`. The
-   frontend conflict flow cannot reliably implement Reload latest / Copy my
-   changes without fetching extra state, and the OpenAPI example promises this
-   field.
+#### MEDIUM — Revision conflict response is machine-readable but lacks documented current revision
 
-5. **MEDIUM — Public File DTO still uses the mutable Current `FileContent` type.**
-   Public `FilePage.Content` remains `FileContent` (`api/internal/tree/types.go:185-188`).
-   The repository currently fills it from `published_file_contents`
-   (`api/internal/tree/repository.go:91-120`), so this is not a direct draft-body
-   leak in the reviewed code, but it exposes Current-only fields such as revision,
-   last_saved_at, and embedding metadata on public responses and keeps API
-   semantics coupled to the Author Current model. Use `PublishedContent` or a
-   dedicated public DTO.
+Evidence:
 
-6. **MEDIUM — Unpublish has no concurrency guard and is not atomic.**
-   `api/internal/http/handlers/tree_lifecycle.go:179-189` accepts no expected
-   revision/version, and `api/internal/tree/lifecycle_repository.go:283-298`
-   updates `file_contents` and `published_file_contents` in separate statements
-   outside a transaction. This can race with publish/save flows and can leave
-   inconsistent Current vs Published visibility if the second statement fails.
+- OpenAPI example requires `details: { reason: revision_conflict,
+  current_revision: 7 }`.
+- `TreeLifecycleHandler.respondError` currently returns only
+  `details.reason = revision_conflict`.
 
-### Non-blocking positive findings
+Risk:
 
-- Public tree, recent, resolve redirects, and search now read visible
-  `published_file_contents` rather than mutable Current content.
-- Draft Preview is mounted under `/api/admin` with `RequireAdmin`, and the router
-  preserves Reader denial even when lifecycle dependencies are absent.
-- Draft Preview reports `iframe_sandbox: allow-scripts`, preserving the no
-  `allow-same-origin` contract at the API layer.
-- Draft asset bytes are mounted only under `/api/admin/assets/...` and use
-  `Cache-Control: no-store`.
+- The UI can still offer “Reload latest” / “Copy my changes”, but clients cannot
+  display or log the server-side Current revision without doing another fetch.
 
-### Required repair evidence
+Recommended fix:
 
-Before this backend security slice can pass, add/repair tests proving:
+- Return `current_revision` when the service/repository can provide it, or update
+  OpenAPI to remove the stronger contract if the extra fetch is intentional.
 
-- public `/api/assets/{asset_id}/{filename}` denies draft-only assets on published
-  Files until Publish promotes them;
-- Publish without a positive `expected_revision` returns 400/409 and cannot fall
-  back to stale publish;
-- comments and likes accept visible Published Content even after Current has
-  unpublished changes, and deny only when `published_file_contents.visible=false`;
-- `revision_conflict` includes `current_revision`;
-- Unpublish either requires an expected revision/version or documents and tests a
-  safe atomic alternative.
+#### WATCH — Unpublish hides content in two statements without transactional proof
+
+Evidence:
+
+- `UnpublishFile` first updates `file_contents.status='draft'`, then separately
+  updates `published_file_contents.visible=false`.
+
+Risk:
+
+- A mid-operation database error can leave author-facing Current status and public
+  Published visibility inconsistent. The public path is still controlled by
+  `published_file_contents.visible`, so this is not an immediate public leak, but
+  it weakens DB/API snapshot proof.
+
+Recommended fix:
+
+- Wrap unpublish in a transaction or document the intentional consistency model
+  with a focused test that proves public visibility is eventually false and
+  Published Content metadata is retained.
+
+#### WATCH — MCP implementation/evidence remains absent
+
+Evidence:
+
+- Repository search found no MCP server package/process, only Stage 3 plans and
+  acceptance/security requirements.
+
+Risk:
+
+- MCP disable-by-default, kill-switch-before-every-call, audit JSONL,
+  backup/export, and “no direct SQL in handlers” cannot be security-approved yet.
+
+Required later gate:
+
+- Repeat this security review after the MCP slice lands and attach disabled and
+  enabled stdio smoke transcripts plus audit/backup evidence.
+
+### Positive checks
+
+- `/api/admin` routes, including Draft Preview and draft asset byte routes, are
+  mounted under `RequireAdmin` in `api/internal/http/router.go`.
+- Draft Preview returns `iframe_sandbox: "allow-scripts"` and frontend
+  `AdminPage.tsx` contains no `allow-same-origin`.
+- Local storage key resolution rejects absolute paths, `..`, backslash traversal,
+  and verifies the resolved path remains under the configured asset root.
+- Public tree/file/search code paths use `published_file_contents` rather than
+  Current Content for public content visibility.
+
+### Required follow-up verification
+
+- Add and run backend tests for:
+  - anonymous/Reader denial for `/api/admin/preview/{file_id}`;
+  - anonymous/Reader denial for `/api/admin/assets/{asset_id}/{filename}`;
+  - public 404 for draft-only asset bytes after upload to an already published
+    file, followed by public 200 only after Publish;
+  - public file/asset DTOs do not contain `storage_key`;
+  - unpublish public visibility and DB snapshot consistency.
+- Run Stage 3 black-box API/browser/MCP acceptance after MCP lands.
