@@ -1,0 +1,210 @@
+# frontend node tests on 2026-06-13T15:33:06+08:00
+HEAD=92dd65edbc12ae4c530aeb20f5b82c04f71d060c
+TAP version 13
+# Subtest: Stage 2 minimal create is slugless and opens the returned node after tree refresh
+ok 1 - Stage 2 minimal create is slugless and opens the returned node after tree refresh
+  ---
+  duration_ms: 1.290348
+  type: 'test'
+  ...
+# Subtest: Stage 2 create UI is Chinese, minimal, and hides implementation controls
+ok 2 - Stage 2 create UI is Chinese, minimal, and hides implementation controls
+  ---
+  duration_ms: 0.324174
+  type: 'test'
+  ...
+# Subtest: Stage 2 create failures use Chinese actionable feedback
+ok 3 - Stage 2 create failures use Chinese actionable feedback
+  ---
+  duration_ms: 0.146197
+  type: 'test'
+  ...
+# Subtest: Task 14 file workspace exposes manual save, assets, settings, and publish controls
+ok 4 - Task 14 file workspace exposes manual save, assets, settings, and publish controls
+  ---
+  duration_ms: 1.241641
+  type: 'test'
+  ...
+# Subtest: Task 14 API helpers bind Stage 2 workspace endpoints without widening create input
+ok 5 - Task 14 API helpers bind Stage 2 workspace endpoints without widening create input
+  ---
+  duration_ms: 0.287163
+  type: 'test'
+  ...
+# Subtest: Task 14 directory settings include guarded delete and same-parent desktop drag wording
+ok 6 - Task 14 directory settings include guarded delete and same-parent desktop drag wording
+  ---
+  duration_ms: 0.378583
+  type: 'test'
+  ...
+# Subtest: Task 14 settings provide Directory Picker move preview and danger feedback
+ok 7 - Task 14 settings provide Directory Picker move preview and danger feedback
+  ---
+  duration_ms: 0.215688
+  type: 'test'
+  ...
+# Subtest: App owns the single current-user state and distinguishes invalid credentials from outages
+ok 8 - App owns the single current-user state and distinguishes invalid credentials from outages
+  ---
+  duration_ms: 1.062262
+  type: 'test'
+  ...
+# Subtest: the global bar has one search field, Directory, Recent, and one truthful identity entry
+ok 9 - the global bar has one search field, Directory, Recent, and one truthful identity entry
+  ---
+  duration_ms: 0.235656
+  type: 'test'
+  ...
+# Subtest: Admin routing keeps Anonymous and Reader outcomes distinct
+ok 10 - Admin routing keeps Anonymous and Reader outcomes distinct
+  ---
+  duration_ms: 0.080443
+  type: 'test'
+  ...
+# Subtest: Search is a results-only page because the global bar owns the sole search input
+ok 11 - Search is a results-only page because the global bar owns the sole search input
+  ---
+  duration_ms: 0.190692
+  type: 'test'
+  ...
+# Subtest: login and logout use safe, loop-free destinations
+ok 12 - login and logout use safe, loop-free destinations
+  ---
+  duration_ms: 0.162939
+  type: 'test'
+  ...
+# Subtest: return targets preserve safe application paths, queries, and hashes
+ok 13 - return targets preserve safe application paths, queries, and hashes
+  ---
+  duration_ms: 0.32242
+  type: 'test'
+  ...
+# Subtest: return targets reject external, auth-loop, backslash, and control-character variants
+ok 14 - return targets reject external, auth-loop, backslash, and control-character variants
+  ---
+  duration_ms: 0.171214
+  type: 'test'
+  ...
+# Subtest: Author and Reader logout destinations match the identity contract
+ok 15 - Author and Reader logout destinations match the identity contract
+  ---
+  duration_ms: 0.337589
+  type: 'test'
+  ...
+# Subtest: authentication errors preserve actionable status distinctions
+ok 16 - authentication errors preserve actionable status distinctions
+  ---
+  duration_ms: 0.521498
+  type: 'test'
+  ...
+# Subtest: Task 15 threads confirmed identity into public directory and file surfaces
+ok 17 - Task 15 threads confirmed identity into public directory and file surfaces
+  ---
+  duration_ms: 1.622793
+  type: 'test'
+  ...
+# Subtest: Task 15 directory manage entry is Author-only and targets Admin selection
+ok 18 - Task 15 directory manage entry is Author-only and targets Admin selection
+  ---
+  duration_ms: 0.27987
+  type: 'test'
+  ...
+# Subtest: Task 15 file edit entry is Author-only and targets Admin selection
+ok 19 - Task 15 file edit entry is Author-only and targets Admin selection
+  ---
+  duration_ms: 0.117091
+  type: 'test'
+  ...
+# Subtest: HTML Documents stay isolated behind the exact iframe sandbox
+ok 20 - HTML Documents stay isolated behind the exact iframe sandbox
+  ---
+  duration_ms: 1.763142
+  type: 'test'
+  ...
+# Subtest: only the Markdown branch injects sanitized HTML into the main DOM
+ok 21 - only the Markdown branch injects sanitized HTML into the main DOM
+  ---
+  duration_ms: 0.409987
+  type: 'test'
+  ...
+# Subtest: both Markdown render paths use the hardened DOMPurify config
+ok 22 - both Markdown render paths use the hardened DOMPurify config
+  ---
+  duration_ms: 0.496731
+  type: 'test'
+  ...
+# Subtest: Packet F reader interactions use API endpoints and login return target
+ok 23 - Packet F reader interactions use API endpoints and login return target
+  ---
+  duration_ms: 0.589587
+  type: 'test'
+  ...
+# Subtest: Packet G assets keep public URLs and admin upload/delete API helpers for later workspace packets
+ok 24 - Packet G assets keep public URLs and admin upload/delete API helpers for later workspace packets
+  ---
+  duration_ms: 0.362196
+  type: 'test'
+  ...
+# Subtest: Packet H search page calls search API and renders source badges
+ok 25 - Packet H search page calls search API and renders source badges
+  ---
+  duration_ms: 0.589135
+  type: 'test'
+  ...
+# Subtest: Stage 2 Author Workspace shell wires protected tree and keeps HTML sandbox isolated to readers
+ok 26 - Stage 2 Author Workspace shell wires protected tree and keeps HTML sandbox isolated to readers
+  ---
+  duration_ms: 0.769657
+  type: 'test'
+  ...
+# Subtest: Stage 2 replaces old Admin chrome with Chinese Author Workspace and protected Content Tree language
+ok 27 - Stage 2 replaces old Admin chrome with Chinese Author Workspace and protected Content Tree language
+  ---
+  duration_ms: 1.973741
+  type: 'test'
+  ...
+# Subtest: Stage 2 minimal create flow is slugless and opens the returned node after tree refresh
+ok 28 - Stage 2 minimal create flow is slugless and opens the returned node after tree refresh
+  ---
+  duration_ms: 0.26891
+  type: 'test'
+  ...
+# Subtest: Stage 2 primary UI hides implementation identifiers and Stage 3 publication concepts
+ok 29 - Stage 2 primary UI hides implementation identifiers and Stage 3 publication concepts
+  ---
+  duration_ms: 0.241006
+  type: 'test'
+  ...
+# Subtest: Stage 2 workspace provides explicit return controls for subflows
+ok 30 - Stage 2 workspace provides explicit return controls for subflows
+  ---
+  duration_ms: 0.207163
+  type: 'test'
+  ...
+# Subtest: Stage 2 public Author entries are role-gated and open admin with selected target
+ok 31 - Stage 2 public Author entries are role-gated and open admin with selected target
+  ---
+  duration_ms: 0.186703
+  type: 'test'
+  ...
+# Subtest: Stage 2 frontend types model the protected tree and draft/published-only statuses
+ok 32 - Stage 2 frontend types model the protected tree and draft/published-only statuses
+  ---
+  duration_ms: 0.098416
+  type: 'test'
+  ...
+# Subtest: Stage 2 admin tree adapter accepts backend flat nodes contract and builds frontend roots
+ok 33 - Stage 2 admin tree adapter accepts backend flat nodes contract and builds frontend roots
+  ---
+  duration_ms: 0.169511
+  type: 'test'
+  ...
+1..33
+# tests 33
+# suites 0
+# pass 33
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 356.630392
