@@ -96,11 +96,7 @@ func (r *stage3RouterLifecycleRepo) UpsertFileContent(_ context.Context, nodeID 
 	return tree.FileContent{NodeID: nodeID, ContentFormat: input.ContentFormat, BodyRaw: input.BodyRaw, Keywords: input.Keywords, Status: tree.PublishStatusDraft}, nil
 }
 
-func (r *stage3RouterLifecycleRepo) PublishFile(_ context.Context, nodeID uuid.UUID) (tree.FileContent, error) {
-	return tree.FileContent{NodeID: nodeID, ContentFormat: tree.ContentFormatMarkdown, Status: tree.PublishStatusPublished}, nil
-}
-
-func (r *stage3RouterLifecycleRepo) UnpublishFile(_ context.Context, nodeID uuid.UUID) (tree.FileContent, error) {
+func (r *stage3RouterLifecycleRepo) UnpublishFile(_ context.Context, nodeID uuid.UUID, expectedRevision int) (tree.FileContent, error) {
 	return tree.FileContent{NodeID: nodeID, ContentFormat: tree.ContentFormatMarkdown, Status: tree.PublishStatusDraft}, nil
 }
 
@@ -134,10 +130,7 @@ func (r *stage3RouterLifecycleRepo) RestorePreviousContent(_ context.Context, no
 }
 
 func (r *stage3RouterLifecycleRepo) PublishCurrentSnapshot(_ context.Context, nodeID uuid.UUID, expectedRevision int) (tree.PublishResult, error) {
-	content, err := r.PublishFile(context.Background(), nodeID)
-	if err != nil {
-		return tree.PublishResult{}, err
-	}
+	content := tree.FileContent{NodeID: nodeID, Revision: expectedRevision, ContentFormat: tree.ContentFormatMarkdown, Status: tree.PublishStatusPublished}
 	published := tree.PublishedContent{NodeID: nodeID, SourceRevision: content.Revision, ContentFormat: content.ContentFormat, Keywords: content.Keywords, BodyRaw: content.BodyRaw, BodyHTML: content.BodyHTML, SearchText: content.SearchText, Visible: true}
 	return tree.PublishResult{Current: content, Published: published, PromotedAssets: []tree.FileAsset{}}, nil
 }

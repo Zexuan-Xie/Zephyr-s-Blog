@@ -962,12 +962,28 @@ components:
         embedding_status: { $ref: '#/components/schemas/EmbeddingStatus' }
         embedding_error: { type: [string, 'null'] }
         embedding_updated_at: { type: [string, 'null'], format: date-time }
+    PublicFileContent:
+      type: object
+      required: [node_id, content_format, keywords, body_raw, search_text, published_at, updated_at]
+      properties:
+        node_id: { type: string, format: uuid }
+        content_format: { $ref: '#/components/schemas/ContentFormat' }
+        keywords:
+          type: array
+          items: { type: string }
+        body_raw: { type: string }
+        body_html:
+          type: [string, 'null']
+          description: Sanitized Markdown HTML cache; null or unused for html_document.
+        search_text: { type: string }
+        published_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
     FilePage:
       type: object
       required: [node, content, keywords_public, like_count, comment_count, assets]
       properties:
         node: { $ref: '#/components/schemas/Node' }
-        content: { $ref: '#/components/schemas/FileContent' }
+        content: { $ref: '#/components/schemas/PublicFileContent' }
         keywords_public:
           type: array
           maxItems: 3

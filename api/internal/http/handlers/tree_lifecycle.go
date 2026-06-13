@@ -20,8 +20,7 @@ type TreeLifecycleService interface {
 	UpsertFileContent(context.Context, uuid.UUID, tree.UpsertFileContentInput) (tree.FileContent, error)
 	RestorePreviousContent(context.Context, uuid.UUID, int) (tree.FileVersionState, error)
 	PublishCurrentSnapshot(context.Context, uuid.UUID, int) (tree.PublishResult, error)
-	PublishFile(context.Context, uuid.UUID) (tree.FileContent, error)
-	UnpublishFile(context.Context, uuid.UUID) (tree.FileContent, error)
+	UnpublishFile(context.Context, uuid.UUID, int) (tree.FileContent, error)
 	DeleteNode(context.Context, uuid.UUID) error
 }
 
@@ -60,7 +59,7 @@ func (h *TreeLifecycleHandler) RestorePreviousContent(w http.ResponseWriter, r *
 	}
 	state, err := h.service.RestorePreviousContent(r.Context(), fileID, input.ExpectedRevision)
 	if err != nil {
-		h.respondError(w, err)
+		h.respondErrorWithContext(r.Context(), w, fileID, err)
 		return
 	}
 	respond.JSON(w, http.StatusOK, state)
@@ -144,7 +143,7 @@ func (h *TreeLifecycleHandler) UpsertFileContent(w http.ResponseWriter, r *http.
 	}
 	content, err := h.service.UpsertFileContent(r.Context(), fileID, input)
 	if err != nil {
-		h.respondError(w, err)
+		h.respondErrorWithContext(r.Context(), w, fileID, err)
 		return
 	}
 	respond.JSON(w, http.StatusOK, content)
@@ -158,22 +157,20 @@ func (h *TreeLifecycleHandler) PublishFile(w http.ResponseWriter, r *http.Reques
 	var input struct {
 		ExpectedRevision int `json:"expected_revision"`
 	}
-	_ = json.NewDecoder(r.Body).Decode(&input)
-	if input.ExpectedRevision > 0 {
-		result, err := h.service.PublishCurrentSnapshot(r.Context(), fileID, input.ExpectedRevision)
-		if err != nil {
-			h.respondError(w, err)
-			return
-		}
-		respond.JSON(w, http.StatusOK, result)
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respond.Error(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	content, err := h.service.PublishFile(r.Context(), fileID)
+	if input.ExpectedRevision <= 0 {
+		respond.Error(w, http.StatusBadRequest, "expected_revision must be positive")
+		return
+	}
+	result, err := h.service.PublishCurrentSnapshot(r.Context(), fileID, input.ExpectedRevision)
 	if err != nil {
-		h.respondError(w, err)
+		h.respondErrorWithContext(r.Context(), w, fileID, err)
 		return
 	}
-	respond.JSON(w, http.StatusOK, content)
+	respond.JSON(w, http.StatusOK, result)
 }
 
 func (h *TreeLifecycleHandler) UnpublishFile(w http.ResponseWriter, r *http.Request) {
@@ -181,9 +178,20 @@ func (h *TreeLifecycleHandler) UnpublishFile(w http.ResponseWriter, r *http.Requ
 	if !ok {
 		return
 	}
-	content, err := h.service.UnpublishFile(r.Context(), fileID)
+	var input struct {
+		ExpectedRevision int `json:"expected_revision"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respond.Error(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if input.ExpectedRevision <= 0 {
+		respond.Error(w, http.StatusBadRequest, "expected_revision must be positive")
+		return
+	}
+	content, err := h.service.UnpublishFile(r.Context(), fileID, input.ExpectedRevision)
 	if err != nil {
-		h.respondError(w, err)
+		h.respondErrorWithContext(r.Context(), w, fileID, err)
 		return
 	}
 	respond.JSON(w, http.StatusOK, content)
@@ -211,6 +219,10 @@ func parseTreeID(w http.ResponseWriter, r *http.Request, param string) (uuid.UUI
 }
 
 func (h *TreeLifecycleHandler) respondError(w http.ResponseWriter, err error) {
+	h.respondErrorWithContext(context.Background(), w, uuid.Nil, err)
+}
+
+func (h *TreeLifecycleHandler) respondErrorWithContext(ctx context.Context, w http.ResponseWriter, fileID uuid.UUID, err error) {
 	switch {
 	case errors.Is(err, tree.ErrNodeNotFound), errors.Is(err, tree.ErrFileContentNotFound):
 		respond.Error(w, http.StatusNotFound, err.Error())
@@ -219,7 +231,13 @@ func (h *TreeLifecycleHandler) respondError(w http.ResponseWriter, err error) {
 	case errors.Is(err, tree.ErrNonEmptyDirectoryDelete):
 		respond.JSON(w, http.StatusConflict, respond.ErrorResponse{Error: err.Error(), Details: map[string]any{"reason": "non_empty_directory"}})
 	case errors.Is(err, tree.ErrLostUpdate):
-		respond.JSON(w, http.StatusConflict, respond.ErrorResponse{Error: "revision conflict", Details: map[string]any{"reason": "revision_conflict"}})
+		details := map[string]any{"reason": "revision_conflict"}
+		if fileID != uuid.Nil {
+			if state, stateErr := h.service.GetFileVersionState(ctx, fileID); stateErr == nil && state.Current.Revision > 0 {
+				details["current_revision"] = state.Current.Revision
+			}
+		}
+		respond.JSON(w, http.StatusConflict, respond.ErrorResponse{Error: "revision conflict", Details: details})
 	case errors.Is(err, tree.ErrPublishedContentFormatChange),
 		errors.Is(err, tree.ErrPublishedFileDelete),
 		errors.Is(err, tree.ErrDirectoryHasPublishedDescendants):
