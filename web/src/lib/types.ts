@@ -140,20 +140,7 @@ export interface AdminNodeDetail {
     created_at?: string;
     updated_at?: string;
   };
-  content?: {
-    node_id: string;
-    content_format: ContentFormat;
-    keywords: string[];
-    body_raw: string;
-    body_html?: string | null;
-    search_text: string;
-    status: PublishStatus;
-    published_at?: string | null;
-    embedding_model?: string | null;
-    embedding_status: 'pending' | 'ready' | 'failed';
-    embedding_error?: string | null;
-    embedding_updated_at?: string | null;
-  } | null;
+  content?: FileContentVersion | null;
   assets: FileAsset[];
   redirects_created: Array<{
     id: string;
