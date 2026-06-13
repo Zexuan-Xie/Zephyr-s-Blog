@@ -115,7 +115,7 @@ export interface AdminTreeNode {
   kind: NodeKind;
   name: string;
   path: string;
-  status: "draft" | "published";
+  status: 'draft' | 'published';
   children: AdminTreeNode[];
   content_format?: ContentFormat;
 }
@@ -143,10 +143,10 @@ export interface AdminNodeDetail {
     body_raw: string;
     body_html?: string | null;
     search_text: string;
-    status: "draft" | "published";
+    status: 'draft' | 'published';
     published_at?: string | null;
     embedding_model?: string | null;
-    embedding_status: "pending" | "ready" | "failed";
+    embedding_status: 'pending' | 'ready' | 'failed';
     embedding_error?: string | null;
     embedding_updated_at?: string | null;
   } | null;
@@ -186,10 +186,10 @@ export interface MovePreviewResponse {
 
 export interface EmbeddingState {
   file_id: string;
-  provider: "qwen";
-  model: "text-embedding-v4";
+  provider: 'qwen';
+  model: 'text-embedding-v4';
   dimensions: 1024;
-  status: "pending" | "ready" | "failed";
+  status: 'pending' | 'ready' | 'failed';
   error?: string | null;
   updated_at?: string | null;
 }

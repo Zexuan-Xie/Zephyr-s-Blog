@@ -627,6 +627,7 @@ function FileOverview({
   const [movePreview, setMovePreview] = useState<MovePreviewResponse | null>(
     null,
   );
+  const [moveDestinationId, setMoveDestinationId] = useState<string | null>(null);
   const contentFormat =
     detail?.content?.content_format ?? node.content_format ?? "markdown";
   const bodyRaw = detail?.content?.body_raw ?? "";
@@ -728,6 +729,7 @@ function FileOverview({
         expected_version: 0,
       });
       setMovePreview(preview);
+      setMoveDestinationId(newParentId || null);
       onFeedback(`移动预览已生成：${preview.destination_path}`);
     } catch (error) {
       onFeedback(formatAdminActionError(error, "移动预览失败，请换一个目录。"));
@@ -735,17 +737,14 @@ function FileOverview({
   }
 
   async function commitMove() {
-    const destinationId = movePreviewDestinationId(
-      movePreview,
-      availableDestinations,
-    );
     try {
       await moveAdminNode(node.id, {
-        new_parent_id: destinationId,
+        new_parent_id: moveDestinationId,
         expected_version: 0,
       });
       onFeedback("位置已移动。");
       setMovePreview(null);
+      setMoveDestinationId(null);
       await onRefresh();
     } catch (error) {
       onFeedback(formatAdminActionError(error, "移动失败，请重新生成预览。"));
@@ -1011,17 +1010,6 @@ function findPathToNode(
     if (childPath.length > 0) return childPath;
   }
   return [];
-}
-
-function movePreviewDestinationId(
-  preview: MovePreviewResponse | null,
-  directories: AdminTreeNode[],
-) {
-  if (!preview) return null;
-  return (
-    directories.find((directory) => directory.path === preview.destination_path)
-      ?.id ?? null
-  );
 }
 
 function stringValue(form: FormData, key: string) {
