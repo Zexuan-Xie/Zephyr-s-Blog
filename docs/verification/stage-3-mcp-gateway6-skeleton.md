@@ -59,5 +59,4 @@ PASS git status/node_modules policy: web/node_modules not tracked; no node_modul
 2. `BLOG_MCP_ENABLED=true BLOG_MCP_KILL_SWITCH=true` refuses `health_check` and writes `result:"refused"` audit JSONL.
 3. `BLOG_MCP_ENABLED=true` allows `health_check` and writes `result:"ok"` audit JSONL.
 
-Full black-box stdio transcripts for read/content/publish/tree/assets/maintenance
-remain blocked until task 17 implements the real tool slices.
+Task 17 implemented the read/content/publish/tree/assets/maintenance tool surface; see docs/verification/stage-3-mcp-gateway6-tools.md. Full black-box stdio acceptance remains assigned to Task 18.

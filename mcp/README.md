@@ -2,7 +2,7 @@
 
 Server-local stdio Model Context Protocol server for trusted Author automation.
 
-Gateway 6 starts with a disabled-by-default skeleton only. Later tasks add the full read/content/publish/tree/assets/maintenance tool set.
+Gateway 6 exposes a server-local, disabled-by-default tool surface for trusted Author automation.
 
 ## Safety contract
 
@@ -27,4 +27,4 @@ cd mcp
 BLOG_MCP_ENABLED=true node src/server.mjs
 ```
 
-The first implemented tool is `health_check`, intentionally non-destructive. It proves the registration/audit/guard pattern.
+Registered tools: `list_content_tree`, `get_file`, `search_files`, `create_directory`, `create_file`, `update_file_content`, `update_file_settings`, `publish_file`, `unpublish_file`, `move_node`, `reorder_children`, `delete_node`, `upload_asset`, `delete_asset`, `list_assets`, `rebuild_search_index`, `export_backup`, plus `health_check`.

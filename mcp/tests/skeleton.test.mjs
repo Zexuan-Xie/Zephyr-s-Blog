@@ -44,3 +44,116 @@ test('health_check succeeds when explicitly enabled and records ok audit event',
   assert.equal(audit.result, 'ok');
   assert.equal(audit.tool, 'health_check');
 });
+
+
+test('registers the full Stage 3 MCP tool surface', async () => {
+  const config = loadConfig({ BLOG_MCP_ENABLED: 'false' });
+  const client = new BlogBackendClient({ baseUrl: config.apiBaseUrl });
+  const names = buildToolDefinitions(config, client).map((tool) => tool.name).sort();
+  assert.deepEqual(names, [
+    'create_directory',
+    'create_file',
+    'delete_asset',
+    'delete_node',
+    'export_backup',
+    'get_file',
+    'health_check',
+    'list_assets',
+    'list_content_tree',
+    'move_node',
+    'publish_file',
+    'rebuild_search_index',
+    'reorder_children',
+    'search_files',
+    'unpublish_file',
+    'update_file_content',
+    'update_file_settings',
+    'upload_asset',
+  ]);
+});
+
+test('destructive tools require explicit enablement before input validation or mutation', async () => {
+  const tmp = await mkdtemp(path.join(os.tmpdir(), 'xlab-blog-mcp-test-'));
+  const auditLogPath = path.join(tmp, 'audit.jsonl');
+  const config = loadConfig({ BLOG_MCP_ENABLED: 'false', BLOG_MCP_AUDIT_LOG: auditLogPath });
+  const client = new BlogBackendClient({ baseUrl: config.apiBaseUrl });
+  const tool = buildToolDefinitions(config, client).find((item) => item.name === 'delete_node');
+  const result = await tool.handler({ node_id: 'not-a-uuid', confirm: true });
+  const audit = JSON.parse((await readFile(auditLogPath, 'utf8')).trim().split('\n').at(-1));
+  assert.equal(result.isError, true);
+  assert.match(result.content[0].text, /Blog MCP disabled/);
+  assert.equal(audit.tool, 'delete_node');
+  assert.equal(audit.result, 'refused');
+  assert.equal(audit.destructive, true);
+});
+
+test('enabled content tool calls backend boundary with auth and audits ok', async () => {
+  const tmp = await mkdtemp(path.join(os.tmpdir(), 'xlab-blog-mcp-test-'));
+  const auditLogPath = path.join(tmp, 'audit.jsonl');
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init = {}) => {
+    calls.push({ url: String(url), init });
+    return new Response(JSON.stringify({ node: { id: 'created' } }), {
+      status: 201,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  };
+  try {
+    const config = loadConfig({
+      BLOG_MCP_ENABLED: 'true',
+      BLOG_MCP_AUDIT_LOG: auditLogPath,
+      BLOG_API_BASE_URL: 'http://backend.local/',
+      BLOG_ADMIN_TOKEN: 'admin-secret',
+    });
+    const client = new BlogBackendClient({ baseUrl: config.apiBaseUrl, adminToken: config.adminToken });
+    const tool = buildToolDefinitions(config, client).find((item) => item.name === 'create_file');
+    const result = await tool.handler({ name: 'Draft', content_format: 'markdown' });
+    const audit = JSON.parse((await readFile(auditLogPath, 'utf8')).trim().split('\n').at(-1));
+
+    assert.equal(result.isError, undefined);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url, 'http://backend.local/api/admin/nodes');
+    assert.equal(calls[0].init.method, 'POST');
+    assert.equal(calls[0].init.headers.Authorization, 'Bearer admin-secret');
+    assert.deepEqual(JSON.parse(calls[0].init.body), {
+      parent_id: null,
+      kind: 'file',
+      name: 'Draft',
+      content_format: 'markdown',
+      sort_order: 0,
+    });
+    assert.equal(audit.tool, 'create_file');
+    assert.equal(audit.result, 'ok');
+    assert.equal(audit.destructive, true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('enabled destructive delete refuses without confirm before backend call and audits error', async () => {
+  const tmp = await mkdtemp(path.join(os.tmpdir(), 'xlab-blog-mcp-test-'));
+  const auditLogPath = path.join(tmp, 'audit.jsonl');
+  const originalFetch = globalThis.fetch;
+  let called = false;
+  globalThis.fetch = async () => {
+    called = true;
+    return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
+  };
+  try {
+    const config = loadConfig({ BLOG_MCP_ENABLED: 'true', BLOG_MCP_AUDIT_LOG: auditLogPath });
+    const client = new BlogBackendClient({ baseUrl: config.apiBaseUrl });
+    const tool = buildToolDefinitions(config, client).find((item) => item.name === 'delete_asset');
+    const result = await tool.handler({ asset_id: '00000000-0000-4000-8000-000000000000', confirm: false });
+    const audit = JSON.parse((await readFile(auditLogPath, 'utf8')).trim().split('\n').at(-1));
+
+    assert.equal(result.isError, true);
+    assert.equal(called, false);
+    assert.match(result.content[0].text, /requires confirm=true/);
+    assert.equal(audit.tool, 'delete_asset');
+    assert.equal(audit.result, 'error');
+    assert.equal(audit.destructive, true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
