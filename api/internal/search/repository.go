@@ -54,7 +54,7 @@ func (r *SQLRepository) FullText(ctx context.Context, query string, limit int) (
 	where p.kind = 'file'
 		and ((setweight(to_tsvector('simple', coalesce(p.name, '')), 'A') ||
 			setweight(to_tsvector('simple', coalesce(p.path, '')), 'A') || pfc.search_vector) @@ query_terms.q)
-	order by rank_score desc, fc.published_at desc nulls last, p.name
+	order by rank_score desc, pfc.published_at desc nulls last, p.name
 	limit $2`
 	rows, err := r.pool.Query(ctx, sqlQuery, query, limit)
 	if err != nil {
@@ -79,7 +79,7 @@ func (r *SQLRepository) Semantic(ctx context.Context, vector string, limit int) 
 	where p.kind = 'file'
 		and pfc.embedding_status = 'ready'
 		and pfc.embedding is not null
-	order by pfc.embedding <=> $1::vector asc, fc.published_at desc nulls last, p.name
+	order by pfc.embedding <=> $1::vector asc, pfc.published_at desc nulls last, p.name
 	limit $2`
 	rows, err := r.pool.Query(ctx, sqlQuery, vector, limit)
 	if err != nil {
@@ -91,7 +91,7 @@ func (r *SQLRepository) Semantic(ctx context.Context, vector string, limit int) 
 
 func (r *SQLRepository) EmbeddingInput(ctx context.Context, fileID uuid.UUID) (EmbeddingInput, error) {
 	const query = searchNodePathsCTE + `
-	select p.id, p.name, p.path, coalesce(fc.keywords, '{}'::text[]) as keywords, pfc.search_text
+	select p.id, p.name, p.path, coalesce(pfc.keywords, '{}'::text[]) as keywords, pfc.search_text
 	from node_paths p
 	join published_file_contents pfc on pfc.node_id = p.id and pfc.visible
 	where p.id = $1 and p.kind = 'file'`
@@ -104,10 +104,10 @@ func (r *SQLRepository) EmbeddingInput(ctx context.Context, fileID uuid.UUID) (E
 
 func (r *SQLRepository) PublishedEmbeddingInputs(ctx context.Context) ([]EmbeddingInput, error) {
 	const query = searchNodePathsCTE + `
-	select p.id, p.name, p.path, coalesce(fc.keywords, '{}'::text[]) as keywords, pfc.search_text
+	select p.id, p.name, p.path, coalesce(pfc.keywords, '{}'::text[]) as keywords, pfc.search_text
 	from node_paths p
 	join published_file_contents pfc on pfc.node_id = p.id and pfc.visible
-	where p.kind = 'file' and fc.status = 'published'
+	where p.kind = 'file'
 	order by p.path`
 	rows, err := r.pool.Query(ctx, query)
 	if err != nil {

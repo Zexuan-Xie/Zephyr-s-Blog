@@ -13,6 +13,9 @@ type Repository interface {
 	FileAssetTotalBytes(ctx context.Context, fileID uuid.UUID) (int64, error)
 	CreateAsset(ctx context.Context, asset FileAsset) (FileAsset, error)
 	FindPublishedAsset(ctx context.Context, assetID uuid.UUID, filename string) (FileAsset, error)
+	FindDraftAsset(ctx context.Context, assetID uuid.UUID, filename string) (FileAsset, error)
+	ListAssetState(ctx context.Context, fileID uuid.UUID) ([]FileAsset, []FileAsset, error)
+	PromoteDraftAssets(ctx context.Context, fileID uuid.UUID) ([]FileAsset, error)
 	DeleteAsset(ctx context.Context, assetID uuid.UUID) (FileAsset, error)
 }
 
@@ -58,6 +61,7 @@ func (s *Service) Upload(ctx context.Context, fileID uuid.UUID, upload Upload) (
 		SizeBytes:       int64(len(data)),
 		StorageProvider: StorageProviderLocal,
 		StorageKey:      fmt.Sprintf("files/%s/%s-%s", fileID, assetID, filename),
+		State:           "draft",
 	}
 	if err := s.storage.Put(asset.StorageKey, bytes.NewReader(data)); err != nil {
 		return FileAsset{}, err

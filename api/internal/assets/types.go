@@ -29,15 +29,17 @@ var (
 )
 
 type FileAsset struct {
-	ID              uuid.UUID `json:"id"`
-	FileID          uuid.UUID `json:"file_node_id"`
-	Filename        string    `json:"filename"`
-	MIMEType        string    `json:"mime_type"`
-	SizeBytes       int64     `json:"size_bytes"`
-	StorageProvider string    `json:"storage_provider"`
-	StorageKey      string    `json:"storage_key"`
-	PublicURL       string    `json:"public_url"`
-	CreatedAt       time.Time `json:"created_at"`
+	ID               uuid.UUID  `json:"id"`
+	FileID           uuid.UUID  `json:"file_node_id"`
+	Filename         string     `json:"filename"`
+	MIMEType         string     `json:"mime_type"`
+	SizeBytes        int64      `json:"size_bytes"`
+	StorageProvider  string     `json:"storage_provider"`
+	StorageKey       string     `json:"storage_key"`
+	PublicURL        string     `json:"public_url"`
+	State            string     `json:"state"`
+	PublishedAssetID *uuid.UUID `json:"published_asset_id"`
+	CreatedAt        time.Time  `json:"created_at"`
 }
 
 type Upload struct {
