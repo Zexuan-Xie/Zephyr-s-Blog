@@ -337,8 +337,8 @@ func TestRouterExposesAssetRoutes(t *testing.T) {
 	if response.Code != http.StatusCreated {
 		t.Fatalf("upload status = %d, want %d; body=%s", response.Code, http.StatusCreated, response.Body.String())
 	}
-	if !strings.Contains(response.Body.String(), `"storage_key"`) || strings.Contains(response.Body.String(), "/tmp/") {
-		t.Fatalf("upload body leaked or missed storage key: %s", response.Body.String())
+	if strings.Contains(response.Body.String(), `"storage_key"`) || strings.Contains(response.Body.String(), `"storage_provider"`) || strings.Contains(response.Body.String(), "/tmp/") {
+		t.Fatalf("upload body leaked storage internals: %s", response.Body.String())
 	}
 
 	assetID := assetServiceTestLastID(response.Body.String())
@@ -404,6 +404,7 @@ func (r *routerFakeAssetRepository) FileAssetTotalBytes(context.Context, uuid.UU
 
 func (r *routerFakeAssetRepository) CreateAsset(_ context.Context, asset assets.FileAsset) (assets.FileAsset, error) {
 	asset.PublicURL = "/api/assets/" + asset.ID.String() + "/" + asset.Filename
+	asset.State = "published"
 	if r.assets == nil {
 		r.assets = map[uuid.UUID]assets.FileAsset{}
 	}

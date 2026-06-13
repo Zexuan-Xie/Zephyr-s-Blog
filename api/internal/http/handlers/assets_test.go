@@ -35,8 +35,8 @@ func TestAssetHandlerUploadServeAndDelete(t *testing.T) {
 	if response.Code != http.StatusCreated {
 		t.Fatalf("upload status = %d, want %d; body=%s", response.Code, http.StatusCreated, response.Body.String())
 	}
-	if !strings.Contains(response.Body.String(), `"public_url"`) {
-		t.Fatalf("upload body = %s, want public_url", response.Body.String())
+	if strings.Contains(response.Body.String(), `"storage_key"`) || strings.Contains(response.Body.String(), `"storage_provider"`) {
+		t.Fatalf("upload body leaked storage internals: %s", response.Body.String())
 	}
 
 	request = httptest.NewRequest(http.MethodGet, "/assets/"+assetID.String()+"/demo.txt", nil)
