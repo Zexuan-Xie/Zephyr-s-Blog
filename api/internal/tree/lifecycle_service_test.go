@@ -62,6 +62,20 @@ func TestLifecycleDeleteProtectsPublishedContent(t *testing.T) {
 	}
 }
 
+func TestLifecycleDeleteBlocksEveryNonEmptyDirectory(t *testing.T) {
+	directoryID := uuid.New()
+	repo := newFakeLifecycleRepository()
+	repo.nodes[directoryID] = Node{ID: directoryID, Kind: NodeKindDirectory}
+	repo.hasChildren[directoryID] = true
+
+	if err := NewLifecycleService(repo).DeleteNode(context.Background(), directoryID); !errors.Is(err, ErrNonEmptyDirectoryDelete) {
+		t.Fatalf("DeleteNode(non-empty directory) error = %v, want ErrNonEmptyDirectoryDelete", err)
+	}
+	if repo.deleted[directoryID] {
+		t.Fatal("non-empty directory was deleted")
+	}
+}
+
 func TestLifecycleRecordDirectoryPathChangeCreatesRedirects(t *testing.T) {
 	directoryID := uuid.New()
 	fileID := uuid.New()
@@ -116,6 +130,7 @@ type fakeLifecycleRepository struct {
 	nodes           map[uuid.UUID]Node
 	contents        map[uuid.UUID]FileContent
 	hasPublished    map[uuid.UUID]bool
+	hasChildren     map[uuid.UUID]bool
 	descendantPaths map[uuid.UUID][]PublishedFilePath
 	redirects       map[string]string
 	deleted         map[uuid.UUID]bool
@@ -126,6 +141,7 @@ func newFakeLifecycleRepository() *fakeLifecycleRepository {
 		nodes:           map[uuid.UUID]Node{},
 		contents:        map[uuid.UUID]FileContent{},
 		hasPublished:    map[uuid.UUID]bool{},
+		hasChildren:     map[uuid.UUID]bool{},
 		descendantPaths: map[uuid.UUID][]PublishedFilePath{},
 		redirects:       map[string]string{},
 		deleted:         map[uuid.UUID]bool{},
@@ -192,6 +208,10 @@ func (f *fakeLifecycleRepository) HasChildNodes(_ context.Context, directoryID u
 
 func (f *fakeLifecycleRepository) HasPublishedDescendantFiles(_ context.Context, directoryID uuid.UUID) (bool, error) {
 	return f.hasPublished[directoryID], nil
+}
+
+func (f *fakeLifecycleRepository) HasChildNodes(_ context.Context, directoryID uuid.UUID) (bool, error) {
+	return f.hasChildren[directoryID], nil
 }
 
 func (f *fakeLifecycleRepository) PublishedDescendantFilePaths(_ context.Context, directoryID uuid.UUID) ([]PublishedFilePath, error) {
