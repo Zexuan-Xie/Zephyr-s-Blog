@@ -1,6 +1,6 @@
 # Stage 3 Team Log
 
-Status: Gateway 0 PASS; Gateway 1 OpenAPI/red-test planning in progress
+Status: Gateway 0 PASS; Gateway 1 contract artifacts integrated; Gateway 1 acceptance review and Gateway 2 backend implementation in progress
 
 Team: `execute-aeolian-blog-a98ab708`
 Coordinator: `worker-1`
@@ -89,11 +89,11 @@ Required red-test topics:
 
 | Worker | Lane | Current task focus | Status |
 |---|---|---|---|
-| worker-1 | coordinator / gateway | Gateway 0 protection, backup, ledger, Gateway 1 orchestration | in progress |
-| worker-2 | backend | OpenAPI red tests and publication-model architecture | in progress |
-| worker-3 | frontend | Stage 3 autosave/UI red contracts | in progress |
-| worker-4 | acceptance / verifier | Stage 3 verification matrix and fixture/evidence plan | in progress |
-| worker-5 | security / review | Stage 3 threat model and abuse-test plan | in progress |
+| worker-1 | coordinator / gateway | Task 2 evidence ledger and orchestration | in progress |
+| worker-2 | backend | Gateway 2 migration/core publication model | in progress |
+| worker-3 | frontend | Gateway 4 readiness complete; production UI blocked on backend APIs | blocked/pending |
+| worker-4 | acceptance / verifier | Gateway 1 contract acceptance review | in progress |
+| worker-5 | security / review | Gateway 1 security review complete; later implementation review pending | pending |
 
 ## Subagent probes integrated by coordinator
 
@@ -108,6 +108,42 @@ Integrated findings:
 - Require OpenAPI-first contracts before UI/production changes.
 - Require migration/restore, conflict, draft/public isolation, search-over-Published-Content, asset split, and MCP disable/audit/backup evidence.
 - Preserve Stage 2 regressions: Author tree, protected APIs, path conflict/cycle traversal defenses, iframe sandbox, and full-text fallback.
+
+
+## Coordinator ledger update — 2026-06-13 22:38 CST
+
+Verdict: **Gateway 1 artifacts integrated; final Gateway 1 acceptance review still in progress**
+
+Current integrated leader HEAD observed by worker-1: `0772b8a`.
+
+Integrated artifacts now present:
+
+- Backend Gateway 1 OpenAPI/red-contract task 3: **completed**. `docs/api/openapi.yaml` includes revision, Current/Previous/Published snapshot, publish/unpublish, Draft Preview, and draft/published asset contracts. Expected-red backend tests exist under `api/internal/*/stage3_gateway1_contract_test.go`.
+- Frontend Gateway 1 red contract task 8: **completed**. `web/tests/stage3-author-workspace-contract-red.test.mjs` is intentionally red until Stage 3 frontend implementation.
+- Acceptance planning task 5: **completed**. `docs/verification/stage-3-acceptance.md` records black-box DB/API/browser/MCP matrix, fixture needs, and evidence plan.
+- Security planning task 7: **completed**; Gateway 1 security contract review task 6: **PASS with follow-ups** in `docs/verification/stage-3-security.md`.
+- Frontend readiness task 13: **completed** in `docs/verification/stage-3-frontend-readiness.md`; production UI remains blocked on backend Gateway 2/3 runtime APIs.
+
+Active/pending implementation gates:
+
+| Task | Owner | Gate | Status | Coordinator note |
+|---:|---|---|---|---|
+| 2 | worker-1 | Evidence ledger/orchestration | in_progress | Keep ledger synchronized; do not close until terminal Stage 3 gates. |
+| 9 | worker-2 | Gateway 2 migration and core publication model | in_progress | Must avoid node_modules/runtime artifacts; satisfy backend expected-red contracts. |
+| 10 | worker-2 | Gateway 3 HTTP APIs and Draft Preview | pending | Depends on Gateway 2 service/schema readiness. |
+| 11 | worker-4 | Gateway 1 contract acceptance review | in_progress | Determines Gateway 1 PASS/REVISE before broad feature continuation. |
+| 4 | worker-3 | Gateway 4 frontend implementation | pending/blocked | Blocked by backend Gateway 2/3 green APIs. |
+| 12 | worker-5 | Security implementation review | pending/blocked | Blocked by Gateway 2/3 implementation. |
+
+Policy reminder from leader mailbox acknowledged: never add or commit `web/node_modules`, node_modules symlinks, caches, `web/dist`, local DB/uploads, or `.omx` runtime state. Coordinator worktree check before this ledger update: `git status --short` clean and `git ls-files -s web/node_modules` empty.
+
+Verification for this ledger update:
+
+```text
+PASS git status/node_modules policy precheck: git status --short clean; git ls-files -s web/node_modules empty.
+PASS source-of-truth read: omx team api list-tasks showed task 1 completed; task 2 in_progress; tasks 3/5/6/7/8/13 completed; task 9 in_progress; task 11 in_progress.
+PASS artifact presence: coordinator inspected stage-3 team log, acceptance plan, security plan, frontend readiness plan, backend/frontend red-test files, and OpenAPI Stage 3 contract tokens.
+```
 
 ## Verification
 

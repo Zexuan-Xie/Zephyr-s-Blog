@@ -4,27 +4,38 @@ Last updated: 2026-06-13 22:22 CST
 
 ## Current breakpoint
 
-Stage 3 execution has started from the protected Stage 2 checkpoint commit `73bcc9e` (`checkpoint: stage 2 polish before stage 3`). Active Team: `execute-aeolian-blog-a98ab708` with persistent lanes coordinator/gateway, backend, frontend, acceptance/verifier, and security/review.
+Stage 3 is active on Team `execute-aeolian-blog-a98ab708` from protected Stage 2 checkpoint `73bcc9e` (`checkpoint: stage 2 polish before stage 3`). Current integrated leader HEAD observed by the coordinator worktree: `0772b8a`.
 
-Gateway 0 status: **PASS / protected start recorded**.
+Gateway status:
 
-- Stage 2 checkpoint commit exists and this worker worktree started clean at `73bcc9e`.
-- Canonical Stage 3 plan: `/home/zephry_xzx/xlab/blog/.omx/plans/stage-3-implement-plan.md`.
-- Stage 3 scope is locked to autosave, Current/Previous content versions, independent Published Content snapshots, Draft Preview, Draft/Published Assets, and server-local stdio Blog MCP Server.
-- Feature implementation is still gated: current work is Gateway 0 protection/backups and Gateway 1 OpenAPI/red-test planning only.
-- Coordinator evidence ledger created at `docs/verification/stage-3-team-log.md`.
-- Backup before schema work: `~/.local/share/xlab-blog/backups/stage-3-gateway0-20260613T221830+0800`.
-- Backup artifacts: `xlab_blog.dump`, `uploads.tgz`, `SHA256SUMS.txt`.
-- Disposable restore proof passed against `xlab_blog_restore_stage3_20260613222147`; restored row counts currently match local empty DB state (`nodes=0`, `file_contents=0`, `file_assets=0`).
+- **Gateway 0 — PASS.** Stage 2 checkpoint protected; pre-schema backup/restore proof recorded in `docs/verification/stage-3-team-log.md`.
+- **Gateway 1 — contract artifacts integrated; acceptance review in progress.** Backend OpenAPI/red tests, frontend expected-red contracts, acceptance plan, and security contract review are present on the integrated branch. Worker-4 task 11 is reviewing Gateway 1 as PASS/REVISE.
+- **Gateway 2 — in progress.** Worker-2 task 9 is implementing the migration/core publication model; frontend production implementation remains blocked until backend Gateway 2/3 runtime APIs are green.
 
-Gateway 1 status: **in progress / OpenAPI-first red-test planning active**.
+Evidence ledger:
 
-- Backend lane owns OpenAPI contracts and backend red tests for revisions/conflicts, Current/Previous rotation, Published Content snapshots, Draft Preview denial, draft/published asset isolation, and search over Published Content.
-- Frontend lane owns autosave/Conflict/UI red contract tests before production UI changes.
-- Acceptance lane owns black-box fixture/evidence planning.
-- Security lane owns Stage 3 threat model and abuse-test planning.
+- Coordinator log: `docs/verification/stage-3-team-log.md`.
+- Acceptance plan: `docs/verification/stage-3-acceptance.md`.
+- Security plan/review: `docs/verification/stage-3-security.md`.
+- Frontend readiness plan: `docs/verification/stage-3-frontend-readiness.md`.
+- OpenAPI contract: `docs/api/openapi.yaml`.
+- Backend Gateway 1 expected-red tests: `api/internal/tree/stage3_gateway1_contract_test.go`, `api/internal/http/handlers/stage3_gateway1_contract_test.go`, `api/internal/http/stage3_gateway1_contract_test.go`, `api/internal/search/stage3_gateway1_contract_test.go`, `api/internal/assets/stage3_gateway1_contract_test.go`.
+- Frontend Gateway 1 expected-red test: `web/tests/stage3-author-workspace-contract-red.test.mjs`.
 
-Required verification baseline for every integration checkpoint remains:
+Gateway 0 backup before schema work:
+
+- Backup directory: `~/.local/share/xlab-blog/backups/stage-3-gateway0-20260613T221830+0800`.
+- Artifacts: `xlab_blog.dump`, `uploads.tgz`, `SHA256SUMS.txt`.
+- Disposable restore proof: `xlab_blog_restore_stage3_20260613222147` restored successfully and was dropped; restored row counts matched current empty local DB state (`nodes=0`, `file_contents=0`, `file_assets=0`).
+
+Current coordination constraints:
+
+- Do not add/commit `web/node_modules`, node_modules symlinks, caches, `web/dist`, local DB/uploads, or `.omx` runtime state.
+- Do not start production frontend UI work until backend Gateway 2/3 APIs are integrated.
+- Acceptance/security tests run only against integrated leader SHAs, not isolated worker branches.
+- Preserve iframe sandbox, full-text fallback, Author-only protected surfaces, draft/public isolation, and the Stage 2 simple-English Aeolian UI baseline.
+
+Required verification baseline for every non-red integration checkpoint remains:
 
 ```bash
 cd api
@@ -33,17 +44,17 @@ CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go vet ./...
 test -z "$(gofmt -l .)"
 
 cd web
-node --test tests/*.test.mjs
+node --test tests/*.test.mjs   # expected to fail while Stage 3 red contract test is intentionally red
 npm run lint
 npm run build
 ```
 
 ## Immediate next steps
 
-1. Integrate Gateway 1 OpenAPI/red-test outputs only after they are intentionally red for missing Stage 3 behavior, not syntax/stale fixtures.
-2. Keep `docs/verification/stage-3-team-log.md` current with task status, source SHAs, and evidence paths.
-3. Do not allow production migration/backend/frontend/MCP feature implementation until Gateway 1 contracts are reviewed and accepted.
-4. Preserve iframe sandbox, full-text fallback, Author-only protected surfaces, and Stage 2 simple-English Aeolian UI baseline while adding Stage 3 behavior.
+1. Wait for worker-4 task 11 to mark Gateway 1 contract acceptance PASS/REVISE.
+2. Monitor worker-2 task 9 (Gateway 2 migration/core publication model) and task 10 (Gateway 3 HTTP/Draft Preview APIs).
+3. If Gateway 1/2/3 gates fail, assign narrow repair tasks; otherwise keep frontend Gateway 4 blocked until runtime APIs are green.
+4. Keep `PROGRESS.md` and `docs/verification/stage-3-team-log.md` synchronized after each integration or gate decision.
 
 ## Previous notes
 # xLab Blog Progress
