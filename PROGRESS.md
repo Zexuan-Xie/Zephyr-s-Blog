@@ -1,43 +1,49 @@
 # Progress
 
-Last updated: 2026-06-13 20:48 CST
+Last updated: 2026-06-13 22:22 CST
 
 ## Current breakpoint
 
-Stage 2 functional polish plus the Aeolian visual polish are implemented and verified. This is a pre-Stage-3 user-acceptance checkpoint.
+Stage 3 execution has started from the protected Stage 2 checkpoint commit `73bcc9e` (`checkpoint: stage 2 polish before stage 3`). Active Team: `execute-aeolian-blog-a98ab708` with persistent lanes coordinator/gateway, backend, frontend, acceptance/verifier, and security/review.
 
-Completed in this checkpoint:
+Gateway 0 status: **PASS / protected start recorded**.
 
-- Brand changed from `xLab Blog` to `Aeolian` in top navigation and browser title/theme metadata.
-- Author Workspace product UI uses simple, direct English.
-- Author Workspace layout was simplified: shorter hero, tighter two-column shell, segmented Directory/File create control, fewer explanatory paragraphs.
-- Directory workspace has a graphical `Arrange` board with draggable cards, drag handles, Directory/File icons, hover/drop states, and pointer-based same-parent sorting.
-- Browser smoke confirmed same-parent card drag sends `PUT /api/admin/nodes/:id/children/order`, shows `Order saved.`, and persists order.
-- Public Author entries use simple English: `Manage` and `Edit`.
-- Public root/404/empty copy received light English polish.
-- New visual polish references `/mnt/c/Users/Alex-/Downloads/Aeolian (fixed).html` while preserving the existing layout: cool paper background, frosted glass cards/nav, aqua crystal accent, self-hosted Instrument Serif only for the `Aeolian` brand mark, with all other UI text restored to the original font stack; refined buttons/tags/code surfaces.
-- Tests were updated from the previous Chinese Stage 2 copy contract to the new simple-English polish contract.
+- Stage 2 checkpoint commit exists and this worker worktree started clean at `73bcc9e`.
+- Canonical Stage 3 plan: `/home/zephry_xzx/xlab/blog/.omx/plans/stage-3-implement-plan.md`.
+- Stage 3 scope is locked to autosave, Current/Previous content versions, independent Published Content snapshots, Draft Preview, Draft/Published Assets, and server-local stdio Blog MCP Server.
+- Feature implementation is still gated: current work is Gateway 0 protection/backups and Gateway 1 OpenAPI/red-test planning only.
+- Coordinator evidence ledger created at `docs/verification/stage-3-team-log.md`.
+- Backup before schema work: `~/.local/share/xlab-blog/backups/stage-3-gateway0-20260613T221830+0800`.
+- Backup artifacts: `xlab_blog.dump`, `uploads.tgz`, `SHA256SUMS.txt`.
+- Disposable restore proof passed against `xlab_blog_restore_stage3_20260613222147`; restored row counts currently match local empty DB state (`nodes=0`, `file_contents=0`, `file_assets=0`).
 
-Verification evidence:
+Gateway 1 status: **in progress / OpenAPI-first red-test planning active**.
 
-- `docs/verification/stage-2-polish-20260613/summary.md`
-- `docs/verification/stage-2-polish-20260613/visual-admin.png`
+- Backend lane owns OpenAPI contracts and backend red tests for revisions/conflicts, Current/Previous rotation, Published Content snapshots, Draft Preview denial, draft/published asset isolation, and search over Published Content.
+- Frontend lane owns autosave/Conflict/UI red contract tests before production UI changes.
+- Acceptance lane owns black-box fixture/evidence planning.
+- Security lane owns Stage 3 threat model and abuse-test planning.
 
-Verification passed:
+Required verification baseline for every integration checkpoint remains:
 
-- `cd api && CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go test -count=1 ./...`
-- `cd api && CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go vet ./...`
-- `cd api && test -z "$(gofmt -l .)"`
-- `cd web && node --test tests/*.test.mjs`
-- `cd web && npm run lint`
-- `cd web && npm run build`
-- Browser smoke: `/admin` title is `Aeolian`, nav/Author Workspace render with the new visual system, layout remains the same.
-- Hotfix: `/admin` Directory create form no longer lets hidden inputs consume grid cells; `Name` and `URL Path preview` are separated into stable rows. Frontend gates and browser smoke rerun.
-- Hotfix: Author Workspace now has `New root` for creating sibling root Directories/Files under `/` even after one root exists; top Directory drawer now renders an expandable tree, and for Author uses the protected full admin tree so draft directories/files are visible. Frontend gates and browser smoke rerun.
-- Hotfix: left Content Tree now visually differentiates hierarchy levels, keeps directory collapse/expand, supports same-parent drag sorting directly in the tree, and removes the right-side `Drag cards`/Arrange panel. Frontend gates and browser smoke rerun.
+```bash
+cd api
+CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go test -count=1 ./...
+CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go vet ./...
+test -z "$(gofmt -l .)"
 
-Next action: ask user to manually accept Stage 2 polish. If accepted, commit the Stage 2 clean-slate + polish changes, then begin Stage 3: autosave, Content Versions, Published Content snapshots, Draft Preview, Draft/Published Assets, and server-local stdio Blog MCP Server.
+cd web
+node --test tests/*.test.mjs
+npm run lint
+npm run build
+```
 
+## Immediate next steps
+
+1. Integrate Gateway 1 OpenAPI/red-test outputs only after they are intentionally red for missing Stage 3 behavior, not syntax/stale fixtures.
+2. Keep `docs/verification/stage-3-team-log.md` current with task status, source SHAs, and evidence paths.
+3. Do not allow production migration/backend/frontend/MCP feature implementation until Gateway 1 contracts are reviewed and accepted.
+4. Preserve iframe sandbox, full-text fallback, Author-only protected surfaces, and Stage 2 simple-English Aeolian UI baseline while adding Stage 3 behavior.
 
 ## Previous notes
 # xLab Blog Progress
