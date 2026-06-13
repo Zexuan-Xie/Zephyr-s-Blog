@@ -275,3 +275,36 @@ Required later gate:
   - public file/asset DTOs do not contain `storage_key`;
   - unpublish public visibility and DB snapshot consistency.
 - Run Stage 3 black-box API/browser/MCP acceptance after MCP lands.
+
+## Task 15 post-repair backend security re-review
+
+Reviewed integrated repaired HEAD `97acc9e` (includes task-14 repair commits `71c9d93`/`e4e2dae`) against the prior Task 12 REVISE blockers.
+
+### Verdict: PASS for backend Gateway 2/3 security repair
+
+MCP-specific security remains out of scope until the MCP slice lands, but the backend HTTP/Draft Preview/public asset repair items from Task 12 and Task 14 are resolved.
+
+### Evidence checked
+
+- Public asset bytes now use `published_file_assets` joined to visible `published_file_contents` in `api/internal/assets/repository.go::FindPublishedAsset`; draft-only assets are no longer authorized merely because the parent File is published.
+- Draft/admin asset byte route remains under `/api/admin/...` and `RequireAdmin` in `api/internal/http/router.go`; public route calls `OpenPublished`, admin route calls `OpenDraft`.
+- `CreateAsset` now returns `state` and `published_asset_id`, matching `scanAsset` and removing the post-insert scan mismatch/orphan-row failure path.
+- Publish and unpublish handlers require valid JSON and positive `expected_revision`; invalid JSON and missing/zero/negative revisions return 400.
+- Unpublish now takes `expected_revision`, locks Current Content with `for update`, and updates Current status plus Published visibility inside one transaction.
+- Comment and like visibility checks use `published_file_contents.visible` instead of mutable `file_contents.status`.
+- `revision_conflict` responses include `details.current_revision` when version state can be read.
+- Public `FilePage.Content` uses `PublicFileContent`, and `storage_key`/`storage_provider` are JSON-hidden and removed from OpenAPI/web schemas; focused response tests check they are not leaked.
+- Draft Preview iframe sandbox remains `allow-scripts`; no `allow-same-origin` appears in `web/src/pages/AdminPage.tsx`.
+- SQL for publication/asset snapshot behavior remains in repository packages.
+
+### Verification commands
+
+- PASS `cd api && CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go test -count=1 ./internal/assets ./internal/http ./internal/http/handlers ./internal/comments ./internal/likes ./internal/tree -run 'Stage3|Lifecycle|ServiceUpload|RouterExposesAssetRoutes|CreateAsset|Publish|Unpublish|Asset'`
+- PASS `cd api && test -z "$(gofmt -l internal/assets internal/http internal/comments internal/likes internal/tree)" && CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go vet ./internal/assets ./internal/http ./internal/http/handlers ./internal/comments ./internal/likes ./internal/tree`
+- PASS `grep -R 'json:"storage_key\|json:"storage_provider\|allow-same-origin\|fc.status = "'"'"'published"'"'"'' -n api web docs/api/openapi.yaml | head -120` only matched negative regression-test strings and OpenAPI prose forbidding `allow-same-origin`.
+- PASS `git diff --check`.
+
+### Remaining later gate
+
+Repeat security review for MCP once implemented: disabled-by-default behavior, per-call kill switch, audit JSONL, destructive tool confirmation, backup/export, and no direct SQL in MCP handlers are still pending future evidence.
+
