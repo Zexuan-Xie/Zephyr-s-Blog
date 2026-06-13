@@ -21,11 +21,12 @@ var (
 )
 
 type UpsertFileContentInput struct {
-	ContentFormat ContentFormat `json:"content_format"`
-	BodyRaw       string        `json:"body_raw"`
-	BodyHTML      *string       `json:"body_html,omitempty"`
-	Keywords      []string      `json:"keywords"`
-	SearchText    string        `json:"search_text,omitempty"`
+	ExpectedRevision int           `json:"expected_revision"`
+	ContentFormat    ContentFormat `json:"content_format"`
+	BodyRaw          string        `json:"body_raw"`
+	BodyHTML         *string       `json:"body_html,omitempty"`
+	Keywords         []string      `json:"keywords"`
+	SearchText       string        `json:"search_text,omitempty"`
 }
 
 type PublishedFilePath struct {

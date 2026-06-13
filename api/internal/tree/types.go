@@ -25,8 +25,9 @@ const (
 type PublishStatus string
 
 const (
-	PublishStatusDraft     PublishStatus = "draft"
-	PublishStatusPublished PublishStatus = "published"
+	PublishStatusDraft              PublishStatus = "draft"
+	PublishStatusPublished          PublishStatus = "published"
+	PublishStatusUnpublishedChanges PublishStatus = "unpublished_changes"
 )
 
 type EmbeddingStatus string
@@ -124,6 +125,7 @@ type DirectoryPage struct {
 
 type FileContent struct {
 	NodeID             uuid.UUID       `json:"node_id"`
+	Revision           int             `json:"revision"`
 	ContentFormat      ContentFormat   `json:"content_format"`
 	Keywords           []string        `json:"keywords"`
 	BodyRaw            string          `json:"body_raw"`
@@ -131,6 +133,7 @@ type FileContent struct {
 	SearchText         string          `json:"search_text"`
 	Status             PublishStatus   `json:"status"`
 	PublishedAt        *time.Time      `json:"published_at"`
+	LastSavedAt        time.Time       `json:"last_saved_at"`
 	EmbeddingModel     *string         `json:"embedding_model"`
 	EmbeddingStatus    EmbeddingStatus `json:"embedding_status"`
 	EmbeddingError     *string         `json:"embedding_error"`
@@ -138,15 +141,45 @@ type FileContent struct {
 }
 
 type FileAsset struct {
-	ID              uuid.UUID `json:"id"`
-	FileID          uuid.UUID `json:"file_node_id"`
-	Filename        string    `json:"filename"`
-	MIMEType        string    `json:"mime_type"`
-	SizeBytes       int64     `json:"size_bytes"`
-	StorageProvider string    `json:"storage_provider"`
-	StorageKey      string    `json:"storage_key"`
-	PublicURL       string    `json:"public_url"`
-	CreatedAt       time.Time `json:"created_at"`
+	ID               uuid.UUID  `json:"id"`
+	FileID           uuid.UUID  `json:"file_node_id"`
+	Filename         string     `json:"filename"`
+	MIMEType         string     `json:"mime_type"`
+	SizeBytes        int64      `json:"size_bytes"`
+	StorageProvider  string     `json:"storage_provider"`
+	StorageKey       string     `json:"storage_key"`
+	PublicURL        string     `json:"public_url"`
+	State            string     `json:"state"`
+	PublishedAssetID *uuid.UUID `json:"published_asset_id"`
+	CreatedAt        time.Time  `json:"created_at"`
+}
+
+type PublishedContent struct {
+	NodeID         uuid.UUID     `json:"node_id"`
+	SourceRevision int           `json:"source_revision"`
+	ContentFormat  ContentFormat `json:"content_format"`
+	Keywords       []string      `json:"keywords"`
+	BodyRaw        string        `json:"body_raw"`
+	BodyHTML       *string       `json:"body_html"`
+	SearchText     string        `json:"search_text"`
+	PublishedAt    time.Time     `json:"published_at"`
+	UpdatedAt      time.Time     `json:"updated_at"`
+	Visible        bool          `json:"visible"`
+}
+
+type FileVersionState struct {
+	Current               FileContent       `json:"current"`
+	Previous              *FileContent      `json:"previous"`
+	Published             *PublishedContent `json:"published"`
+	HasUnpublishedChanges bool              `json:"has_unpublished_changes"`
+	DraftAssets           []FileAsset       `json:"draft_assets"`
+	PublishedAssets       []FileAsset       `json:"published_assets"`
+}
+
+type PublishResult struct {
+	Current        FileContent      `json:"current"`
+	Published      PublishedContent `json:"published"`
+	PromotedAssets []FileAsset      `json:"promoted_assets"`
 }
 
 type FilePage struct {
