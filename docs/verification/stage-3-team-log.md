@@ -1,9 +1,9 @@
 # Stage 3 Team Log
 
-Status: Gateway 0 PASS; Gateway 1 PASS; Gateway 2 PASS; Gateway 3 PASS; Gateway 4 PASS; security review REVISE; backend repair in progress
+Status: Gateway 0 PASS; Gateway 1 PASS; Gateway 2 PASS; Gateway 3 PASS; Gateway 4 PASS; backend security repair PASS; MCP/closeout pending
 
 Team: `execute-aeolian-blog-a98ab708`
-Coordinator: `worker-1`
+Coordinator: `worker-2` (task 2 reassigned from worker-3 after backend repair/security re-review)
 Protected Stage 2 checkpoint SHA: `73bcc9e` (`checkpoint: stage 2 polish before stage 3`)
 Canonical plan: `/home/zephry_xzx/xlab/blog/.omx/plans/stage-3-implement-plan.md`
 Stage scope: autosave, Current/Previous content versions, independent Published Content snapshots, Draft Preview, Draft/Published Assets, and server-local stdio Blog MCP Server.
@@ -89,11 +89,11 @@ Required red-test topics:
 
 | Worker | Lane | Current task focus | Status |
 |---|---|---|---|
-| worker-1 | coordinator / gateway | Original Task 2 evidence ledger lane superseded by worker-3 claim | superseded |
-| worker-2 | backend | Task 14 backend security REVISE repair | in progress |
-| worker-3 | frontend / planner | Task 4 complete; Task 2 ledger reconciliation in progress | in progress |
-| worker-4 | acceptance / verifier | Gateway 1 PASS recorded; downstream fixture gaps pending later implementation | pending |
-| worker-5 | security / review | Security REVISE verdict integrated; duplicate task-12 review stopped | complete / revise |
+| worker-1 | coordinator / gateway | Gateway 0 complete; original task 2 superseded/reassigned | superseded |
+| worker-2 | backend / coordinator | Tasks 3/9/10/14 complete; Task 2 ledger reconciliation now active | in progress |
+| worker-3 | frontend / planner | Task 4 Gateway 4 frontend complete; prior Task 2 ledger handoff complete | complete |
+| worker-4 | acceptance / verifier | Gateway 1 PASS recorded; final integrated acceptance pending MCP/closeout | pending |
+| worker-5 | security / review | Task 15 backend repair re-review PASS; MCP security gate remains pending | complete / MCP pending |
 
 ## Subagent probes integrated by coordinator
 
@@ -287,3 +287,49 @@ PASS disposable restore: pg_restore succeeded into xlab_blog_restore_stage3_2026
 - Gateway 1 backend/frontend red tests are being produced by backend/frontend lanes.
 - No Stage 3 production migration, backend behavior, frontend behavior, browser acceptance, security abuse, or MCP smoke has been integrated yet.
 - Full backend/frontend gates will be run after this docs-only coordinator checkpoint.
+
+## Coordinator ledger update — 2026-06-13 23:48 CST
+
+Verdict: **Gateway 0/1/2/3/4 PASS; backend security repair PASS; MCP and final closeout pending**
+
+Current coordinator worktree HEAD observed by worker-2: `f50fb4d`.
+
+Task state reconciliation from OMX task JSON:
+
+- Task 1 Gateway 0 coordinator: **completed**.
+- Task 3 Gateway 1 OpenAPI/backend red contracts: **completed**.
+- Task 5/11 acceptance planning and Gateway 1 contract acceptance: **completed / PASS**.
+- Task 6/7 security planning and Gateway 1 review: **completed / PASS with follow-up findings**.
+- Task 8 frontend Gateway 1 red contracts and task 13 frontend readiness: **completed**.
+- Task 9 Gateway 2 backend core model: **completed**.
+- Task 10 Gateway 3 backend HTTP/Draft Preview APIs: **completed**.
+- Task 4 Gateway 4 frontend implementation: **completed** at commit `9b51d36` with lint/build/node tests and Stage 3 frontend contract passing.
+- Task 12 implementation security review: **failed / REVISE**; findings recorded in `docs/verification/stage-3-security.md`.
+- Task 14 backend security repair: **completed** by worker-2; CreateAsset scan mismatch, public asset snapshot binding, asset DTO leak, expected revision, conflict details, comments/likes visibility, public DTO, and unpublish atomicity were repaired.
+- Task 15 post-repair security re-review: **completed / PASS** by worker-5 on integrated repaired HEAD `97acc9e`/`dd2b493`.
+- Task 2 coordinator ledger: **in_progress** and now claimed by worker-2.
+
+Backend repair/security evidence now recorded in `docs/verification/stage-3-security.md`:
+
+```text
+PASS backend Gateway 2/3 repair re-review.
+PASS public asset lookup uses published_file_assets plus visible published content.
+PASS CreateAsset RETURNING matches scanAsset state/published_asset_id.
+PASS storage_key/storage_provider are JSON-hidden and removed from OpenAPI/web schemas.
+PASS publish/unpublish require positive expected_revision and unpublish is transactional.
+PASS comments/likes use published_file_contents.visible.
+PASS revision_conflict includes current_revision when state is available.
+PASS iframe sandbox remains allow-scripts without allow-same-origin.
+```
+
+Coordinator interpretation:
+
+- The previous Task 12 security REVISE is resolved for backend Gateway 2/3 repair scope by tasks 14 and 15.
+- Stage 3 is not final-closeout complete because the Blog MCP Server remains unimplemented/unverified. MCP-specific requirements in `docs/verification/stage-3-security.md` and `docs/verification/stage-3-acceptance.md` remain blocked pending an actual server-local stdio MCP package, disabled/enabled smoke transcripts, audit JSONL, backup/export evidence, kill-switch proof, and no-direct-SQL review.
+- Acceptance/security closeout should continue to run only on integrated SHAs. Do not treat worker-local partial branches as closeout candidates.
+
+Policy check before this update:
+
+```text
+PASS git status/node_modules policy precheck: clean and no tracked web/node_modules.
+```
