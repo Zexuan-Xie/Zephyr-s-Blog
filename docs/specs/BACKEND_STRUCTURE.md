@@ -158,7 +158,7 @@ Rules:
 - published File cannot directly switch `content_format`。
 - File save must update `search_text` and set embedding pending/ready/failed.
 - Qwen failure never rolls back content save。
-- File autosave uses optimistic concurrency: the client submits the loaded content version and stale writes are rejected rather than silently overwriting newer content.
+- Stage 2 File save is manual and uses the existing single file_contents row. Stage 3 autosave uses optimistic concurrency: the client submits the loaded content version and stale writes are rejected rather than silently overwriting newer content.
 
 ### 2.5 path_redirects
 
@@ -351,7 +351,7 @@ The content-version migration is lossless and transactional:
 
 - Existing Published Files initialize Current and Published Content from the existing content; Previous is empty.
 - Existing Draft Files initialize Current only; Previous and Published Content are empty.
-- Existing Assets migrate to Draft/Published state from the File publication state and actual Published Content references.
+- Stage 3 only: Existing Assets migrate to Draft/Published state from the File publication state and actual Published Content references.
 - Back up the database before running the migration.
 
 ## 5. Tree path resolution
@@ -387,8 +387,8 @@ Algorithm:
 
 ### 6.3 Delete
 
-- Draft File can hard delete。
-- Draft-only Directory subtree can hard delete。
+- Stage 2: Draft File can hard delete。
+- Stage 2: every non-empty Directory is blocked, including draft-only subtrees; recursive subtree deletion is deferred。
 - Published File cannot hard delete; must unpublish first。
 - Directory containing any published File cannot hard delete。
 

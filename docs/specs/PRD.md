@@ -174,10 +174,13 @@
 ### 4.8 Author Workspace
 
 - 文件管理器式后台。
-- 不做拖拽；移动节点用 parent directory select。
-- 排序用 sort_order 数字或上/下按钮。
-- 危险操作（移动 published 子树、改 slug、删除）必须提示影响。
-- 可上传 assets、刷新 embedding、发布/撤回 File。
+- Stage 2 使用中文 Author Workspace：左侧受保护 Content Tree，右侧 Directory/File 工作区。
+- Stage 2 桌面端允许同一 parent 内 Directory/File 混合拖拽排序；拖拽不改变 parent。
+- Stage 2 跨 Directory 移动通过图形化 Directory Picker，不显示 Parent ID。
+- Stage 2 不实现 autosave、Content Version、Draft Preview、Draft/Published Assets 或 `有未发布修改`；这些属于 Stage 3。
+- Stage 2 保守删除策略：Published File 和所有非空 Directory 禁删；不提供递归删除。
+- 危险操作（移动 published 子树、改 URL Path、删除）必须提示影响。
+- 可上传 assets、发布/撤回 File。
 
 ## 5. 明确不在范围内
 
@@ -187,7 +190,7 @@
 - SSR / Next.js / Server Components。
 - HTTP 301 redirect。
 - Object storage 实现；只保留接口。
-- 跨 Directory 的 drag-and-drop reparenting；首版只支持同一 parent 内的桌面拖拽排序，移动端使用上移/下移。
+- 跨 Directory 的 drag-and-drop reparenting；首版只支持同一 parent 内的桌面拖拽排序，拖拽不改变 parent；移动端 Stage 2 只做 no-regression sanity，不要求完整移动/排序流。
 - 同级 Directory/File 使用统一混合顺序，不强制 Directory 优先。
 - LLM query expansion、rerank、cross-language query translation。
 - HTML iframe auto-resize。

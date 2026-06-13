@@ -93,7 +93,7 @@ The fixture must cover nested Directories, Draft Files, Published Files, Chinese
 
 Update OpenAPI first. Add or reshape protected Author Workspace APIs with clear repository/service/handler boundaries:
 
-- complete protected Author Content Tree containing all Directories, Draft Files, Published Files, and Files with unpublished changes;
+- complete protected Author Content Tree containing all Directories, Draft Files, and Published Files. Stage 2 does not model `有未发布修改`; that state requires Stage 3 Published Content snapshots;
 - node detail for Directory/File workspace loading;
 - context-aware create using the selected parent Directory;
 - backend-authoritative Name → URL Path generation:
@@ -103,7 +103,7 @@ Update OpenAPI first. Add or reshape protected Author Workspace APIs with clear 
   - never silently rewrite explicit URL Path edits;
 - same-parent mixed Directory/File reorder with transaction safety;
 - graphical Directory Picker support for cross-Directory moves, impact preview, cycle prevention, subtree path rewrite, and redirects for formerly public paths;
-- deletion constraints with clear reasons for non-empty Directories and Published Files;
+- deletion constraints with clear reasons for non-empty Directories and Published Files; Stage 2 chooses the conservative rule that every non-empty Directory is blocked, including draft-only subtrees;
 - publication state read/update sufficient for the Stage 2 manual-save File workspace.
 
 Do **not** implement Stage 3 Content Version history, Draft Preview, Draft/Published Asset split, or independent Published Content snapshots in Stage 2.
@@ -122,7 +122,8 @@ Build a desktop-first Chinese Author Workspace. Mobile Stage 2 is no-regression 
 #### Content Tree
 
 - Expand/collapse tree; no tree search in Stage 2.
-- Show all Directories, Draft Files, Published Files, and Files with unpublished changes.
+- Stage 2 uses one protected complete-tree load for the Author Workspace left tree. Directory workspace child cards may be derived from that tree or detail API; do not implement public-tree or draft-leaking shortcuts.
+- Show all Directories, Draft Files, and Published Files. Do not display `有未发布修改` in Stage 2 because manual saves still update the single draft/live content model inherited from Stage 1; Stage 3 adds separate Published Content snapshots.
 - Restore browser-local selection/expanded state when safe.
 - Creation refreshes the tree, expands the parent Directory, selects the new node, and opens the right workspace.
 - Author public Directory/File entry expands ancestors and selects the target node.
@@ -150,7 +151,7 @@ Creation success must show a lightweight Chinese toast, refresh tree/navigation 
 
 Selecting a File opens a Stage-3-compatible shell, but saving remains manual:
 
-- header: File Name, status (`草稿`, `已发布`, `有未发布修改` where supported), URL Path, public-view action, and one primary publication action;
+- header: File Name, status (`草稿` or `已发布` only in Stage 2), URL Path, public-view action, and one primary publication action;
 - sections/tabs: `内容`, `资源`, `设置`;
 - `内容`: body editor, keywords, manual save, clear Chinese success/error messages;
 - `资源`: upload/view/delete using the existing asset model;
@@ -159,7 +160,7 @@ Selecting a File opens a Stage-3-compatible shell, but saving remains manual:
 Publication control:
 
 - Draft → primary `发布`;
-- saved unpublished changes → primary `发布更新`;
+- Stage 2 does not expose `有未发布修改` / `发布更新`; changed saved content uses the existing single-content model until Stage 3 snapshots are added.
 - current Published File → status `已发布` instead of redundant publish button;
 - `撤回发布` is secondary/overflow/danger, not a sibling primary button.
 
@@ -167,7 +168,7 @@ Publication control:
 
 - Settings sections: `基础信息`, `位置`, `危险操作`.
 - Danger actions are bottom, visually distinct, and require Chinese second confirmation.
-- Block Published File deletion and non-empty Directory deletion with clear Chinese explanations.
+- Block Published File deletion and every non-empty Directory deletion, including draft-only subtrees, with clear Chinese explanations. Stage 2 does not offer recursive subtree deletion; Authors must empty a Directory first.
 - Cross-Directory moves use a graphical Directory Picker and path/impact preview; never require Parent ID.
 - Every right-workspace subflow has explicit return buttons such as `返回当前目录`, `返回文件内容`, or `返回设置`.
 - Lightweight breadcrumbs/path indicators aid orientation but are not the only return path.

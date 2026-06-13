@@ -1,6 +1,6 @@
 # xLab Blog Progress
 
-Last updated: 2026-06-13 13:20 CST
+Last updated: 2026-06-13 13:55 CST
 
 This is the durable resume point. Keep it concise and update it after every key milestone.
 
@@ -113,13 +113,16 @@ For runtime/auth/tree/publication changes, also run native PostgreSQL API smoke 
 
 ## Latest planning review
 
+
+- 2026-06-13: Second Critic probe round returned `REVISE`; fixes applied in working tree: clarified Stage 2 has only `草稿` / `已发布` and defers `有未发布修改` / `发布更新`; chose conservative deletion rule blocking every non-empty Directory; made `GET /admin/tree` the complete protected Stage 2 tree; strengthened OpenAPI field/error requirements; aligned active specs; rewrote ignored `.omx` Stage 2 PRD/packet DAG runtime copies to current Author Workspace scope.
+- 2026-06-13: Wrong Team launch abort: a free-form Stage 2 launch produced `legacy_text` decomposition and was force-shutdown before integration; worker diffs were empty/noop. Plan launch guard now requires the exact approved Stage 2 DAG hint and decomposition-source verification before implementation.
 - 2026-06-13: Ran a Critic probe on the Stage 2 plan. Verdict was `REVISE`, not implementation-blocking after fixes.
 - Applied fixes: unified Team launch to five persistent seats plus on-demand repair; added Stage 2/Stage 3 boundary precedence; added minimum OpenAPI contract table and stronger backend Red cases; added public Directory `管理此目录` acceptance/security checks; added disposable restore proof condition; clarified Author-role-only public entry data flow.
 
 ## Immediate next steps
 
 1. Await explicit user instruction before Stage 2 implementation.
-2. If the user approves execution, launch a five-seat OMX Team from `docs/plans/STAGE_2_TEAM_EXECUTION.md` / `.omx/plans/stage-2-author-workspace-team-execution-plan.md`, starting with Gateway 0/1: clean status check, local database/uploads backup, disposable restore proof when cleanup/schema work applies, and `/stage-2-acceptance` fixture setup.
+2. If the user approves execution after final plan confirmation, activate the Stage 2 DAG and launch exactly: `omx team 5 "Execute approved xLab Blog second-development Stage 2 DAG"`. Gateway 0 must verify approved DAG import, not `legacy_text`, before any implementation. Then continue with clean status check, local database/uploads backup, disposable restore proof when cleanup/schema work applies, and `/stage-2-acceptance` fixture setup.
 3. Before coding, reread `AGENTS.md`, this file, `docs/plans/SECOND_DEVELOPMENT.md`, `docs/specs/CONTEXT.md`, relevant specs, and `docs/api/openapi.yaml` for API changes.
 4. Update `PROGRESS.md` and `docs/verification/` at every key milestone and before stopping.
 
