@@ -1,6 +1,6 @@
 # Stage 2 Team Log
 
-Status: Gateway 1 PASS; Gateway 2 in progress
+Status: Gateway 2 PASS; Gateway 3/4 in progress
 
 Team: `execute-approved-xlab-015f30a9`
 Coordinator: `worker-1`
@@ -57,10 +57,10 @@ omx team api await-event --input '{"team_name":"execute-approved-xlab-015f30a9",
 |---:|---|---|---|---|---|
 | 6 | `s2-00-launch-control` | worker-1 | — | completed | false |
 | 7 | `s2-01-data-fixture` | worker-4 | 6 | completed | false |
-| 8 | `s2-02-backend-red-openapi` | worker-2 | 7 | in_progress | true |
-| 9 | `s2-03-backend-tree-create` | worker-2 | 8 | pending | true |
+| 8 | `s2-02-backend-red-openapi` | worker-2 | 7 | completed | true |
+| 9 | `s2-03-backend-tree-create` | worker-2 | 8 | in_progress | true |
 | 10 | `s2-04-backend-reorder-move-delete` | worker-2 | 9 | pending | true |
-| 11 | `s2-05-frontend-red-contracts` | worker-3 | 8 | pending | true |
+| 11 | `s2-05-frontend-red-contracts` | worker-3 | 8 | in_progress | true |
 | 12 | `s2-06-frontend-shell-tree` | worker-3 | 9, 11 | pending | true |
 | 13 | `s2-07-frontend-directory-create` | worker-3 | 12 | pending | true |
 | 14 | `s2-08-frontend-file-settings-assets` | worker-3 | 12, 10 | pending | true |
@@ -77,7 +77,7 @@ omx team api await-event --input '{"team_name":"execute-approved-xlab-015f30a9",
 |---|---|---|---|---|---|---|
 | 6 — Gateway 0 launch control and decomposition audit | worker-1 | `4a17333` | `d6b8949` | PASS | `docs/verification/stage-2-team-log.md` | completed |
 | 7 — Gateway 1 backup restore and Stage 2 fixture | worker-4 | `4363dd0` | `4f992c7` | PASS | `docs/verification/stage-2-backup-and-fixture.md`; `docs/verification/stage-2-acceptance.md` | completed |
-| 8 — Gateway 2 OpenAPI and backend Red contracts | worker-2 | pending | pending | pending | task result / source commit | pending |
+| 8 — Gateway 2 OpenAPI and backend Red contracts | worker-2 | `9b989d3` / `4767f67` | `83dc5f4` / `020c85d` | Red PASS | `docs/api/openapi.yaml`; backend Red tests | completed |
 | 9 — Protected Author tree detail and minimal create APIs | worker-2 | pending | pending | pending | task result / source commit | pending |
 | 10 — Same-parent reorder move preview commit and delete constraints | worker-2 | pending | pending | pending | task result / source commit | pending |
 | 11 — Gateway 4 frontend Red UI contracts | worker-3 | pending | pending | pending | task result / source commit | pending |
@@ -121,3 +121,15 @@ Verdict: **PASS**
 - Public smoke: published fixture resolves; draft fixture returns HTTP 404 publicly.
 - Baseline preservation: non-stage2 path list unchanged; only four Stage 2 fixture nodes added.
 - Gateway 2 status: worker-2 claimed task 8 and is working on OpenAPI-first backend Red contracts.
+
+## Gateway 2 OpenAPI and backend Red checkpoint — 2026-06-13 14:03 CST
+
+Verdict: **PASS (Red)**
+
+- OpenAPI-first commit integrated on leader: `83dc5f4b5aff` from worker source `9b989d34ebb1`.
+- Backend Red test commit integrated on leader: `020c85d64f30` from worker source `4767f6710cec`.
+- OpenAPI additions include: protected `GET /admin/tree`, slugless/minimal create contract, explicit `url_path` settings update semantics, same-parent reorder endpoint, move preview/commit endpoints, machine-readable delete constraints, and Author 401/403 semantics.
+- Red tests added: `api/internal/tree/stage2_admin_contract_test.go` and `api/internal/http/handlers/stage2_admin_contract_test.go`.
+- Red verification: `cd api && CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go test ./internal/tree ./internal/http/handlers -run Stage2` fails as intended because Stage 2 production APIs/types/errors are not fully implemented yet (`AdminTree`, `ReorderChildren`, `Move`, `ErrNonEmptyDirectoryDelete`, etc.).
+- Full backend gate is expected to fail until Gateway 3/Task 9+10 Green implementation lands.
+- Downstream unblocked: worker-2 task 9 and worker-3 task 11 are in progress.
