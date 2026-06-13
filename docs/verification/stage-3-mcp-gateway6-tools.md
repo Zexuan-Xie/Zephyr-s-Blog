@@ -3,7 +3,7 @@
 Status: **PASS (leader implementation slice)**
 
 Task: 17 — Gateway 6 MCP tool implementation slices.
-Integrated SHA: pending commit after local verification.
+Integrated SHA: 5949af1 + follow-up TS compile fix commit.
 
 ## Implemented tool surface
 
@@ -20,8 +20,8 @@ The server-local `mcp/` package now registers the full required Blog MCP tool su
 ## Architecture and safety notes
 
 - MCP remains a separate server-local stdio package/process under `mcp/`; no HTTP/SSE MCP transport was added.
-- Tool handlers are thin orchestration wrappers in `mcp/src/tools.mjs`.
-- All blog state access goes through `BlogBackendClient` in `mcp/src/backendClient.mjs`, which calls the existing protected backend HTTP API.
+- Tool handlers are thin orchestration wrappers in `mcp/src/tools.ts`.
+- All blog state access goes through `BlogBackendClient` in `mcp/src/backendClient.ts`, which calls the existing protected backend HTTP API.
 - No MCP handler imports backend database/repository packages.
 - `BLOG_MCP_ENABLED` is checked before tool input validation or backend calls.
 - `BLOG_MCP_KILL_SWITCH` is checked before every tool call.

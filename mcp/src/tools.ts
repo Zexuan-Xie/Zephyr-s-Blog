@@ -1,4 +1,4 @@
-import type { ZodRawShape } from "zod";
+import { z, type ZodObject, type ZodRawShape } from "zod";
 import type { BlogMcpConfig } from "./config.js";
 import { assertEnabled } from "./config.js";
 import { summarizeArgs, writeAudit } from "./audit.js";
@@ -24,6 +24,11 @@ export interface ToolDefinition {
   handler: (args: Record<string, unknown>) => Promise<ToolResult>;
 }
 
+const uuidSchema = z.string().uuid();
+const nonEmptyString = z.string().min(1);
+const positiveRevision = z.number().int().positive();
+const contentFormatSchema = z.enum(["markdown", "html_document"]);
+
 function textResult(payload: unknown): ToolResult {
   return { content: [{ type: "text", text: typeof payload === "string" ? payload : JSON.stringify(payload, null, 2) }] };
 }
@@ -32,9 +37,13 @@ function errorResult(error: unknown): ToolResult {
   return { content: [{ type: "text", text: error instanceof Error ? error.message : String(error) }], isError: true };
 }
 
+function requireConfirm(args: { confirm?: boolean }, message: string): void {
+  if (args.confirm !== true) throw new Error(message);
+}
+
 export async function runGuardedTool<T extends Record<string, unknown>>(
   config: BlogMcpConfig,
-  tool: string,
+  toolName: string,
   destructive: boolean,
   args: T,
   operation: () => Promise<ToolResult>,
@@ -43,7 +52,7 @@ export async function runGuardedTool<T extends Record<string, unknown>>(
     assertEnabled(config);
   } catch (error) {
     await writeAudit(config.auditLogPath, {
-      tool,
+      tool: toolName,
       destructive,
       args_summary: summarizeArgs(args),
       result: "refused",
@@ -55,7 +64,7 @@ export async function runGuardedTool<T extends Record<string, unknown>>(
   try {
     const result = await operation();
     await writeAudit(config.auditLogPath, {
-      tool,
+      tool: toolName,
       destructive,
       args_summary: summarizeArgs(args),
       result: "ok",
@@ -63,7 +72,7 @@ export async function runGuardedTool<T extends Record<string, unknown>>(
     return result;
   } catch (error) {
     await writeAudit(config.auditLogPath, {
-      tool,
+      tool: toolName,
       destructive,
       args_summary: summarizeArgs(args),
       result: "error",
@@ -71,6 +80,32 @@ export async function runGuardedTool<T extends Record<string, unknown>>(
     });
     return errorResult(error);
   }
+}
+
+function tool(
+  name: string,
+  title: string,
+  description: string,
+  inputSchema: ZodRawShape,
+  destructive: boolean,
+  handler: (args: Record<string, unknown>) => Promise<ToolResult>,
+): ToolDefinition {
+  return { name, title, description, inputSchema, destructive, handler };
+}
+
+function guarded<T extends ZodRawShape>(
+  config: BlogMcpConfig,
+  client: BlogBackendClient,
+  name: string,
+  destructive: boolean,
+  schema: ZodObject<T>,
+  operation: (api: BlogBackendClient, args: z.infer<ZodObject<T>>) => Promise<unknown>,
+): (args: Record<string, unknown>) => Promise<ToolResult> {
+  return (args) =>
+    runGuardedTool(config, name, destructive, args, async () => {
+      const parsed = schema.parse(args ?? {});
+      return textResult(await operation(client, parsed));
+    });
 }
 
 export function buildToolDefinitions(config: BlogMcpConfig, client: BlogBackendClient): ToolDefinition[] {
