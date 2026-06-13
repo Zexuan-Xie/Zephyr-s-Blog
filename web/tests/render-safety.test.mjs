@@ -50,18 +50,14 @@ test('Packet F reader interactions use API endpoints and login return target', (
   assert.match(apiSource, /Authorization: `Bearer \$\{token\}`/);
 });
 
-test('Packet G assets use public URLs and admin upload/delete helpers', () => {
+test('Packet G assets keep public URLs and admin upload/delete API helpers for later workspace packets', () => {
   const apiSource = readFileSync(new URL('../src/lib/api.ts', import.meta.url), 'utf8');
-  const adminPageSource = readFileSync(new URL('../src/pages/AdminPage.tsx', import.meta.url), 'utf8');
 
   assert.match(filePageSource, /file\.assets\.map/);
   assert.match(filePageSource, /href=\{asset\.public_url\}/);
   assert.match(apiSource, /\/admin\/files\/\$\{encodeURIComponent\(fileId\)\}\/assets/);
   assert.match(apiSource, /\/admin\/assets\/\$\{encodeURIComponent\(assetId\)\}/);
   assert.match(apiSource, /FormData\(\)/);
-  assert.match(adminPageSource, /AssetPanel/);
-  assert.match(adminPageSource, /uploadAsset\(selectedFileId, file\)/);
-  assert.match(adminPageSource, /deleteAsset\(assetId\)/);
 });
 
 
@@ -79,22 +75,18 @@ test('Packet H search page calls search API and renders source badges', () => {
 });
 
 
-test('Packet I admin manager wires tree, lifecycle, asset, and embedding controls', () => {
+test('Stage 2 Author Workspace shell wires protected tree and keeps HTML sandbox isolated to readers', () => {
   const apiSource = readFileSync(new URL('../src/lib/api.ts', import.meta.url), 'utf8');
   const adminPageSource = readFileSync(new URL('../src/pages/AdminPage.tsx', import.meta.url), 'utf8');
 
+  assert.match(apiSource, /fetchAdminTree/);
+  assert.match(apiSource, /\/admin\/tree/);
   assert.match(apiSource, /fetchAdminNode/);
-  assert.match(apiSource, /createAdminNode/);
-  assert.match(apiSource, /updateAdminNode/);
-  assert.match(apiSource, /upsertFileContent/);
-  assert.match(apiSource, /publishFile/);
-  assert.match(apiSource, /unpublishFile/);
-  assert.match(apiSource, /refreshEmbedding/);
-  assert.match(apiSource, /rebuildSearchIndex/);
   assert.match(apiSource, /fetchCurrentUser/);
-  assert.match(adminPageSource, /Tree Manager/);
+  assert.match(adminPageSource, /作者工作台/);
+  assert.match(adminPageSource, /内容树/);
   assert.match(adminPageSource, /Navigate to="\/login\?return_to=%2Fadmin"/);
-  assert.match(adminPageSource, /window\.confirm/);
-  assert.match(adminPageSource, /Published files cannot directly change content_format/);
-  assert.match(adminPageSource, /sandbox="allow-scripts"/);
+  assert.match(adminPageSource, /草稿/);
+  assert.match(adminPageSource, /已发布/);
+  assert.doesNotMatch(adminPageSource, /sandbox="allow-scripts"/);
 });
