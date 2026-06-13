@@ -21,6 +21,8 @@ tags:
   - name: Likes
   - name: Assets
   - name: Admin Tree
+  - name: Admin Versions
+  - name: Admin Preview
   - name: Admin Search
 paths:
   /auth/register:
@@ -160,8 +162,10 @@ paths:
       tags: [Search]
       summary: Hybrid search over published files
       description: >-
-        Search File.name, FileContent.keywords, extracted search_text, and path.
-        Ranking combines full-text retrieval and Qwen/DashScope embedding
+        Search File.name, PublishedContent.keywords, published search_text, and path.
+        Draft autosaves are excluded until Publish copies Current Content into
+        the independent Published Content snapshot. Ranking combines full-text
+        retrieval and Qwen/DashScope embedding
         semantic retrieval with Reciprocal Rank Fusion. No LLM query expansion or
         reranking is performed in this release.
       security: []
@@ -308,12 +312,11 @@ paths:
       tags: [Admin Tree]
       summary: Return the complete protected Author Workspace content tree
       description: >-
-        Admin-only Stage 2 tree used by the Chinese Author Workspace. The
-        response is a flat pre-order list with parent_id links so the client can
-        restore expansion/selection state. It includes every Directory and File,
-        including Draft Files and Published Files; public tree/search/recent
-        APIs remain published-only. Stage 2 publication status values are only
-        draft and published.
+        Admin-only Author Workspace tree. The response is a flat pre-order list
+        with parent_id links so the client can restore expansion/selection
+        state. It includes every Directory and File, including Draft Files,
+        Published Files, and Files with unpublished Current Content. Public
+        tree/search/recent APIs read only Published Content snapshots.
       responses:
         '200':
           description: Complete protected tree
@@ -507,14 +510,38 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '409': { $ref: '#/components/responses/Conflict' }
   /admin/files/{file_id}/content:
-    put:
-      tags: [Admin Tree]
-      summary: Upsert file content and metadata
+    get:
+      tags: [Admin Tree, Admin Versions]
+      summary: Return Current, Previous, and Published Content metadata
       description: >-
-        Draft files may change content_format. Published files cannot change
-        content_format directly; unpublish first. Updating content refreshes
-        search_text and marks embedding_status pending/failed/ready depending on
-        embedding refresh outcome.
+        Admin-only version state for the Author Workspace. Current Content is
+        the autosaved editable draft; Previous Content is the single reversible
+        pre-save slot; Published Content is the stable public snapshot used by
+        public pages, recent lists, comments/likes existence checks, and search.
+      parameters:
+        - $ref: '#/components/parameters/FileId'
+      responses:
+        '200':
+          description: Version state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileVersionState'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Admin Tree, Admin Versions]
+      summary: Save Current Content with optimistic concurrency
+      description: >-
+        Autosave endpoint for Current Content. Clients must send
+        expected_revision from the latest Current Content. A changed save rotates
+        the pre-save Current snapshot into Previous, increments revision, updates
+        last_saved_at, refreshes search_text, and marks embedding_status
+        pending/failed/ready depending on embedding refresh outcome. A no-op save
+        returns the current version without rotating Previous or incrementing
+        revision. Published Content and public search remain unchanged until
+        Publish.
       parameters:
         - $ref: '#/components/parameters/FileId'
       requestBody:
@@ -525,41 +552,159 @@ paths:
               $ref: '#/components/schemas/UpdateFileContentRequest'
       responses:
         '200':
-          description: File content updated
+          description: Current Content saved
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/FileContent'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Revision conflict; client must reload or copy local changes
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example:
+                error: revision conflict
+                details: { reason: revision_conflict, current_revision: 7 }
+  /admin/files/{file_id}/previous/restore:
+    post:
+      tags: [Admin Versions]
+      summary: Restore Previous Content into Current Content
+      description: >-
+        Swaps Current and Previous snapshots, increments Current revision, and
+        leaves Published Content unchanged until Publish.
+      parameters:
+        - $ref: '#/components/parameters/FileId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestorePreviousRequest'
+      responses:
+        '200':
+          description: Current and Previous swapped
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileVersionState'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /admin/files/{file_id}/publish-summary:
+    get:
+      tags: [Admin Tree, Admin Versions, Assets]
+      summary: Preview content and asset changes that Publish will promote
+      parameters:
+        - $ref: '#/components/parameters/FileId'
+      responses:
+        '200':
+          description: Publish summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishSummary'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /admin/files/{file_id}/publish:
     post:
-      tags: [Admin Tree]
-      summary: Publish a draft file
+      tags: [Admin Tree, Admin Versions, Assets]
+      summary: Publish Current Content as an independent public snapshot
+      description: >-
+        Copies Current Content into Published Content, records source_revision,
+        promotes the draft asset set into Published Assets, and updates public
+        visibility atomically. Public pages/search/recent change only after this
+        endpoint succeeds.
       parameters:
         - $ref: '#/components/parameters/FileId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublishFileRequest'
       responses:
         '200':
-          description: File published
+          description: File published from Current Content
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FileContent'
+                $ref: '#/components/schemas/PublishResult'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
   /admin/files/{file_id}/unpublish:
     post:
-      tags: [Admin Tree]
-      summary: Unpublish a file back to draft
+      tags: [Admin Tree, Admin Versions]
+      summary: Hide a file from public routes while retaining Published Content
+      description: >-
+        Removes public visibility from tree/search/recent/asset serving while
+        retaining the last Published Content snapshot and metadata for comparison
+        or later republish. Current and Previous Content are not overwritten.
       parameters:
         - $ref: '#/components/parameters/FileId'
       responses:
         '200':
-          description: File unpublished
+          description: File hidden from public routes
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FileContent'
+                $ref: '#/components/schemas/FileVersionState'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /admin/preview/{file_id}:
+    get:
+      tags: [Admin Preview]
+      summary: Render Draft Preview from saved Current Content
+      description: >-
+        Author-only preview of the latest saved Current Content with draft asset
+        URLs. Anonymous users and Reader accounts must receive 401/403 and must
+        not learn draft content or draft asset metadata. HTML document previews
+        must continue to use an iframe sandbox without allow-same-origin.
+      parameters:
+        - $ref: '#/components/parameters/FileId'
+      responses:
+        '200':
+          description: Draft preview payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftPreview'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /admin/files/{file_id}/assets:
+    get:
+      tags: [Admin Tree, Assets]
+      summary: List draft and published asset states for a file
+      parameters:
+        - $ref: '#/components/parameters/FileId'
+      responses:
+        '200':
+          description: Draft and Published asset state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileAssetState'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
     post:
       tags: [Admin Tree, Assets]
-      summary: Upload an immutable asset for a file (MIME allowlist includes images, PDF, CSS/JS, JSON/text/CSV)
+      summary: Upload a draft asset for Current Content (MIME allowlist includes images, PDF, CSS/JS, JSON/text/CSV)
+      description: >-
+        Uploads are draft-only until Publish promotes the draft asset set. Public
+        /assets routes serve only Published Assets from the last successful
+        Publish.
       parameters:
         - $ref: '#/components/parameters/FileId'
       requestBody:
@@ -575,19 +720,50 @@ paths:
                   format: binary
       responses:
         '201':
-          description: Asset uploaded
+          description: Draft asset uploaded
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/FileAsset'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
   /admin/assets/{asset_id}:
     delete:
       tags: [Admin Tree, Assets]
-      summary: Delete or detach an asset
+      summary: Delete or detach a draft asset
+      description: >-
+        Deleting a draft-only asset removes it. Detaching an asset that still
+        exists in Published Assets must not break current public content before
+        the next Publish or Unpublish.
       parameters:
         - $ref: '#/components/parameters/AssetId'
       responses:
-        '204': { description: Asset deleted or detached }
+        '204': { description: Draft asset deleted or detached }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /admin/assets/{asset_id}/{filename}:
+    get:
+      tags: [Admin Tree, Assets]
+      summary: Return draft asset bytes for Author preview
+      parameters:
+        - $ref: '#/components/parameters/AssetId'
+        - name: filename
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Draft asset bytes for authenticated Author only
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /admin/files/{file_id}/refresh-embedding:
     post:
@@ -713,7 +889,11 @@ components:
       enum: [markdown, html_document]
     PublishStatus:
       type: string
-      enum: [draft, published]
+      enum: [draft, published, unpublished_changes]
+      description: >-
+        Public FileEntry responses expose published only. Admin tree responses
+        use unpublished_changes when Current revision differs from the Published
+        Content source_revision.
     EmbeddingStatus:
       type: string
       enum: [pending, ready, failed]
@@ -753,9 +933,13 @@ components:
         reading_time_minutes: { type: [integer, 'null'], minimum: 1 }
     FileContent:
       type: object
-      required: [node_id, content_format, keywords, body_raw, search_text, status, embedding_status]
+      required: [node_id, revision, content_format, keywords, body_raw, search_text, status, last_saved_at, embedding_status]
       properties:
         node_id: { type: string, format: uuid }
+        revision:
+          type: integer
+          minimum: 1
+          description: Monotonic Current Content revision used for optimistic concurrency.
         content_format: { $ref: '#/components/schemas/ContentFormat' }
         keywords:
           type: array
@@ -767,7 +951,12 @@ components:
           description: Sanitized Markdown HTML cache; null or unused for html_document.
         search_text: { type: string }
         status: { $ref: '#/components/schemas/PublishStatus' }
-        published_at: { type: [string, 'null'], format: date-time }
+        published_at:
+          type: [string, 'null']
+          format: date-time
+          deprecated: true
+          description: Use PublishedContent.published_at for the stable public snapshot.
+        last_saved_at: { type: string, format: date-time }
         embedding: false
         embedding_model: { type: [string, 'null'], example: text-embedding-v4 }
         embedding_status: { $ref: '#/components/schemas/EmbeddingStatus' }
@@ -919,7 +1108,7 @@ components:
 
     FileAsset:
       type: object
-      required: [id, file_node_id, filename, mime_type, size_bytes, storage_provider, public_url, created_at]
+      required: [id, file_node_id, filename, mime_type, size_bytes, storage_provider, public_url, state, created_at]
       properties:
         id: { type: string, format: uuid }
         file_node_id: { type: string, format: uuid }
@@ -929,7 +1118,121 @@ components:
         storage_provider: { type: string, enum: [local, s3, r2, oss] }
         storage_key: { type: string }
         public_url: { type: string }
+        state:
+          type: string
+          enum: [draft, published, draft_and_published]
+        published_asset_id: { type: [string, 'null'], format: uuid }
         created_at: { type: string, format: date-time }
+
+    PublishedContent:
+      type: object
+      required: [node_id, source_revision, content_format, keywords, body_raw, search_text, published_at, visible]
+      properties:
+        node_id: { type: string, format: uuid }
+        source_revision: { type: integer, minimum: 1 }
+        content_format: { $ref: '#/components/schemas/ContentFormat' }
+        keywords:
+          type: array
+          items: { type: string }
+        body_raw: { type: string }
+        body_html: { type: [string, 'null'] }
+        search_text: { type: string }
+        published_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        visible:
+          type: boolean
+          description: False after Unpublish; snapshot is retained but hidden from public routes.
+    PreviousContent:
+      allOf:
+        - $ref: '#/components/schemas/FileContent'
+      description: Single pre-save slot for reversible Current/Previous restore.
+    FileVersionState:
+      type: object
+      required: [current, has_unpublished_changes, draft_assets, published_assets]
+      properties:
+        current: { $ref: '#/components/schemas/FileContent' }
+        previous:
+          anyOf:
+            - $ref: '#/components/schemas/PreviousContent'
+            - type: 'null'
+        published:
+          anyOf:
+            - $ref: '#/components/schemas/PublishedContent'
+            - type: 'null'
+        has_unpublished_changes: { type: boolean }
+        draft_assets:
+          type: array
+          items: { $ref: '#/components/schemas/FileAsset' }
+        published_assets:
+          type: array
+          items: { $ref: '#/components/schemas/FileAsset' }
+    RestorePreviousRequest:
+      type: object
+      required: [expected_revision]
+      properties:
+        expected_revision: { type: integer, minimum: 1 }
+    PublishFileRequest:
+      type: object
+      required: [expected_revision]
+      properties:
+        expected_revision: { type: integer, minimum: 1 }
+    PublishSummary:
+      type: object
+      required: [file_id, current_revision, will_update_content, draft_assets, published_assets, asset_changes]
+      properties:
+        file_id: { type: string, format: uuid }
+        current_revision: { type: integer, minimum: 1 }
+        published_source_revision: { type: [integer, 'null'], minimum: 1 }
+        will_update_content: { type: boolean }
+        draft_assets:
+          type: array
+          items: { $ref: '#/components/schemas/FileAsset' }
+        published_assets:
+          type: array
+          items: { $ref: '#/components/schemas/FileAsset' }
+        asset_changes:
+          type: array
+          items:
+            type: object
+            required: [filename, change]
+            properties:
+              filename: { type: string }
+              change: { type: string, enum: [added, removed, changed, unchanged] }
+    PublishResult:
+      type: object
+      required: [current, published, promoted_assets]
+      properties:
+        current: { $ref: '#/components/schemas/FileContent' }
+        published: { $ref: '#/components/schemas/PublishedContent' }
+        promoted_assets:
+          type: array
+          items: { $ref: '#/components/schemas/FileAsset' }
+    FileAssetState:
+      type: object
+      required: [draft_assets, published_assets]
+      properties:
+        draft_assets:
+          type: array
+          items: { $ref: '#/components/schemas/FileAsset' }
+        published_assets:
+          type: array
+          items: { $ref: '#/components/schemas/FileAsset' }
+    DraftPreview:
+      type: object
+      required: [node, current, html, assets, iframe_sandbox]
+      properties:
+        node: { $ref: '#/components/schemas/Node' }
+        current: { $ref: '#/components/schemas/FileContent' }
+        html:
+          type: string
+          description: Rendered Markdown HTML or safe wrapper metadata for html_document.
+        assets:
+          type: array
+          items: { $ref: '#/components/schemas/FileAsset' }
+        iframe_sandbox:
+          type: string
+          example: allow-scripts
+          description: Must not include allow-same-origin.
 
     CreateNodeRequest:
       type: object
@@ -957,8 +1260,12 @@ components:
           description: Explicit Author-edited URL Path segment or absolute path; never silently rewritten.
     UpdateFileContentRequest:
       type: object
-      required: [content_format, body_raw, keywords]
+      required: [expected_revision, content_format, body_raw, keywords]
       properties:
+        expected_revision:
+          type: integer
+          minimum: 1
+          description: Latest Current Content revision observed by the client.
         content_format: { $ref: '#/components/schemas/ContentFormat' }
         body_raw: { type: string }
         keywords:
@@ -991,9 +1298,9 @@ components:
         url_path: { type: string, example: /研究/笔记 }
         sort_order: { type: integer }
         status:
-          type: string
-          enum: [draft, published]
-          description: Stage 2 exposes only draft/published; unpublished-change states are Stage 3.
+          $ref: '#/components/schemas/PublishStatus'
+        current_revision: { type: [integer, 'null'], minimum: 1 }
+        published_source_revision: { type: [integer, 'null'], minimum: 1 }
         content_format:
           anyOf:
             - $ref: '#/components/schemas/ContentFormat'
@@ -1100,7 +1407,7 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
     Conflict:
-      description: Conflict, such as duplicate slug or email
+      description: Conflict, such as duplicate slug/email, lost update, revision conflict, or blocked publication
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
