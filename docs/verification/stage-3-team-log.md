@@ -1,6 +1,6 @@
 # Stage 3 Team Log
 
-Status: Gateway 0 PASS; Gateway 1 PASS; Gateway 2 complete; Gateway 3 backend HTTP/Draft Preview in progress
+Status: Gateway 0 PASS; Gateway 1 PASS; Gateway 2/3/4 complete; security implementation review REVISE; backend repair task 14 in progress
 
 Team: `execute-aeolian-blog-a98ab708`
 Coordinator: `worker-1`
@@ -90,10 +90,10 @@ Required red-test topics:
 | Worker | Lane | Current task focus | Status |
 |---|---|---|---|
 | worker-1 | coordinator / gateway | Task 2 evidence ledger and orchestration | in progress |
-| worker-2 | backend | Gateway 3 HTTP APIs and Draft Preview | in progress |
-| worker-3 | frontend | Gateway 4 readiness complete; production UI blocked on Gateway 3 APIs | blocked/in progress |
+| worker-2 | backend | Task 14 backend security REVISE repair | in progress |
+| worker-3 | frontend | Gateway 4 frontend implementation complete | completed |
 | worker-4 | acceptance / verifier | Gateway 1 PASS recorded; downstream fixture gaps pending later implementation | pending |
-| worker-5 | security / review | Gateway 1 security review complete; later implementation review pending | pending |
+| worker-5 | security / review | Task 12 security implementation review REVISE; re-review pending repair | pending |
 
 ## Subagent probes integrated by coordinator
 
@@ -210,6 +210,41 @@ Policy check before this update:
 ```text
 PASS git status/node_modules policy precheck: clean and no tracked web/node_modules.
 ```
+
+
+## Coordinator ledger update — 2026-06-13 23:20 CST
+
+Verdict: **Gateway 4 integrated; security review REVISE; backend repair active**
+
+Current integrated leader HEAD observed by worker-1: `0210285`.
+
+Task state changes since the previous coordinator update:
+
+- Task 10 (Gateway 3 backend HTTP APIs and Draft Preview): **completed**. Worker-2 reported route/handler exposure for version state, Previous restore, publish summary/publish/unpublish snapshot semantics, Draft Preview, asset state list, protected draft asset bytes, and 409 `revision_conflict` mapping.
+- Task 4 (Gateway 4 frontend implementation): **completed**. Worker-3 reported autosave/version state, 15s debounce and blur saves, conflict actions, Current/Previous compare and restore, publish summary, Draft Preview iframe sandbox, and draft/published asset panels. Frontend gates passed and `allow-same-origin` was not introduced.
+- Task 12 (security implementation review): **failed / REVISE**. Findings are recorded in `docs/verification/stage-3-security.md` at `0210285`.
+- Task 14 (backend repair for security REVISE findings): **in_progress** on worker-2. This is the active blocker before final acceptance/security closeout.
+- Task 2 ownership was repaired back to worker-1; claim token observed in task file/API state.
+
+Security REVISE repair scope from task 14:
+
+1. Public asset route must deny draft-only assets until Publish promotes them.
+2. Publish must require positive `expected_revision`; invalid JSON must be 400.
+3. Comments/likes public file visibility must use `published_file_contents.visible`, not mutable `file_contents.status`.
+4. `revision_conflict` responses must include `current_revision`.
+5. Public File DTO must not expose mutable Current `FileContent` metadata.
+6. Unpublish needs expected revision/version or a documented/tested atomic safe alternative.
+
+Coordinator verification and policy evidence:
+
+```text
+PASS mailbox: messages 21eb171d and 49c66553 read; 21eb171d delivered; 49c66553 delivered; leader ACK sent.
+PASS task state: task 4 completed, task 10 completed, task 12 failed/REVISE, task 14 in_progress, task 2 owned/claimed by worker-1.
+PASS backend full gate before this REVISE checkpoint: on integrated HEAD db1633c, cd api && CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go test -count=1 ./...; go vet ./...; gofmt scan all passed.
+PASS artifact policy pre-edit: git status --short clean; git ls-files -s web/node_modules empty.
+```
+
+Coordinator decision: keep Task 2 open. Final acceptance/security closeout is blocked on task 14 repair plus security re-review.
 
 ## Verification
 

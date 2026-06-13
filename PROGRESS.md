@@ -1,19 +1,21 @@
 # Progress
 
-Last updated: 2026-06-13 22:47 CST
+Last updated: 2026-06-13 23:20 CST
 
 ## Current breakpoint
 
-Stage 3 is active on Team `execute-aeolian-blog-a98ab708` from protected Stage 2 checkpoint `73bcc9e` (`checkpoint: stage 2 polish before stage 3`). Current integrated leader HEAD observed by the coordinator worktree: `9599c4e`.
+Stage 3 is active on Team `execute-aeolian-blog-a98ab708` from protected Stage 2 checkpoint `73bcc9e` (`checkpoint: stage 2 polish before stage 3`). Current integrated leader HEAD observed by the coordinator worktree: `0210285`.
 
 Gateway status:
 
 - **Gateway 0 — PASS.** Stage 2 checkpoint protected; pre-schema backup/restore proof recorded in `docs/verification/stage-3-team-log.md`.
 - **Gateway 1 — PASS.** Contract acceptance review task 11 completed with downstream fixture/watch items recorded in `docs/verification/stage-3-acceptance.md`.
-- **Gateway 2 — complete enough to unblock Gateway 3.** Worker-2 task 9 completed core migration/publication model; coordinator re-smoke on latest integrated HEAD no longer shows the earlier `listFileAssetsByState`/`FileAsset.State` failure.
-- **Gateway 3 — in progress.** Worker-2 task 10 is implementing backend HTTP APIs and Draft Preview. Frontend Gateway 4 remains blocked on task 10.
+- **Gateway 2 — complete.** Worker-2 task 9 completed core migration/publication model.
+- **Gateway 3 — complete.** Worker-2 task 10 completed backend HTTP APIs, Draft Preview, asset state routes, protected draft asset bytes, and revision-conflict mapping; coordinator backend full gate passed on integrated HEAD `db1633c` before the later security review checkpoint.
+- **Gateway 4 — complete.** Worker-3 task 4 completed the frontend autosave/version/publish/preview/assets UI; frontend red contract is green and no `allow-same-origin` was introduced.
+- **Security implementation review — REVISE.** Task 12 failed/revised with findings recorded in `docs/verification/stage-3-security.md` at `0210285`; backend repair task 14 is in progress on worker-2.
 
-Current verification note (2026-06-13 22:47 CST): backend full gate on integrated HEAD `9599c4e` still **FAILS** only in Gateway 3 route exposure tests: `GET /api/admin/files/{id}/content` returns 405 instead of 200 and reader Draft Preview route returns 404 instead of 403. Coordinator reported this as task 10 boundary monitoring and did not edit backend code.
+Current verification note (2026-06-13 23:20 CST): task 14 is the active blocking repair for final acceptance/security. Do not start closeout or final acceptance until the backend REVISE findings are repaired and security re-review passes.
 
 
 Evidence ledger:
@@ -55,9 +57,9 @@ npm run build
 
 ## Immediate next steps
 
-1. Monitor worker-2 task 10 (Gateway 3 HTTP/Draft Preview APIs) until backend route exposure tests pass.
-2. Keep frontend Gateway 4 blocked from production UI changes until task 10 completes; then unblock/assign implementation work.
-3. Prepare security task 12 after Gateway 3 and later MCP/backend slices land.
+1. Monitor worker-2 task 14 backend repair for the security REVISE findings.
+2. After task 14 completes, trigger/monitor focused security re-review before acceptance closeout.
+3. Keep acceptance/security on integrated SHAs only; final acceptance remains blocked while task 14 is in progress.
 4. Keep `PROGRESS.md` and `docs/verification/stage-3-team-log.md` synchronized after each integration or gate decision.
 
 ## Previous notes
