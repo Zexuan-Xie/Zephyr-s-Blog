@@ -1,0 +1,107 @@
+# Desktop browser smoke
+date: 2026-06-13T15:05:25+08:00
+head: eb543dae28140eae042abd11b84c1a4457c2d202
+Opening Author Workspace with seeded admin token.
+✓ xLab Blog
+  http://127.0.0.1:5173/admin
+null
+✓ Done
+
+## URL/title
+http://127.0.0.1:5173/login?return_to=%2Fadmin
+xLab Blog
+
+## snapshot interactive
+- generic "xLab BlogRecentDirectoryAuthorContent TreeDirectories & filesdirectory/researchdirectory/smoke-notes" [ref=e1] clickable [onclick]
+  - navigation "Primary navigation" [ref=e2]
+    - link "xLab Blog root" [ref=e3]
+    - link "Recent" [ref=e7]
+    - textbox "Search files" [ref=e8]
+    - button "Directory" [ref=e4]
+    - link "Author" [ref=e5]
+  - heading "Welcome back" [level=1, ref=e6]
+  - textbox "Email" [required, ref=e9]
+  - textbox "Password" [required, ref=e10]
+  - button "Log in" [ref=e11]
+  - link "Register" [ref=e12]
+
+## visible text
+"xLab Blog\nRecent\nDirectory\nAuthor\n\nLOGIN\n\nWelcome back\nLog in\n\nNeed an account? Register"
+
+## console/network maybe
+[B8C7D28AE8FD424792842911E8A98101] GET http://127.0.0.1:5173/admin (Document) 200
+[1082333.2] GET http://127.0.0.1:5173/@vite/client (Script) 200
+[1082333.3] GET http://127.0.0.1:5173/src/main.tsx (Script) 200
+[1082333.6] GET http://127.0.0.1:5173/@react-refresh (Script) 200
+[1082333.7] GET http://127.0.0.1:5173/node_modules/.vite/deps/react.js?v=fb063670 (Script) 200
+[1082333.8] GET http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=fb063670 (Script) 200
+[1082333.9] GET http://127.0.0.1:5173/node_modules/.vite/deps/@tanstack_react-query.js?v=fb063670 (Script) 200
+[1082333.10] GET http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=fb063670 (Script) 200
+[1082333.11] GET http://127.0.0.1:5173/src/App.tsx (Script) 200
+[1082333.12] GET http://127.0.0.1:5173/src/styles/glass.css (Script) 200
+[1082333.13] GET http://127.0.0.1:5173/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=fb063670 (Script) 200
+[1082333.14] GET http://127.0.0.1:5173/node_modules/.vite/deps/chunk-B-1-B7_t.js?v=fb063670 (Script) 200
+[1082333.15] GET http://127.0.0.1:5173/node_modules/.vite/deps/react_jsx-runtime.js?v=fb063670 (Script) 200
+[1082333.16] GET http://127.0.0.1:5173/src/components/DirectoryDrawer.tsx (Script) 200
+[1082333.17] GET http://127.0.0.1:5173/src/components/GlassNav.tsx (Script) 200
+[1082333.18] GET http://127.0.0.1:5173/src/lib/api.ts (Script) 200
+[1082333.19] GET http://127.0.0.1:5173/src/lib/auth.ts (Script) 200
+[1082333.20] GET http://127.0.0.1:5173/src/pages/AdminPage.tsx (Script) 200
+[1082333.21] GET http://127.0.0.1:5173/src/pages/AuthPages.tsx (Script) 200
+[1082333.22] GET http://127.0.0.1:5173/src/pages/ContentResolverPage.tsx (Script) 200
+[1082333.23] GET http://127.0.0.1:5173/src/pages/RecentPage.tsx (Script) 200
+[1082333.24] GET http://127.0.0.1:5173/src/pages/RootPage.tsx (Script) 200
+[1082333.25] GET http://127.0.0.1:5173/src/pages/SearchPage.tsx (Script) 200
+[1082333.26] GET http://127.0.0.1:5173/node_modules/.vite/deps/react-dom.js?v=fb063670 (Script) 200
+[1082333.27] GET http://127.0.0.1:5173/node_modules/.vite/deps/lucide-react.js?v=fb063670 (Script) 200
+[1082333.28] GET http://127.0.0.1:5173/node_modules/.vite/deps/zod.js?v=fb063670 (Script) 200
+[1082333.29] GET http://127.0.0.1:5173/src/components/FilePage.tsx (Script) 200
+[1082333.30] GET http://127.0.0.1:5173/src/pages/DirectoryPage.tsx (Script) 200
+[1082333.31] GET http://127.0.0.1:5173/src/components/ContentEntryCard.tsx (Script) 200
+[1082333.32] GET http://127.0.0.1:5173/node_modules/vite/dist/client/env.mjs (Script) 200
+[1082333.34] GET http://127.0.0.1:5173/src/lib/renderMarkdown.ts (Script) 200
+[1082333.35] GET http://127.0.0.1:5173/src/components/Breadcrumb.tsx (Script) 200
+[1082333.36] GET http://127.0.0.1:5173/node_modules/.vite/deps/dompurify.js?v=fb063670 (Script) 200
+[1082333.37] GET http://127.0.0.1:5173/node_modules/.vite/deps/marked.js?v=fb063670 (Script) 200
+[1082333.38] GET data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E (Image) 200
+[1082333.39] GET http://127.0.0.1:5173/api/tree (Fetch) 200
+[1082333.40] GET http://127.0.0.1:5173/favicon.ico (Other) 404
+[1082333.41] GET http://127.0.0.1:5173/favicon.ico (Other) 404
+[DE6CAE5115E41003F7D57FC34BB4BBD1] GET http://127.0.0.1:5173/login?return_to=%2Fadmin (Document) 200
+[1082333.43] GET http://127.0.0.1:5173/@vite/client (Script) 304
+[1082333.44] GET http://127.0.0.1:5173/src/main.tsx (Script) 304
+[1082333.47] GET http://127.0.0.1:5173/@react-refresh (Script) 304
+[1082333.48] GET http://127.0.0.1:5173/node_modules/vite/dist/client/env.mjs (Script) 304
+[1082333.49] GET http://127.0.0.1:5173/node_modules/.vite/deps/react.js?v=fb063670 (Script) 200
+[1082333.50] GET http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=fb063670 (Script) 200
+[1082333.51] GET http://127.0.0.1:5173/node_modules/.vite/deps/@tanstack_react-query.js?v=fb063670 (Script) 200
+[1082333.52] GET http://127.0.0.1:5173/node_modules/.vite/deps/react-router-dom.js?v=fb063670 (Script) 200
+[1082333.53] GET http://127.0.0.1:5173/src/App.tsx (Script) 304
+[1082333.54] GET http://127.0.0.1:5173/src/styles/glass.css (Script) 304
+[1082333.55] GET http://127.0.0.1:5173/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=fb063670 (Script) 200
+[1082333.56] GET http://127.0.0.1:5173/node_modules/.vite/deps/chunk-B-1-B7_t.js?v=fb063670 (Script) 200
+[1082333.57] GET http://127.0.0.1:5173/node_modules/.vite/deps/react-dom.js?v=fb063670 (Script) 200
+[1082333.58] GET http://127.0.0.1:5173/node_modules/.vite/deps/react_jsx-runtime.js?v=fb063670 (Script) 200
+[1082333.60] GET http://127.0.0.1:5173/src/components/DirectoryDrawer.tsx (Script) 304
+[1082333.61] GET http://127.0.0.1:5173/src/components/GlassNav.tsx (Script) 304
+[1082333.62] GET http://127.0.0.1:5173/src/lib/api.ts (Script) 304
+[1082333.63] GET http://127.0.0.1:5173/src/lib/auth.ts (Script) 304
+[1082333.64] GET http://127.0.0.1:5173/src/pages/AdminPage.tsx (Script) 304
+[1082333.65] GET http://127.0.0.1:5173/src/pages/AuthPages.tsx (Script) 304
+[1082333.66] GET http://127.0.0.1:5173/src/pages/ContentResolverPage.tsx (Script) 304
+[1082333.67] GET http://127.0.0.1:5173/src/pages/RecentPage.tsx (Script) 304
+[1082333.68] GET http://127.0.0.1:5173/src/pages/RootPage.tsx (Script) 304
+[1082333.69] GET http://127.0.0.1:5173/src/pages/SearchPage.tsx (Script) 304
+[1082333.70] GET http://127.0.0.1:5173/node_modules/.vite/deps/lucide-react.js?v=fb063670 (Script) 200
+[1082333.71] GET http://127.0.0.1:5173/node_modules/.vite/deps/zod.js?v=fb063670 (Script) 200
+[1082333.72] GET http://127.0.0.1:5173/src/components/FilePage.tsx (Script) 304
+[1082333.73] GET http://127.0.0.1:5173/src/pages/DirectoryPage.tsx (Script) 304
+[1082333.74] GET http://127.0.0.1:5173/src/components/ContentEntryCard.tsx (Script) 304
+[1082333.75] GET http://127.0.0.1:5173/src/lib/renderMarkdown.ts (Script) 304
+[1082333.76] GET http://127.0.0.1:5173/src/components/Breadcrumb.tsx (Script) 304
+[1082333.77] GET http://127.0.0.1:5173/node_modules/.vite/deps/dompurify.js?v=fb063670 (Script) 200
+[1082333.78] GET http://127.0.0.1:5173/node_modules/.vite/deps/marked.js?v=fb063670 (Script) 200
+[1082333.79] GET data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E (Image) 200
+[1082333.80] GET http://127.0.0.1:5173/api/tree (Fetch) 200
+[1082333.81] GET http://127.0.0.1:5173/api/auth/me (Fetch) 200
+✓ Screenshot saved to docs/verification/stage-2-browser-20260613/desktop-admin-smoke-eb543da.png
