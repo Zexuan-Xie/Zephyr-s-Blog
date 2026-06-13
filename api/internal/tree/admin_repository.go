@@ -213,15 +213,12 @@ func recordPathChangeInTransaction(ctx context.Context, tx pgx.Tx, current Node,
 
 	if updated.Kind == NodeKindFile {
 		var status PublishStatus
-		err := tx.QueryRow(ctx, `select status from file_contents where node_id = $1`, updated.ID).Scan(&status)
+		err := tx.QueryRow(ctx, `select 'published'::text from published_file_contents where node_id = $1 and visible`, updated.ID).Scan(&status)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil
 		}
 		if err != nil {
 			return err
-		}
-		if status != PublishStatusPublished {
-			return nil
 		}
 		if err := updateRedirectTargetsInTransaction(ctx, tx, updated.ID, newPath); err != nil {
 			return err
@@ -232,7 +229,7 @@ func recordPathChangeInTransaction(ctx context.Context, tx pgx.Tx, current Node,
 	const query = nodePathsCTE + `
 		select paths.id, paths.path
 		from node_paths paths
-		join file_contents fc on fc.node_id = paths.id and fc.status = 'published'
+		join published_file_contents pfc on pfc.node_id = paths.id and pfc.visible
 		where paths.path like (
 			select directory.path || '/%' from node_paths directory where directory.id = $1
 		)

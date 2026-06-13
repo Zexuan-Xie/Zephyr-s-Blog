@@ -54,17 +54,17 @@ func (r *SQLRepository) DirectoryPage(ctx context.Context, parentID *uuid.UUID) 
 			), 0) as child_directory_count,
 			coalesce((
 				select count(*) from nodes child
-				join file_contents child_fc on child_fc.node_id = child.id and child_fc.status = 'published'
+				join published_file_contents child_pfc on child_pfc.node_id = child.id and child_pfc.visible
 				where child.parent_id = p.id and child.kind = 'file'
 			), 0) as child_file_count,
-			fc.content_format, fc.status, coalesce(fc.keywords, '{}'::text[]) as keywords, fc.published_at,
+			pfc.content_format, 'published'::text as status, coalesce(pfc.keywords, '{}'::text[]) as keywords, pfc.published_at,
 			coalesce((select count(*) from likes l where l.target_type = 'file' and l.target_id = p.id), 0) as like_count,
 			coalesce((select count(*) from comments c where c.file_node_id = p.id and c.deleted_at is null), 0) as comment_count,
-			fc.search_text
+			pfc.search_text
 		from node_paths p
-		left join file_contents fc on fc.node_id = p.id
+		left join published_file_contents pfc on pfc.node_id = p.id and pfc.visible
 		where (($1::uuid is null and p.parent_id is null) or p.parent_id = $1::uuid)
-			and (p.kind = 'directory' or fc.status = 'published')
+			and (p.kind = 'directory' or pfc.node_id is not null)
 		order by p.kind, p.sort_order, p.name, p.slug`
 
 	rows, err := r.pool.Query(ctx, query, parentArg)
@@ -90,13 +90,13 @@ func (r *SQLRepository) DirectoryPage(ctx context.Context, parentID *uuid.UUID) 
 
 func (r *SQLRepository) FilePage(ctx context.Context, node Node) (FilePage, error) {
 	const query = `
-		select fc.node_id, fc.content_format, fc.keywords, fc.body_raw, fc.body_html, fc.search_text,
-			fc.status, fc.published_at, fc.embedding_model, fc.embedding_status, fc.embedding_error,
-			fc.embedding_updated_at,
-			coalesce((select count(*) from likes l where l.target_type = 'file' and l.target_id = fc.node_id), 0) as like_count,
-			coalesce((select count(*) from comments c where c.file_node_id = fc.node_id and c.deleted_at is null), 0) as comment_count
-		from file_contents fc
-		where fc.node_id = $1 and fc.status = 'published'`
+		select pfc.node_id, pfc.source_revision, pfc.content_format, pfc.keywords, pfc.body_raw, pfc.body_html, pfc.search_text,
+			'published'::text as status, pfc.published_at, pfc.updated_at as last_saved_at, pfc.embedding_model, pfc.embedding_status, pfc.embedding_error,
+			pfc.embedding_updated_at,
+			coalesce((select count(*) from likes l where l.target_type = 'file' and l.target_id = pfc.node_id), 0) as like_count,
+			coalesce((select count(*) from comments c where c.file_node_id = pfc.node_id and c.deleted_at is null), 0) as comment_count
+		from published_file_contents pfc
+		where pfc.node_id = $1 and pfc.visible`
 
 	content, likeCount, commentCount, err := scanFilePageContent(r.pool.QueryRow(ctx, query, node.ID))
 	if err != nil {
@@ -105,7 +105,7 @@ func (r *SQLRepository) FilePage(ctx context.Context, node Node) (FilePage, erro
 		}
 		return FilePage{}, err
 	}
-	assets, err := r.listFileAssets(ctx, node.ID)
+	assets, err := r.listFileAssetsByState(ctx, node.ID, true)
 	if err != nil {
 		return FilePage{}, err
 	}
@@ -143,7 +143,7 @@ func (r *SQLRepository) RedirectPath(ctx context.Context, oldPath string) (strin
 		select pr.new_path
 		from path_redirects pr
 		join nodes n on n.id = pr.node_id and n.kind = 'file'
-		join file_contents fc on fc.node_id = n.id and fc.status = 'published'
+		join published_file_contents pfc on pfc.node_id = n.id and pfc.visible
 		where pr.old_path = $1`
 	var newPath string
 	if err := r.pool.QueryRow(ctx, query, oldPath).Scan(&newPath); err != nil {
@@ -271,6 +271,7 @@ func scanFilePageContent(row rowScanner) (FileContent, int, int, error) {
 	var commentCount int
 	if err := row.Scan(
 		&content.NodeID,
+		&content.Revision,
 		&contentFormat,
 		&content.Keywords,
 		&content.BodyRaw,
@@ -278,6 +279,7 @@ func scanFilePageContent(row rowScanner) (FileContent, int, int, error) {
 		&content.SearchText,
 		&status,
 		&publishedAt,
+		&content.LastSavedAt,
 		&embeddingModel,
 		&embeddingStatus,
 		&embeddingError,
@@ -324,11 +326,18 @@ func readingTimeMinutes(text string) int {
 }
 
 func (r *SQLRepository) listFileAssets(ctx context.Context, fileID uuid.UUID) ([]FileAsset, error) {
-	const query = `
-		select id, file_node_id, filename, mime_type, size_bytes, storage_provider, storage_key, created_at
+	return r.listFileAssetsByState(ctx, fileID, false)
+}
+
+func (r *SQLRepository) listFileAssetsByState(ctx context.Context, fileID uuid.UUID, publishedOnly bool) ([]FileAsset, error) {
+	query := `
+		select id, file_node_id, filename, mime_type, size_bytes, storage_provider, storage_key, state, published_asset_id, created_at
 		from file_assets
-		where file_node_id = $1
-		order by created_at, filename`
+		where file_node_id = $1`
+	if publishedOnly {
+		query += ` and state in ('published','draft_and_published')`
+	}
+	query += ` order by created_at, filename`
 	rows, err := r.pool.Query(ctx, query, fileID)
 	if err != nil {
 		return nil, err
@@ -355,6 +364,8 @@ func scanFileAsset(row rowScanner) (FileAsset, error) {
 		&asset.SizeBytes,
 		&asset.StorageProvider,
 		&asset.StorageKey,
+		&asset.State,
+		&asset.PublishedAssetID,
 		&asset.CreatedAt,
 	); err != nil {
 		return FileAsset{}, err

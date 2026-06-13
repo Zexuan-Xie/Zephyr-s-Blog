@@ -39,22 +39,21 @@ func (r *SQLRepository) FullText(ctx context.Context, query string, limit int) (
 	const sqlQuery = searchNodePathsCTE + `,
 	query_terms as (select websearch_to_tsquery('simple', $1) as q)
 	select p.id, p.parent_id, p.kind, p.name, p.slug, p.path, p.sort_order, p.created_at, p.updated_at,
-		fc.content_format, fc.status, coalesce(fc.keywords, '{}'::text[]) as keywords, fc.published_at,
+		pfc.content_format, 'published'::text as status, coalesce(pfc.keywords, '{}'::text[]) as keywords, pfc.published_at,
 		coalesce((select count(*) from likes l where l.target_type = 'file' and l.target_id = p.id), 0) as like_count,
 		coalesce((select count(*) from comments c where c.file_node_id = p.id and c.deleted_at is null), 0) as comment_count,
-		fc.search_text,
-		ts_headline('simple', concat_ws(' ', p.name, p.path, array_to_string(fc.keywords, ' '), fc.search_text), query_terms.q,
+		pfc.search_text,
+		ts_headline('simple', concat_ws(' ', p.name, p.path, array_to_string(pfc.keywords, ' '), pfc.search_text), query_terms.q,
 			'StartSel=<mark>, StopSel=</mark>, MaxWords=28, MinWords=8') as snippet,
 		ts_rank((setweight(to_tsvector('simple', coalesce(p.name, '')), 'A') ||
-			setweight(to_tsvector('simple', coalesce(p.path, '')), 'A') || fc.search_vector), query_terms.q) as rank_score,
-		exists(select 1 from unnest(fc.keywords) kw where lower(kw) like '%' || lower($1) || '%') as keyword_match
+			setweight(to_tsvector('simple', coalesce(p.path, '')), 'A') || pfc.search_vector), query_terms.q) as rank_score,
+		exists(select 1 from unnest(pfc.keywords) kw where lower(kw) like '%' || lower($1) || '%') as keyword_match
 	from node_paths p
-	join file_contents fc on fc.node_id = p.id
+	join published_file_contents pfc on pfc.node_id = p.id and pfc.visible
 	cross join query_terms
 	where p.kind = 'file'
-		and fc.status = 'published'
 		and ((setweight(to_tsvector('simple', coalesce(p.name, '')), 'A') ||
-			setweight(to_tsvector('simple', coalesce(p.path, '')), 'A') || fc.search_vector) @@ query_terms.q)
+			setweight(to_tsvector('simple', coalesce(p.path, '')), 'A') || pfc.search_vector) @@ query_terms.q)
 	order by rank_score desc, fc.published_at desc nulls last, p.name
 	limit $2`
 	rows, err := r.pool.Query(ctx, sqlQuery, query, limit)
@@ -68,20 +67,19 @@ func (r *SQLRepository) FullText(ctx context.Context, query string, limit int) (
 func (r *SQLRepository) Semantic(ctx context.Context, vector string, limit int) ([]Candidate, error) {
 	const sqlQuery = searchNodePathsCTE + `
 	select p.id, p.parent_id, p.kind, p.name, p.slug, p.path, p.sort_order, p.created_at, p.updated_at,
-		fc.content_format, fc.status, coalesce(fc.keywords, '{}'::text[]) as keywords, fc.published_at,
+		pfc.content_format, 'published'::text as status, coalesce(pfc.keywords, '{}'::text[]) as keywords, pfc.published_at,
 		coalesce((select count(*) from likes l where l.target_type = 'file' and l.target_id = p.id), 0) as like_count,
 		coalesce((select count(*) from comments c where c.file_node_id = p.id and c.deleted_at is null), 0) as comment_count,
-		fc.search_text,
-		left(fc.search_text, 240) as snippet,
-		(1 - (fc.embedding <=> $1::vector))::float8 as rank_score,
+		pfc.search_text,
+		left(pfc.search_text, 240) as snippet,
+		(1 - (pfc.embedding <=> $1::vector))::float8 as rank_score,
 		false as keyword_match
 	from node_paths p
-	join file_contents fc on fc.node_id = p.id
+	join published_file_contents pfc on pfc.node_id = p.id and pfc.visible
 	where p.kind = 'file'
-		and fc.status = 'published'
-		and fc.embedding_status = 'ready'
-		and fc.embedding is not null
-	order by fc.embedding <=> $1::vector asc, fc.published_at desc nulls last, p.name
+		and pfc.embedding_status = 'ready'
+		and pfc.embedding is not null
+	order by pfc.embedding <=> $1::vector asc, fc.published_at desc nulls last, p.name
 	limit $2`
 	rows, err := r.pool.Query(ctx, sqlQuery, vector, limit)
 	if err != nil {
@@ -93,9 +91,9 @@ func (r *SQLRepository) Semantic(ctx context.Context, vector string, limit int) 
 
 func (r *SQLRepository) EmbeddingInput(ctx context.Context, fileID uuid.UUID) (EmbeddingInput, error) {
 	const query = searchNodePathsCTE + `
-	select p.id, p.name, p.path, coalesce(fc.keywords, '{}'::text[]) as keywords, fc.search_text
+	select p.id, p.name, p.path, coalesce(fc.keywords, '{}'::text[]) as keywords, pfc.search_text
 	from node_paths p
-	join file_contents fc on fc.node_id = p.id
+	join published_file_contents pfc on pfc.node_id = p.id and pfc.visible
 	where p.id = $1 and p.kind = 'file'`
 	input, err := scanEmbeddingInput(r.pool.QueryRow(ctx, query, fileID))
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -106,9 +104,9 @@ func (r *SQLRepository) EmbeddingInput(ctx context.Context, fileID uuid.UUID) (E
 
 func (r *SQLRepository) PublishedEmbeddingInputs(ctx context.Context) ([]EmbeddingInput, error) {
 	const query = searchNodePathsCTE + `
-	select p.id, p.name, p.path, coalesce(fc.keywords, '{}'::text[]) as keywords, fc.search_text
+	select p.id, p.name, p.path, coalesce(fc.keywords, '{}'::text[]) as keywords, pfc.search_text
 	from node_paths p
-	join file_contents fc on fc.node_id = p.id
+	join published_file_contents pfc on pfc.node_id = p.id and pfc.visible
 	where p.kind = 'file' and fc.status = 'published'
 	order by p.path`
 	rows, err := r.pool.Query(ctx, query)
@@ -129,7 +127,7 @@ func (r *SQLRepository) PublishedEmbeddingInputs(ctx context.Context) ([]Embeddi
 
 func (r *SQLRepository) SetEmbeddingReady(ctx context.Context, fileID uuid.UUID, model string, embedding []float32) (EmbeddingState, error) {
 	const query = `
-	update file_contents
+	update published_file_contents
 	set embedding = $2::vector,
 		embedding_model = $3,
 		embedding_status = 'ready',
@@ -146,7 +144,7 @@ func (r *SQLRepository) SetEmbeddingReady(ctx context.Context, fileID uuid.UUID,
 
 func (r *SQLRepository) SetEmbeddingFailed(ctx context.Context, fileID uuid.UUID, model string, message string) (EmbeddingState, error) {
 	const query = `
-	update file_contents
+	update published_file_contents
 	set embedding = null,
 		embedding_model = $2,
 		embedding_status = 'failed',

@@ -43,14 +43,14 @@ func (r *SQLRepository) RecentFiles(ctx context.Context, limit, offset int) ([]F
 		select p.id, p.parent_id, p.kind, p.name, p.slug, p.path, p.sort_order, p.created_at, p.updated_at,
 			0 as child_directory_count,
 			0 as child_file_count,
-			fc.content_format, fc.status, coalesce(fc.keywords, '{}'::text[]) as keywords, fc.published_at,
+			pfc.content_format, 'published'::text as status, coalesce(pfc.keywords, '{}'::text[]) as keywords, pfc.published_at,
 			coalesce((select count(*) from likes l where l.target_type = 'file' and l.target_id = p.id), 0) as like_count,
 			coalesce((select count(*) from comments c where c.file_node_id = p.id and c.deleted_at is null), 0) as comment_count,
-			fc.search_text
+			pfc.search_text
 		from node_paths p
-		join file_contents fc on fc.node_id = p.id
-		where p.kind = 'file' and fc.status = 'published'
-		order by p.updated_at desc, fc.published_at desc nulls last, p.name
+		join published_file_contents pfc on pfc.node_id = p.id and pfc.visible
+		where p.kind = 'file'
+		order by pfc.updated_at desc, pfc.published_at desc nulls last, p.name
 		limit $1 offset $2`
 	rows, err := r.pool.Query(ctx, query, limit, offset)
 	if err != nil {
