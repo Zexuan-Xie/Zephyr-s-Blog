@@ -1,0 +1,15 @@
+?   	xlab-blog/api/cmd/server	[no test files]
+ok  	xlab-blog/api/internal/assets	0.005s
+ok  	xlab-blog/api/internal/auth	0.584s
+ok  	xlab-blog/api/internal/comments	0.004s
+ok  	xlab-blog/api/internal/config	0.003s
+?   	xlab-blog/api/internal/db	[no test files]
+ok  	xlab-blog/api/internal/http	0.007s
+ok  	xlab-blog/api/internal/http/handlers	0.092s
+ok  	xlab-blog/api/internal/http/middleware	0.004s
+?   	xlab-blog/api/internal/http/respond	[no test files]
+ok  	xlab-blog/api/internal/likes	0.003s
+ok  	xlab-blog/api/internal/render	0.005s
+ok  	xlab-blog/api/internal/search	0.028s
+ok  	xlab-blog/api/internal/tree	0.003s
+ok  	xlab-blog/api/internal/users	0.002s
