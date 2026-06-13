@@ -1,6 +1,6 @@
 # Stage 3 Gateway 6 MCP Skeleton Evidence
 
-Status: **in progress**
+Status: **PASS (leader repaired dependency/runtime issues)**
 
 Task: 16 — Gateway 6 MCP research and server skeleton.
 Worker: worker-2.
@@ -16,7 +16,7 @@ server-local stdio only; it does not add an HTTP/SSE listener.
 
 Files added under separate package `mcp/`:
 
-- `mcp/package.json` — private package for `xlab-blog-mcp` with MCP SDK and zod dependencies.
+- `mcp/package.json` — private package for `xlab-blog-mcp` with the official `@modelcontextprotocol/sdk` and zod dependencies.
 - `mcp/src/server.mjs` — stdio MCP server entrypoint using `McpServer` and `StdioServerTransport`.
 - `mcp/src/config.mjs` — explicit `BLOG_MCP_ENABLED` gate and per-call `BLOG_MCP_KILL_SWITCH` config.
 - `mcp/src/audit.mjs` — JSONL audit writer with argument redaction.
@@ -43,9 +43,10 @@ later task 17 adds real blog tools.
 ## Verification commands
 
 ```text
+PASS cd mcp && npm install --no-audit --no-fund
 PASS cd mcp && npm test
 PASS cd mcp && npm run build
-PASS grep -R "pgx\|database/sql\|SELECT \|INSERT \|UPDATE \|DELETE " -n mcp/src --exclude=backendClient.mjs -> no direct SQL/DB implementation matches expected beyond comments check
+PASS grep -R "pgx\|database/sql\|SELECT \|INSERT \|UPDATE \|DELETE " -n mcp/src --exclude=backendClient.mjs -> no direct SQL/DB implementation matches
 PASS git diff --check
 PASS git status/node_modules policy: web/node_modules not tracked; no node_modules/dist/.omx runtime artifacts added
 ```

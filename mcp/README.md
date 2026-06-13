@@ -1,4 +1,4 @@
-# xLab Blog MCP Server
+# Aeolian Blog MCP Server
 
 Server-local stdio Model Context Protocol server for trusted Author automation.
 
@@ -24,7 +24,7 @@ To start the stdio server after dependencies are installed:
 
 ```bash
 cd mcp
-BLOG_MCP_ENABLED=true npm exec tsx src/server.ts
+BLOG_MCP_ENABLED=true node src/server.mjs
 ```
 
 The first implemented tool is `health_check`, intentionally non-destructive. It proves the registration/audit/guard pattern.
