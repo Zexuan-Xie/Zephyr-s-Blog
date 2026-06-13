@@ -1,0 +1,26 @@
+# Native contract check
+date: 2026-06-13T15:06:26+08:00
+head: 706c8df1466a8a6bf9d8f85ec81631b874e53a75
+
+## /api/admin/tree shape
+top_level_keys= ['nodes']
+first_node_keys= ['id', 'kind', 'name', 'parent_id', 'sort_order', 'status', 'url_path']
+has_frontend_expected_roots= False
+has_frontend_expected_path= False
+has_backend_url_path= True
+
+## public fixture via correct resolver
+HTTP/1.1 200 OK
+Content-Type: application/json
+Date: Sat, 13 Jun 2026 07:06:26 GMT
+Content-Length: 1098
+
+{"type":"file","file":{"node":{"id":"a260a9f7-ecf3-4c3d-a87e-cc96b44c73bc","parent_id":"77473f2e-6069-48ff-95a7-3d7173d090c4","kind":"file","name":"Published Fixture","slug":"published-fixture","path":"/stage-2-acceptance/published-fixture","sort_order":20,"created_at":"2026-06-13T13:52:13.622241+08:00","updated_at":"2026-06-13T13:52:13.622241+08:00"},"content":{"node_id":"a260a9f7-ecf3-4c3d-a87e-cc96b44c73bc","content_format":"markdown","keywords":["stage2","published"],"body_raw":"# Published fixture\n\nThis Stage 2 published file verifies public Author entry and unpublish acceptance.","body_html":null,"search_text":"Published Fixture\n/stage-2-acceptance/published-fixture\nstage2 published\n# Published fixture\n\nThis Stage 2 published file verifies public Author entry and unpublish acceptance.","status":"published","published_at":"2026-06-13T13:52:13.650236+08:00","embedding_model":null,"embedding_status":"pending","embedding_error":null,"embedding_updated_at":null},"keywords_public":["stage2","published"],"like_count":0,"viewer_has_liked":false,"comment_count":0,"assets":[]}}
+
+## draft fixture via correct resolver
+HTTP/1.1 404 Not Found
+Content-Type: application/json
+Date: Sat, 13 Jun 2026 07:06:26 GMT
+Content-Length: 32
+
+{"error":"tree node not found"}
