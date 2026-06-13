@@ -1,0 +1,7 @@
+ready 2026-06-13T15:00:37+08:00
+head 6a0b197d988096378da38f234276dabd238c3611
+api_health {"status":"ok","database":"ok"}
+web_ok yes
+State  Recv-Q Send-Q Local Address:Port Peer Address:PortProcess                             
+LISTEN 0      4096       127.0.0.1:8080      0.0.0.0:*    users:(("server",pid=1041469,fd=6))
+LISTEN 0      511        127.0.0.1:5173      0.0.0.0:*    users:(("node",pid=1041421,fd=22)) 
