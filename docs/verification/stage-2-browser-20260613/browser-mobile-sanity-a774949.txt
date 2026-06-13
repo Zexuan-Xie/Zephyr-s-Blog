@@ -1,0 +1,27 @@
+# Mobile browser sanity at 390x844
+date: 2026-06-13T15:07:13+08:00
+head: a7749494fc9cf748e6c49d08e2b60c6dd42d3b20
+✓ Done
+✓ xLab Blog
+  http://127.0.0.1:5173/admin
+✓ Done
+
+## URL/title
+http://127.0.0.1:5173/admin
+xLab Blog
+
+## snapshot
+- generic "xLab BlogRecentDirectoryAuthorContent TreeDirectories & filesdirectory/researchdirectory/smoke-notes" [ref=e1] clickable [onclick]
+  - navigation "Primary navigation" [ref=e2]
+    - link "xLab Blog root" [ref=e3]
+    - button "Directory" [ref=e4]
+    - link "Author" [ref=e5]
+  - heading "内容树" [level=1, ref=e6]
+  - button "返回内容树" [ref=e7]
+  - button "退出登录" [ref=e8]
+  - heading "受保护内容树" [level=2, ref=e9]
+  - button "刷新" [ref=e10]
+
+## visible text
+"xLab Blog\nDirectory\nAuthor\n\n作者工作台\n\n内容树\n\n管理受保护的目录、草稿文件和已发布文件。URL Path 由系统展示，主要操作不暴露实现标识。\n\n返回内容树\n退出登录\n\nCONTENT TREE\n\n受保护内容树\n刷新\n\n内容树加载失败。请刷新或重新登录。\n\n请选择内容树中的目录或文件。"
+✓ Screenshot saved to docs/verification/stage-2-browser-20260613/mobile-admin-failure-a774949.png
