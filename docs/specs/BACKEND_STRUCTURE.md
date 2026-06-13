@@ -337,7 +337,7 @@ POST   /api/admin/files/{file_id}/refresh-embedding
 POST   /api/admin/search-index/rebuild
 ```
 
-Admin Content Tree requires a protected children-list/read model that includes all Directories and both Draft and Published Files. Public tree endpoints remain publication-filtered and must not serve as the Admin tree source.
+Author Workspace Content Tree requires a protected children-list/read model that includes all Directories and both Draft and Published Files. Public tree endpoints remain publication-filtered and must not serve as the Author Workspace tree source.
 
 Node creation owns slug generation and conflict resolution on the server. It normalizes the submitted Name and selects the final same-parent unique slug transactionally; client path previews are advisory only.
 

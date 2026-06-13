@@ -1,51 +1,70 @@
 # xLab Blog Progress
 
-Last updated: 2026-06-13 01:30 CST
+Last updated: 2026-06-13 02:10 CST
 
 This is the durable resume point. Keep it concise and update it after every key milestone.
 
-## Current state
+## Current breakpoint
 
 - Branch: `main`; local commits are ahead of `origin/main`.
-- Initial Packets A–J are complete and natively verified.
 - Active plan: `docs/plans/SECOND_DEVELOPMENT.md`.
-- Current breakpoint: Stage 1 engineering closeout is complete at product SHA `b16755f` with Architect `CLEAR` and Code Review `APPROVE`; user acceptance exposed four Stage 2 UX/product blockers that must be corrected in Stage 2 before acceptance can pass.
-- Current integrated product commit: `b16755f56bb0d95a7e3d95b3431a84fc93984cf6`.
-- Completed Stage 1 packets: control checkpoint, backend Red contract, frontend Red contract, precise auth/create API errors, acceptance/security preparation, truthful identity/minimal navigation, Directory creation result repair, security repairs, closeout identity repair, integrated acceptance/security, and independent review.
-- Remaining Stage 1 work: user acceptance is not yet passed; Stage 2 must address the recorded Author Admin UX blockers before the next acceptance pass.
-- Runtime services: API `:8080` and web `:5173` were healthy at the Stage 1 handoff; recheck before any next verification.
-- Recovery Team terminal task snapshot: 16 total; 16 completed, 0 in progress, 0 pending, 0 failed; all five tmux workers remain dead and the leader completed closeout via the durable ledger.
-- Worker adaptation: all five tmux workers remain dead after quota exhaustion. Native independent Architect/code-reviewer agents completed review; the durable Team ledger remains the source of truth.
-- Cleanup checkpoint: `453515d`.
-- Approved Ralplan consensus: Architect `APPROVE/CLEAR`; Critic `APPROVE` at 99%.
-- Stage 1 Team will use five fixed seats: coordinator, backend, frontend, acceptance, and security.
-- Only the coordinator edits `PROGRESS.md` and `docs/verification/stage-1-team-log.md` while Team is active.
-- Stage 1 backend error behavior and regression tests have changed; no database schema or acceptance fixture has changed.
+- Current breakpoint: Stage 2 is planned and ready for execution planning/Team launch when the user explicitly instructs. Do not start implementation yet.
+- Stage 1 engineering is complete and reviewed, but user acceptance did not pass because Author Workspace UX was inadequate; its blockers are now Stage 2 scope.
+- Current product baseline before Stage 2 implementation: Stage 1 closeout commits through `9b45f6b` documentation updates; recheck `git log` before starting.
+- Runtime services were healthy at the Stage 1 handoff; recheck before verification.
 
-## Locked delivery stages
+## Active delivery stages
 
-1. **Reliability/navigation/identity** — false create failure, actionable errors, single search input, identity-aware navigation, Reader/Author access behavior.
-2. **Graphical Admin workspace** — complete protected Content Tree, graphical creation, ordering, moves, node settings, Content/Assets/Settings workspace.
-3. **Autosave/publication model** — Current/Previous Content Versions, independent Published Content, Draft Preview, optimistic concurrency, Draft/Published Assets.
+1. **Stage 1 — Reliability/navigation/identity**: engineering complete; acceptance feedback folded into Stage 2.
+2. **Stage 2 — Chinese Author Workspace and protected Content Tree**: current active target. Desktop-first; mobile no-regression sanity only.
+3. **Stage 3 — Autosave/publication model, Draft Preview, Draft/Published Assets, and Blog MCP Server**: final product stage.
 
-Each stage must finish runnable, reversible, fully tested, documented, and user-accepted before the next begins.
+Each stage must finish runnable, reversible, tested, documented, independently reviewed, and user-accepted before the next begins.
+
+## Stage 2 scope summary
+
+Stage 2 replaces the current form-heavy Admin page with a Chinese **Author Workspace**:
+
+- protected complete Content Tree showing Directories, Draft Files, Published Files, and Files with unpublished changes;
+- minimal create flow: Directory = `名称`; File = `名称` + `格式`; URL Path generated automatically with Chinese preserved;
+- create success immediately refreshes tree/navigation, expands parent, selects/opens new node, and shows clear Chinese toast/path feedback;
+- Directory overview workspace with child cards and new Directory/File actions;
+- File workspace shell with `内容` / `资源` / `设置`, manual save, single primary publish action, and secondary `撤回发布`;
+- Settings sections: `基础信息`, `位置`, `危险操作`; no Parent ID, Node ID, Sort order, or `slug` in primary UI;
+- explicit return buttons and lightweight breadcrumbs for subflows;
+- Author-only public entries: `管理此目录` and `编辑文件` return to the workspace with the target selected;
+- same-parent desktop drag sorting only; drag never reparents;
+- dedicated fixture root such as `/stage-2-acceptance`;
+- presentation/defense quality: readable, extensible, clearly layered code and documentation.
+
+See `docs/plans/SECOND_DEVELOPMENT.md` Section 4 for the controlling Stage 2 plan.
+
+## Stage 3 / MCP summary
+
+Stage 3 adds autosave, Current/Previous Content Versions, independent Published Content, Draft Preview, Draft/Published Assets, and a separate server-local stdio Blog MCP Server.
+
+MCP decisions:
+
+- independent MCP Server process/package, not embedded in Web UI;
+- server-local stdio for trusted AI agents; no public HTTP/SSE transport initially;
+- high-trust full Author permissions;
+- tools: read, content, publish, tree, assets, maintenance;
+- safeguards: explicit enablement config, operation audit logs, backup/export before destructive batches where practical, emergency disable;
+- reuse backend service/API-client capabilities; do not duplicate business logic or SQL.
 
 ## Scope lock
 
-Do not proactively redesign public homepage, Recent cards, public Directory/File reading, comments/Likes, or Glass Ricepaper. Only repair regressions in those areas.
+Do not proactively redesign public homepage, Recent cards, public Directory/File reading, comments/Likes, or Glass Ricepaper. Only repair regressions or add the required Author-only public manage/edit entry.
 
-## Verified baseline
+Preserve:
 
-- Go full tests/vet/gofmt: pass.
-- Frontend static tests 7/7, lint, build: pass.
-- Fresh PostgreSQL migration and 21-step API smoke: pass.
-- Desktop/mobile browser acceptance: pass.
-- Evidence: `docs/verification/BASELINE.md` and `docs/verification/native-local-full-stack-smoke-20260606.md`.
-- Remaining external boundary: real DashScope embeddings and live Docker Compose.
+- iframe `sandbox="allow-scripts"` without `allow-same-origin`;
+- full-text search fallback when semantic indexing is unavailable;
+- product language from `docs/specs/CONTEXT.md`.
 
 ## Local environment and recovery
 
-Conda environment `blogenv`:
+Use Conda environment `blogenv`:
 
 - Node.js `22.22.3`
 - npm `10.9.8`
@@ -63,51 +82,38 @@ curl -fsS http://127.0.0.1:8080/api/health
 curl -fsS http://127.0.0.1:5173/ >/dev/null
 ```
 
-The native stack is currently running from this session for user acceptance. If it is offline later, restart it with `~/.local/share/xlab-blog/start-local.sh`.
+## Required verification
 
-## Cleanup checkpoint — complete
+Backend:
 
-- Removed old build/runtime caches, obsolete soft-link index, stale generated team instructions, historical packet plans, and monitor logs from the working tree.
-- Removed unused frontend dependencies `@types/dompurify` and `prettier`, and unused backend dependency `pgvector-go`.
-- Compacted 7,489 removed lines into current entry docs, `docs/archive/INITIAL_BUILD_SUMMARY.md`, and `docs/verification/BASELINE.md`; net working-tree reduction is 7,184 lines.
-- Moved the active plan to `docs/plans/SECOND_DEVELOPMENT.md` and synchronized README, agent guide, PRD read order, and technical stack.
-- Full Go tests/vet/gofmt, frontend 7/7 tests/lint/build, OpenAPI local refs, Markdown links, package lock, module tidy, and host-network local health checks pass.
-- `npm audit` remains externally blocked: the configured mirror does not implement the audit endpoint and the official registry request failed from the current environment.
+```bash
+cd api
+CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go test -count=1 ./...
+CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go vet ./...
+test -z "$(gofmt -l .)"
+```
+
+Frontend:
+
+```bash
+cd web
+node --test tests/render-safety.test.mjs
+npm run lint
+npm run build
+```
+
+For runtime/auth/tree/publication changes, also run native PostgreSQL API smoke and browser acceptance. Stage 2 requires desktop Author workflow acceptance plus mobile no-regression sanity. Record evidence under `docs/verification/`.
 
 ## Immediate next steps
 
-1. Review the revised Stage 2 plan in `docs/plans/SECOND_DEVELOPMENT.md` Section 16 and the interview record in `docs/plans/STAGE_2_REPLAN_BREAKPOINT.md`. Stage 2 replanning has 90%+ shared-understanding confidence and is ready for execution planning/Team launch when the user instructs.
-2. Do not start Stage 2 implementation until the user explicitly says to proceed.
-3. Preserve the current local database until the Stage 2 pre-stage backup/fixture cleanup step.
-4. If services stop, recover with `~/.local/share/xlab-blog/start-local.sh`.
+1. Await explicit user instruction before Stage 2 implementation.
+2. Before coding, reread `AGENTS.md`, this file, `docs/plans/SECOND_DEVELOPMENT.md`, `docs/specs/CONTEXT.md`, relevant specs, and `docs/api/openapi.yaml` for API changes.
+3. For Stage 2 start: back up local database/uploads, create/refresh the `/stage-2-acceptance` fixture, update OpenAPI first for protected Author Workspace APIs, then implement backend/frontend in small verified packets.
+4. Update `PROGRESS.md` and `docs/verification/` at every key milestone and before stopping.
 
-## Recent milestones
+## Key evidence and history
 
-- **2026-06-13 01:30 CST** — `$grill-with-docs` replanning reached 90%+ confidence for Stage 2 and the final-stage MCP branch. Stage 2 Section 16 was rewritten around a desktop-first Chinese Author Workspace, protected complete Content Tree, minimal create flow, Author-only public edit/manage entry, manual-save File workspace shell, explicit return controls, dedicated fixture, desktop Author workflow acceptance, and mobile no-regression sanity. Final-stage MCP decisions Q21–Q26: build a separate server-local stdio MCP Server with high-trust full Author permissions, complete Author tool set, explicit enablement, audit logs, backup/export safeguards, and emergency disable; no public HTTP/SSE transport in initial scope. Awaiting user instruction before implementation.
-
-- **2026-06-13 00:55 CST** — `$grill-with-docs` Stage 2 replanning interview paused by user request and recorded in `docs/plans/STAGE_2_REPLAN_BREAKPOINT.md`. Confirmed decisions Q1–Q12: replace current Admin page with a Chinese Author Workspace; desktop two-column/mobile single-column; Chinese scope focused on Author flows plus related public entry points; Author-only public Directory/File manage/edit actions; protected expand/collapse Content Tree without search; minimal create flow; same-parent drag sorting only; Directory overview workspace; File workspace shell with manual save; single primary publication action with secondary unpublish; creation toast plus automatic tree selection; explicit return buttons plus lightweight breadcrumbs. Next question is Q13 about Settings danger/advanced-operation layering.
-
-- **2026-06-13 00:42 CST** — User acceptance did not pass and produced four Stage 2 correction requirements: stale Content Tree/navigation after Directory/File creation, missing explicit in-app back/return controls, inability to select/edit/unpublish generated Files from Author workflows including public File browsing, and overly complex English Admin UI requiring a more graphical Chinese redesign with clearer prompts, typography, spacing, and layout. No feature code changed; waiting for further user instruction before Stage 2 implementation.
-
-- **2026-06-12 23:42 CST** — Stage 1 independent review and coordinator closeout completed; terminal Team snapshot 16/16 completed. Initial Architect/Code Review found identity closeout blockers; `b16755f` repaired role-aware Author login, Reader logout staying on public pages, Author logout from Admin to `/`, and status-specific auth UI errors. Full backend gates, 19/19 frontend tests, lint, build, 12-step native identity/API smoke, and rerun desktop/mobile browser identity closeout passed after restoring `clearIdentity`. Evidence artifacts introduced at `a76dd89`; closeout docs were refreshed after final `clearIdentity` restoration. Architect `CLEAR`; Code Review `APPROVE`. Stage 1 now waits only for explicit user acceptance.
-
-- **2026-06-12 18:26 CST** — integrated acceptance/security retests completed with `PASS` against product SHA `d6c7d09`; evidence commit `ee6a5c2` records the 21-step PostgreSQL/API smoke, full backend/frontend gates, desktop/mobile role and creation scenarios, security blocker retests, explicit-ID cleanup, and redacted artifacts. Team tasks are 14/16 complete; independent architecture/code review is active.
-- **2026-06-12 17:54 CST** — security fixes integrated: `673650e` hardens Login return targets (17/17 frontend tests, lint, build PASS); `d6c7d09` makes configured Author credentials authoritative and sanitizes unexpected auth errors (full Go tests/vet/gofmt and PostgreSQL rollback regression PASS). Independent security and acceptance retests started.
-- **2026-06-12 17:45 CST** — independent security report `1877c25` recorded `FAIL`: existing Reader elevation retained the old password, unexpected auth errors leaked internal messages, and backslash-form return targets broke post-login navigation. Backend task `14`, frontend task `15`, and security retest task `16` were added; native agents Dewey/Planck are active because all tmux workers are dead.
-- **2026-06-12 10:38 CST** — integrated browser acceptance exposed incorrect duplicate-URL-Path messaging because parent wording was matched before HTTP 409. Fix task `12` used Red→Green regression coverage and completed at `58df9f6`; full frontend tests 15/15, lint, and build pass. Retest task `13` is active.
-- **2026-06-12 10:24 CST** — task `7` completed at integrated SHA `8b34388`; leader verification passed 14/14 frontend tests, lint, build, and `git show --check`. Tasks `8`/`9` are in progress. Because their tmux owners reached usage limits, native independent acceptance/security agents were assigned the unchanged verification contracts. API and web services are healthy.
-- **2026-06-12 09:57 CST** — recovery DAG reconciled: tasks `6`–`11` now encode the remaining frontend, acceptance, security, independent review, and closeout dependency chain. Backend bootstrap task `2` completed; four roots remain active. Services remain offline and no final gate is claimed.
-- **2026-06-12 09:56 CST** — recovery Team `execute-approved-xlab-31e581d5` launched with five live/reporting workers and all five coarse seat tasks claimed. Coordinator detected missing packet dependencies and notified the leader.
-- **2026-06-12 09:49 CST** — recovered from a non-resumable Team: old runtime state archived, all five clean detached worktrees removed, backend packets 2/6 verified complete, and the durable breakpoint moved to integrated SHA `d636c31`.
-- **2026-06-12 00:05 CST** — all five root packets were claimed; Team state is 5 in progress, 6 pending, 0 failed.
-- **2026-06-12 00:03 CST** — Stage 1 Team launched with five live workers. `dag_sidecar`, effective worker count 5, bootstrap mapping, and all 11 packet subjects/owners/file scopes/dependencies passed exact audit. Initial event cursor and integration ledger were recorded in `docs/verification/stage-1-team-log.md`.
-- **2026-06-11 23:59 CST** — Stage 1 preflight baseline passed: Go tests/vet/gofmt and frontend render-safety/lint/build; approved plan applied and Stage 1 bootstrap DAG byte-verified.
-- **2026-06-11 23:00 CST** — Ralplan consensus completed after five review iterations: Team launch parsing, DAG JSON, packet command syntax, file ownership, Stage 2 cleanup safety, and Stage 3 restore lifecycle passed; approved plan applied and Stage 1 launch preflight started.
-- **2026-06-06 21:13 CST** — clean Stage 1-ready repository baseline committed as `453515d`.
-- **2026-06-06 21:12 CST** — repository cleanup completed: stale agent/runtime/doc artifacts removed, unused dependencies removed, active documentation reorganized and compacted, all local quality gates passed, and the native acceptance stack was restored in `xlab-blog-local`.
-- **2026-06-06 20:58 CST** — requirements interview reached ~95% shared understanding; three-stage plan and ADR 0007 committed as `075d2f3`.
-- **2026-06-06 17:00–20:58 CST** — navigation, identity, graphical Admin, autosave/version/publication, Draft Preview, Asset lifecycle, migration, and stage-gate decisions recorded in active specs.
-- **2026-06-06 14:17 CST** — persistent PostgreSQL/uploads recovery state established outside `/tmp`.
-- **2026-06-06 14:16 CST** — native full-stack acceptance candidate passed.
-
-Historical team/task detail is available in Git history and summarized in `docs/archive/INITIAL_BUILD_SUMMARY.md`.
+- Baseline evidence: `docs/verification/BASELINE.md`, `docs/verification/native-local-full-stack-smoke-20260606.md`.
+- Stage 1 evidence: `docs/verification/stage-1-*` and `docs/verification/stage-1-browser-20260612/*`.
+- Historical implementation summary: `docs/archive/INITIAL_BUILD_SUMMARY.md`.
+- Detailed older Team/task history is in Git history; do not revive stale OMX runtime state.

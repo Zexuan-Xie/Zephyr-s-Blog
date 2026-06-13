@@ -344,9 +344,9 @@ There is exactly one elevation idea: **glass floating over paper.** Lift comes f
 ## Known Gaps (to design later)
 
 - **Comment thread** layout is specified as a glass recipe but not yet visually prototyped (nesting, reply indentation, input box).
-- **Admin / Markdown editor** must use a graphical, context-aware creation flow rather than exposing raw Node IDs as the primary interaction. Directory/File creation starts from the selected Content Tree location, visually distinguishes the two node types, and reveals advanced metadata only when needed. Detailed Admin composition remains to be resolved.
-- **Admin New workspace** replaces the right workspace while keeping the Content Tree visible on desktop. It is not a modal. Mobile uses a full-width create view with a return path to the tree.
-- **Admin Content Tree ordering** uses desktop drag-and-drop only within the current parent. Mobile exposes explicit `Move up` / `Move down` actions; neither interaction reparents a node.
+- **Author Workspace / Markdown editor** must use a graphical, context-aware creation flow rather than exposing raw Node IDs as the primary interaction. Directory/File creation starts from the selected Content Tree location, visually distinguishes the two node types, and reveals advanced metadata only when needed. Detailed Admin composition remains to be resolved.
+- **Author Workspace New flow** replaces the right workspace while keeping the Content Tree visible on desktop. It is not a modal. Mobile uses a full-width create view with a return path to the tree.
+- **Author Workspace Content Tree ordering** uses desktop drag-and-drop only within the current parent. Mobile exposes explicit `Move up` / `Move down` actions; neither interaction reparents a node.
 - **Ordering feedback** is inline and transient: `Saving…` during persistence and a lightweight success notice afterward. Failure restores the previous visual order rather than leaving an uncertain state.
 - **Directory Picker** is the only cross-Directory move control. It reuses the readable Content Tree model, highlights the current parent, previews the destination path, and never exposes raw Parent IDs.
 - **Node Advanced settings** replaces the right-side node workspace temporarily. It opens from the selected tree node's `···` menu, never as a modal or separate page, and returns to the prior node workspace on save or cancel.
@@ -360,10 +360,10 @@ There is exactly one elevation idea: **glass floating over paper.** Lift comes f
 - **File workspace navigation** uses three restrained tabs: Content, Assets, and Settings. Content is the default; Assets never form a long panel below the writing surface, and Settings opens the node-level advanced view.
 - **Publication control** is the single primary action in the File editor header. Unpublish is a secondary overflow action, and an already-current Published File shows status rather than a redundant button.
 - **Search indexing state** is progressive disclosure. Normal editor chrome does not expose embedding jargon; per-File status is in overflow details and global rebuild belongs to Admin-level tools.
-- **Admin shell** starts with the working interface, not an introductory hero card. A compact top toolbar carries context on the left and `View site` plus infrequent system actions on the right.
+- **Author Workspace shell** starts with the working interface, not an introductory hero card. A compact top toolbar carries context on the left and `View site` plus infrequent system actions on the right.
 - **Tree publication state** uses restrained dots and short labels rather than filled badges: hollow gray Draft, green Published, amber Changes, and red Save failed. Every state has text or an accessible label and never depends on color alone.
 - **Collapsed Directory attention** shows only the highest-priority descendant issue: red for Save failed, otherwise amber for unpublished Changes. It never displays counts or summarizes ordinary Draft/Published descendants.
-- **Admin empty workspace** is instructional only at the moment of need: one short prompt and one `＋ New` action, with no dashboard, statistics, or tutorial chrome.
+- **Author Workspace empty state** is instructional only at the moment of need: one short prompt and one `＋ New` action, with no dashboard, statistics, or tutorial chrome.
 - **Identity loading** reserves the final control's space with a quiet skeleton. Never flash `Login` before resolving a stored session, and never present a network failure as an authenticated-state decision.
 - **Dark mode** is intentionally **out of scope** — this is a light-only, rice-paper system by decision.
 - Empty/loading/skeleton states for the content tree card grid and directory sidebar not yet designed.

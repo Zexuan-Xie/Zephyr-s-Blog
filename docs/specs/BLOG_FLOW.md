@@ -12,7 +12,7 @@
 | `/search?q=` | public | Search Page | `GET /api/search?q=` |
 | `/login` | public | Login Page | `POST /api/auth/login` |
 | `/register` | public | Register Page | `POST /api/auth/register` |
-| `/admin` | admin | Admin Tree Manager | admin APIs |
+| `/admin` | admin | Author Workspace | admin APIs |
 | `/*` | public | Content Path Resolver | `GET /api/tree/resolve?path=...` |
 
 Root reserved URL path segments：`admin`、`api`、`auth`、`login`、`register`、`recent`、`search`、`settings`。
@@ -252,7 +252,7 @@ Directory 页面显示：
 - Anonymous Visitor 不显示任何 `Admin` 或 `Author` 入口；`/admin` 的直接访问仍跳转 Login。
 - Reader：显示 Reader 的 `display_name`；点击打开仅包含 `Logout` 的极简菜单。
 - Author：显示 `Author`；点击直接进入 `/admin`。
-- Author 的 `Logout` 位于 Admin Tree Manager 内，不在顶部增加第二层入口。
+- Author 的 `Logout` 位于 Author Workspace 内，不在顶部增加第二层入口。
 - 桌面与移动端保持相同语义。
 - 身份尚未确认时显示固定尺寸的无文字骨架占位，不先显示 Login 再闪烁为 Reader/Author。
 - Token 无效时清除本地身份并显示 Login。
@@ -309,13 +309,13 @@ Directory 页面显示：
 - 同 File，但 endpoint 为 `/api/comments/{comment_id}/like`。
 - deleted comment 不允许新增 like；UI 不展示 deleted comment like count。
 
-## 11. Admin Tree Manager flow
+## 11. Author Workspace flow
 
 ### 11.1 Layout
 
 - Tree browser + selected node editor。
 - 移动端可退化为 list → edit page。
-- Admin 不显示大型 `ADMIN / Tree Manager` 介绍卡，进入后直接显示工作区。
+- Author Workspace 不显示旧的 `ADMIN / Tree Manager` 介绍卡，进入后直接显示工作区。
 - Admin 顶部工具栏左侧显示 `Content` 与当前节点 path。
 - 右侧显示 `View site` 与页面级 `···` 菜单。
 - 页面级菜单包含 `Rebuild search`、`System status`、`Logout`。
@@ -347,7 +347,7 @@ Directory 页面显示：
 - 离开 New workspace 时，仅当 Name 已填写且尚未创建才提示 `Discard this new item?`，操作为 `Keep editing` / `Discard`。
 - Name 为空时，即使已选择 Directory/File 类型，也可直接退出。
 - 单击节点时选中并打开；Directory 使用独立箭头展开或折叠。
-- Admin Content Tree 显示所有 Directory、Draft File 与 Published File，包括只包含 Draft 的 Directory。
+- Author Workspace Content Tree 显示所有 Directory、Draft File 与 Published File，包括只包含 Draft 的 Directory。
 - File 显示轻量状态：`Draft`、`Published` 或 `Unpublished changes`。
 - Draft：灰色空心圆 + `Draft`。
 - Published：绿色小圆点，不重复显示状态文字。
@@ -357,13 +357,13 @@ Directory 页面显示：
 - 折叠 Directory 只汇总需要处理的后代状态：存在 Save failed 时显示红点，否则存在 Unpublished changes 时显示琥珀点。
 - 仅包含 Draft/Published 时不显示 Directory 汇总点；不显示后代状态数量。
 - 子节点按需加载，不一次性加载完整大树。
-- Admin Content Tree 使用独立的受保护管理 API，不能用过滤 Draft 的 Public Tree 代替。
+- Author Workspace Content Tree 使用独立的受保护管理 API，不能用过滤 Draft 的 Public Tree 代替。
 - 重新进入 `/admin` 时恢复本浏览器上次选中的节点及 Directory 展开状态。
 - 上次节点已删除时，选择最近仍存在的 parent Directory；首次进入只显示根级，不展开全部。
-- Admin tree navigation state 不跨设备同步。
-- Admin Content Tree 不提供独立节点搜索或 `Find in tree`。
+- Author Workspace tree navigation state 不跨设备同步。
+- Author Workspace Content Tree 不提供独立节点搜索或 `Find in tree`。
 - 全站公开搜索只检索 Published File；Draft 不进入公开搜索。
-- Author 仅通过 Admin Content Tree 查看和定位 Draft。
+- Author 仅通过 Author Workspace Content Tree 查看和定位 Draft。
 - 仅在节点选中时显示 `···` 操作菜单，避免常驻操作按钮造成视觉噪音。
 - Directory 菜单：`New inside`、`Advanced settings`。
 - File 菜单：`Open editor`、`Advanced settings`。
@@ -451,7 +451,7 @@ Directory 页面显示：
 
 Directory/File 创建失败时只显示后端实际失败原因，不得把成功后的前端状态异常误报为创建失败。
 
-Admin 写操作错误使用面向 Author 的可操作文案，并尽量显示在对应字段或操作附近：
+Author Workspace 写操作错误使用面向 Author 的可操作文案，并尽量显示在对应字段或操作附近：
 
 - URL path 冲突：`This path is already in use. Try research-2.`
 - reserved root URL path：`“admin” is reserved. Choose another name.`

@@ -141,7 +141,7 @@
 
 - 搜索对象：published File。
 - 搜索范围：File name + keywords + extracted search_text + path。
-- 搜索只返回 Published File；Draft 即使对 Author 可见，也只在 Admin Content Tree 中定位，不进入搜索。
+- 搜索只返回 Published File；Draft 即使对 Author 可见，也只在 Author Workspace Content Tree 中定位，不进入搜索。
 - Markdown search_text：从 Markdown 原文提取纯文本。
 - HTML search_text：只提取可见文本，排除 CSS/JS/meta/link/noscript/hidden。
 - Retrieval：Postgres full-text + Qwen/DashScope embedding + pgvector semantic search。
@@ -171,7 +171,7 @@
 - PDF 可点击 inline 打开，但不默认嵌入页面。
 - HTML Document 可引用同 File assets 中的 JS/CSS，但仍运行在 sandbox iframe。
 
-### 4.8 Admin Tree Manager
+### 4.8 Author Workspace
 
 - 文件管理器式后台。
 - 不做拖拽；移动节点用 parent directory select。
@@ -222,7 +222,7 @@
 
 作为 admin，我在 `/admin` 创建 Directory 和 File，编辑内容，上传 assets，发布 File。移动 published File 后旧 path 会软跳到新 path。
 
-验收：Tree Manager 中可完成 CRUD/move/publish/unpublish/asset upload/embedding refresh；published path change 创建 redirect。
+验收：Author Workspace 中可完成 CRUD/move/publish/unpublish/asset upload/embedding refresh；published path change 创建 redirect。
 
 ### 6.5 HTML Document demo
 
