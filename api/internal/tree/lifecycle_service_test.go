@@ -220,3 +220,32 @@ func (f *fakeLifecycleRepository) UpsertPathRedirect(_ context.Context, oldPath,
 	f.redirects[oldPath] = newPath
 	return nil
 }
+
+func (f *fakeLifecycleRepository) GetFileVersionState(_ context.Context, nodeID uuid.UUID) (FileVersionState, error) {
+	content, err := f.GetFileContent(context.Background(), nodeID)
+	if err != nil {
+		return FileVersionState{}, err
+	}
+	return FileVersionState{Current: content, DraftAssets: []FileAsset{}, PublishedAssets: []FileAsset{}}, nil
+}
+
+func (f *fakeLifecycleRepository) RestorePreviousContent(_ context.Context, nodeID uuid.UUID, expectedRevision int) (FileVersionState, error) {
+	return f.GetFileVersionState(context.Background(), nodeID)
+}
+
+func (f *fakeLifecycleRepository) PublishCurrentSnapshot(_ context.Context, nodeID uuid.UUID, expectedRevision int) (PublishResult, error) {
+	content, err := f.PublishFile(context.Background(), nodeID)
+	if err != nil {
+		return PublishResult{}, err
+	}
+	published := PublishedContent{NodeID: nodeID, SourceRevision: content.Revision, ContentFormat: content.ContentFormat, Keywords: content.Keywords, BodyRaw: content.BodyRaw, BodyHTML: content.BodyHTML, SearchText: content.SearchText, Visible: true}
+	return PublishResult{Current: content, Published: published, PromotedAssets: []FileAsset{}}, nil
+}
+
+func (f *fakeLifecycleRepository) PublishedContent(_ context.Context, nodeID uuid.UUID) (PublishedContent, error) {
+	content, err := f.GetFileContent(context.Background(), nodeID)
+	if err != nil || content.Status != PublishStatusPublished {
+		return PublishedContent{}, ErrFileContentNotFound
+	}
+	return PublishedContent{NodeID: nodeID, SourceRevision: content.Revision, ContentFormat: content.ContentFormat, Keywords: content.Keywords, BodyRaw: content.BodyRaw, BodyHTML: content.BodyHTML, SearchText: content.SearchText, Visible: true}, nil
+}

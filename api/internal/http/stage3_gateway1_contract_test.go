@@ -120,3 +120,32 @@ func (r *stage3RouterLifecycleRepo) UpdateRedirectTargets(context.Context, uuid.
 func (r *stage3RouterLifecycleRepo) UpsertPathRedirect(context.Context, string, string, uuid.UUID) error {
 	return nil
 }
+
+func (r *stage3RouterLifecycleRepo) GetFileVersionState(_ context.Context, nodeID uuid.UUID) (tree.FileVersionState, error) {
+	content, err := r.GetFileContent(context.Background(), nodeID)
+	if err != nil {
+		return tree.FileVersionState{}, err
+	}
+	return tree.FileVersionState{Current: content, DraftAssets: []tree.FileAsset{}, PublishedAssets: []tree.FileAsset{}}, nil
+}
+
+func (r *stage3RouterLifecycleRepo) RestorePreviousContent(_ context.Context, nodeID uuid.UUID, expectedRevision int) (tree.FileVersionState, error) {
+	return r.GetFileVersionState(context.Background(), nodeID)
+}
+
+func (r *stage3RouterLifecycleRepo) PublishCurrentSnapshot(_ context.Context, nodeID uuid.UUID, expectedRevision int) (tree.PublishResult, error) {
+	content, err := r.PublishFile(context.Background(), nodeID)
+	if err != nil {
+		return tree.PublishResult{}, err
+	}
+	published := tree.PublishedContent{NodeID: nodeID, SourceRevision: content.Revision, ContentFormat: content.ContentFormat, Keywords: content.Keywords, BodyRaw: content.BodyRaw, BodyHTML: content.BodyHTML, SearchText: content.SearchText, Visible: true}
+	return tree.PublishResult{Current: content, Published: published, PromotedAssets: []tree.FileAsset{}}, nil
+}
+
+func (r *stage3RouterLifecycleRepo) PublishedContent(_ context.Context, nodeID uuid.UUID) (tree.PublishedContent, error) {
+	content, err := r.GetFileContent(context.Background(), nodeID)
+	if err != nil {
+		return tree.PublishedContent{}, err
+	}
+	return tree.PublishedContent{NodeID: nodeID, SourceRevision: content.Revision, ContentFormat: content.ContentFormat, Keywords: content.Keywords, BodyRaw: content.BodyRaw, BodyHTML: content.BodyHTML, SearchText: content.SearchText, Visible: true}, nil
+}
