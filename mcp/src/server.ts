@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { BlogBackendClient } from "./backendClient.mjs";
-import { loadConfig } from "./config.mjs";
-import { buildToolDefinitions } from "./tools.mjs";
+import { BlogBackendClient } from "./backendClient.js";
+import { loadConfig } from "./config.js";
+import { buildToolDefinitions } from "./tools.js";
 
-export function createServer() {
+export function createServer(): McpServer {
   const config = loadConfig();
   const client = new BlogBackendClient({ baseUrl: config.apiBaseUrl, adminToken: config.adminToken });
   const server = new McpServer({ name: "xlab-blog-mcp", version: "0.1.0" });
@@ -25,7 +25,7 @@ export function createServer() {
   return server;
 }
 
-export async function main() {
+export async function main(): Promise<void> {
   const server = createServer();
   const transport = new StdioServerTransport();
   await server.connect(transport);

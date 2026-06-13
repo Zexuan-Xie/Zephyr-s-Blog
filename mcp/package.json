@@ -5,11 +5,11 @@
   "type": "module",
   "description": "Server-local stdio Model Context Protocol server for Aeolian Blog author operations.",
   "bin": {
-    "xlab-blog-mcp": "./src/server.mjs"
+    "xlab-blog-mcp": "./src/server.ts"
   },
   "scripts": {
     "build": "tsc --noEmit",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --import tsx --test tests/*.test.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.29.0",

@@ -1,6 +1,7 @@
-import { createWriteStream } from "node:fs";
-import { mkdir } from "node:fs/promises";
-import path from "node:path";
+export interface BackendClientOptions {
+  baseUrl: string;
+  adminToken?: string;
+}
 
 /**
  * Thin backend HTTP API boundary for MCP tools.
@@ -9,12 +10,15 @@ import path from "node:path";
  * All blog state changes go through the same protected HTTP API used by Author UI.
  */
 export class BlogBackendClient {
-  constructor(options) {
+  readonly baseUrl: string;
+  readonly adminToken?: string;
+
+  constructor(options: BackendClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/+$/, "");
     this.adminToken = options.adminToken;
   }
 
-  async health() {
+  async health(): Promise<{ ok: boolean; base_url: string }> {
     return { ok: true, base_url: this.baseUrl };
   }
 

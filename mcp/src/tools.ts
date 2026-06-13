@@ -1,25 +1,44 @@
-import { z } from "zod";
-import { assertEnabled } from "./config.mjs";
-import { summarizeArgs, writeAudit } from "./audit.mjs";
+import type { ZodRawShape } from "zod";
+import type { BlogMcpConfig } from "./config.js";
+import { assertEnabled } from "./config.js";
+import { summarizeArgs, writeAudit } from "./audit.js";
+import type { BlogBackendClient } from "./backendClient.js";
 
-const uuidSchema = z.string().uuid();
-const nonEmptyString = z.string().min(1);
-const positiveRevision = z.number().int().positive();
-const contentFormatSchema = z.enum(["markdown", "html_document"]);
+export interface ToolResultContent {
+  type: "text";
+  text: string;
+}
 
-function textResult(payload) {
+export interface ToolResult {
+  [key: string]: unknown;
+  content: ToolResultContent[];
+  isError?: boolean;
+}
+
+export interface ToolDefinition {
+  name: string;
+  title: string;
+  description: string;
+  inputSchema: ZodRawShape;
+  destructive: boolean;
+  handler: (args: Record<string, unknown>) => Promise<ToolResult>;
+}
+
+function textResult(payload: unknown): ToolResult {
   return { content: [{ type: "text", text: typeof payload === "string" ? payload : JSON.stringify(payload, null, 2) }] };
 }
 
-function errorResult(error) {
+function errorResult(error: unknown): ToolResult {
   return { content: [{ type: "text", text: error instanceof Error ? error.message : String(error) }], isError: true };
 }
 
-function requireConfirm(args, message) {
-  if (args?.confirm !== true) throw new Error(message);
-}
-
-export async function runGuardedTool(config, tool, destructive, args, operation) {
+export async function runGuardedTool<T extends Record<string, unknown>>(
+  config: BlogMcpConfig,
+  tool: string,
+  destructive: boolean,
+  args: T,
+  operation: () => Promise<ToolResult>,
+): Promise<ToolResult> {
   try {
     assertEnabled(config);
   } catch (error) {
@@ -54,19 +73,7 @@ export async function runGuardedTool(config, tool, destructive, args, operation)
   }
 }
 
-function tool(name, title, description, inputSchema, destructive, handler) {
-  return { name, title, description, inputSchema, destructive, handler };
-}
-
-function guarded(config, client, name, destructive, schema, operation) {
-  return (args) =>
-    runGuardedTool(config, name, destructive, args, async () => {
-      const parsed = schema.parse(args ?? {});
-      return textResult(await operation(client, parsed));
-    });
-}
-
-export function buildToolDefinitions(config, client) {
+export function buildToolDefinitions(config: BlogMcpConfig, client: BlogBackendClient): ToolDefinition[] {
   return [
     tool(
       "health_check",

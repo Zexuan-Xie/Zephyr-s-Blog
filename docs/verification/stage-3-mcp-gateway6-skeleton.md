@@ -1,6 +1,6 @@
 # Stage 3 Gateway 6 MCP Skeleton Evidence
 
-Status: **PASS (leader repaired dependency/runtime issues)**
+Status: **PASS for Gateway 6 skeleton slice**
 
 Task: 16 — Gateway 6 MCP research and server skeleton.
 Worker: worker-2.
@@ -17,11 +17,11 @@ server-local stdio only; it does not add an HTTP/SSE listener.
 Files added under separate package `mcp/`:
 
 - `mcp/package.json` — private package for `xlab-blog-mcp` with the official `@modelcontextprotocol/sdk` and zod dependencies.
-- `mcp/src/server.mjs` — stdio MCP server entrypoint using `McpServer` and `StdioServerTransport`.
-- `mcp/src/config.mjs` — explicit `BLOG_MCP_ENABLED` gate and per-call `BLOG_MCP_KILL_SWITCH` config.
-- `mcp/src/audit.mjs` — JSONL audit writer with argument redaction.
-- `mcp/src/backendClient.mjs` — backend API-client boundary placeholder; intentionally no DB/repository/SQL imports.
-- `mcp/src/tools.mjs` — guarded tool registration/handler pattern with audit on ok/error/refused outcomes.
+- `mcp/src/server.ts` — stdio MCP server entrypoint using `McpServer` and `StdioServerTransport`.
+- `mcp/src/config.ts` — explicit `BLOG_MCP_ENABLED` gate and per-call `BLOG_MCP_KILL_SWITCH` config.
+- `mcp/src/audit.ts` — JSONL audit writer with argument redaction.
+- `mcp/src/backendClient.ts` — backend API-client boundary placeholder; intentionally no DB/repository/SQL imports.
+- `mcp/src/tools.ts` — guarded tool registration/handler pattern with audit on ok/error/refused outcomes.
 - `mcp/tests/skeleton.test.mjs` — disabled, kill-switch, enabled health-check/audit smoke tests.
 - `mcp/README.md` — operation and safety notes.
 
@@ -46,9 +46,9 @@ later task 17 adds real blog tools.
 PASS cd mcp && npm install --no-audit --no-fund
 PASS cd mcp && npm test
 PASS cd mcp && npm run build
-PASS grep -R "pgx\|database/sql\|SELECT \|INSERT \|UPDATE \|DELETE " -n mcp/src --exclude=backendClient.mjs -> no direct SQL/DB implementation matches
+PASS grep -R "pgx\|database/sql\|SELECT \|INSERT \|UPDATE \|DELETE " -n mcp/src --exclude=backendClient.ts -> no direct SQL/DB implementation matches
 PASS git diff --check
-PASS git status/node_modules policy: web/node_modules not tracked; no node_modules/dist/.omx runtime artifacts added
+PASS git status/node_modules policy: web/node_modules not tracked; mcp/node_modules remains ignored/untracked; no web/dist/.omx runtime artifacts added
 ```
 
 ## Smoke transcript summary
@@ -59,4 +59,9 @@ PASS git status/node_modules policy: web/node_modules not tracked; no node_modul
 2. `BLOG_MCP_ENABLED=true BLOG_MCP_KILL_SWITCH=true` refuses `health_check` and writes `result:"refused"` audit JSONL.
 3. `BLOG_MCP_ENABLED=true` allows `health_check` and writes `result:"ok"` audit JSONL.
 
-Task 17 implemented the read/content/publish/tree/assets/maintenance tool surface; see docs/verification/stage-3-mcp-gateway6-tools.md. Full black-box stdio acceptance remains assigned to Task 18.
+Full black-box stdio transcripts for read/content/publish/tree/assets/maintenance
+remain blocked until task 17 implements the real tool slices.
+
+## Dependency repair note
+
+Leader preflight found invalid early dependency choices during initial integration. The package now uses valid current npm metadata observed during repair: `@modelcontextprotocol/sdk` 1.29.0, `@types/node` 25.9.3, `tsx` 4.22.4, and `typescript` 6.0.3. Tests import TypeScript sources through `node --import tsx --test`, and `npm run build` runs `tsc --noEmit`.
