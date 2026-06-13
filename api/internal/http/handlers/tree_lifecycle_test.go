@@ -31,7 +31,7 @@ func TestTreeLifecycleHandlerRoutes(t *testing.T) {
 		status int
 	}{
 		{method: http.MethodPut, path: "/files/" + fileID.String() + "/content", body: `{"content_format":"markdown","body_raw":"hello","keywords":[]}`, status: http.StatusOK},
-		{method: http.MethodPost, path: "/files/" + fileID.String() + "/publish", status: http.StatusOK},
+		{method: http.MethodPost, path: "/files/" + fileID.String() + "/publish", body: `{"expected_revision":1}`, status: http.StatusOK},
 		{method: http.MethodDelete, path: "/nodes/" + fileID.String(), status: http.StatusNoContent},
 		{method: http.MethodPost, path: "/files/not-a-uuid/publish", status: http.StatusBadRequest},
 	}
@@ -81,11 +81,7 @@ func (f *fakeTreeLifecycleService) UpsertFileContent(context.Context, uuid.UUID,
 	return f.content, f.err
 }
 
-func (f *fakeTreeLifecycleService) PublishFile(context.Context, uuid.UUID) (tree.FileContent, error) {
-	return f.content, f.err
-}
-
-func (f *fakeTreeLifecycleService) UnpublishFile(context.Context, uuid.UUID) (tree.FileContent, error) {
+func (f *fakeTreeLifecycleService) UnpublishFile(context.Context, uuid.UUID, int) (tree.FileContent, error) {
 	return f.content, f.err
 }
 

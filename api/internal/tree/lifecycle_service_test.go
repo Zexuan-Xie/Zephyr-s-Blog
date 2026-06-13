@@ -178,14 +178,7 @@ func (f *fakeLifecycleRepository) UpsertFileContent(_ context.Context, nodeID uu
 	return content, nil
 }
 
-func (f *fakeLifecycleRepository) PublishFile(_ context.Context, nodeID uuid.UUID) (FileContent, error) {
-	content, err := f.GetFileContent(context.Background(), nodeID)
-	content.Status = PublishStatusPublished
-	f.contents[nodeID] = content
-	return content, err
-}
-
-func (f *fakeLifecycleRepository) UnpublishFile(_ context.Context, nodeID uuid.UUID) (FileContent, error) {
+func (f *fakeLifecycleRepository) UnpublishFile(_ context.Context, nodeID uuid.UUID, expectedRevision int) (FileContent, error) {
 	content, err := f.GetFileContent(context.Background(), nodeID)
 	content.Status = PublishStatusDraft
 	f.contents[nodeID] = content
@@ -234,10 +227,12 @@ func (f *fakeLifecycleRepository) RestorePreviousContent(_ context.Context, node
 }
 
 func (f *fakeLifecycleRepository) PublishCurrentSnapshot(_ context.Context, nodeID uuid.UUID, expectedRevision int) (PublishResult, error) {
-	content, err := f.PublishFile(context.Background(), nodeID)
+	content, err := f.GetFileContent(context.Background(), nodeID)
 	if err != nil {
 		return PublishResult{}, err
 	}
+	content.Status = PublishStatusPublished
+	f.contents[nodeID] = content
 	published := PublishedContent{NodeID: nodeID, SourceRevision: content.Revision, ContentFormat: content.ContentFormat, Keywords: content.Keywords, BodyRaw: content.BodyRaw, BodyHTML: content.BodyHTML, SearchText: content.SearchText, Visible: true}
 	return PublishResult{Current: content, Published: published, PromotedAssets: []FileAsset{}}, nil
 }

@@ -267,22 +267,21 @@ const legacyFileSchema = z.object({
   comment_count: z.number().optional(),
 });
 
-const fileContentSchema = z.object({
+const publicFileContentSchema = z.object({
   node_id: z.string(),
-  revision: z.number().optional(),
   content_format: z.enum(["markdown", "html_document"]),
   keywords: z.array(z.string()).optional(),
   body_raw: z.string().optional(),
   body_html: z.string().nullable().optional(),
-  status: z.string().optional(),
+  search_text: z.string().optional(),
   published_at: nullableStringSchema,
-  last_saved_at: nullableStringSchema,
+  updated_at: nullableStringSchema,
   reading_time_minutes: nullableNumberSchema,
 });
 
 const openApiFileSchema = z.object({
   node: nodeSchema.extend({ kind: z.literal("file") }),
-  content: fileContentSchema,
+  content: publicFileContentSchema,
   keywords_public: z.array(z.string()).optional(),
   like_count: z.number().optional(),
   viewer_has_liked: z.boolean().optional(),
