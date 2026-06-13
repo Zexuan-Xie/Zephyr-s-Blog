@@ -307,4 +307,3 @@ MCP-specific security remains out of scope until the MCP slice lands, but the ba
 ### Remaining later gate
 
 Repeat security review for MCP once implemented: disabled-by-default behavior, per-call kill switch, audit JSONL, destructive tool confirmation, backup/export, and no direct SQL in MCP handlers are still pending future evidence.
-
