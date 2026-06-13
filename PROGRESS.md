@@ -1,6 +1,6 @@
 # Progress
 
-Last updated: 2026-06-13 22:22 CST
+Last updated: 2026-06-13 22:41 CST
 
 ## Current breakpoint
 
@@ -11,6 +11,9 @@ Gateway status:
 - **Gateway 0 — PASS.** Stage 2 checkpoint protected; pre-schema backup/restore proof recorded in `docs/verification/stage-3-team-log.md`.
 - **Gateway 1 — contract artifacts integrated; acceptance review in progress.** Backend OpenAPI/red tests, frontend expected-red contracts, acceptance plan, and security contract review are present on the integrated branch. Worker-4 task 11 is reviewing Gateway 1 as PASS/REVISE.
 - **Gateway 2 — in progress.** Worker-2 task 9 is implementing the migration/core publication model; frontend production implementation remains blocked until backend Gateway 2/3 runtime APIs are green.
+
+Current verification note (2026-06-13 22:41 CST): backend full gate is temporarily **FAIL** on integrated HEAD `0772b8a` while worker-2 Gateway 2 is in progress. Failure is in backend build/tests: `SQLRepository.listFileAssetsByState` missing in `api/internal/tree/lifecycle_repository.go`, plus the expected Stage 3 asset contract still needs `FileAsset.State`. Coordinator reported this as boundary monitoring and did not edit backend code.
+
 
 Evidence ledger:
 

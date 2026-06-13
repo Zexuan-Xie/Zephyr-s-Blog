@@ -145,6 +145,39 @@ PASS source-of-truth read: omx team api list-tasks showed task 1 completed; task
 PASS artifact presence: coordinator inspected stage-3 team log, acceptance plan, security plan, frontend readiness plan, backend/frontend red-test files, and OpenAPI Stage 3 contract tokens.
 ```
 
+
+## Coordinator boundary-monitoring update — 2026-06-13 22:41 CST
+
+Verdict: **Gateway 2 implementation in progress; integrated backend gate currently failing**
+
+Coordinator synced worker-1 to integrated leader HEAD `0772b8a` and ran a backend full-gate smoke to monitor the active Gateway 2 lane.
+
+Result:
+
+```text
+FAIL cd api && CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go test -count=1 ./...
+# xlab-blog/api/internal/tree
+internal/tree/lifecycle_repository.go:56:29: r.listFileAssetsByState undefined (type *SQLRepository has no field or method listFileAssetsByState)
+internal/tree/lifecycle_repository.go:60:33: r.listFileAssetsByState undefined (type *SQLRepository has no field or method listFileAssetsByState)
+internal/tree/lifecycle_repository.go:252:19: r.listFileAssetsByState undefined (type *SQLRepository has no field or method listFileAssetsByState)
+FAIL xlab-blog/api/cmd/server [build failed]
+FAIL xlab-blog/api/internal/http [build failed]
+FAIL xlab-blog/api/internal/http/handlers [build failed]
+FAIL xlab-blog/api/internal/search [build failed]
+FAIL xlab-blog/api/internal/tree [build failed]
+--- FAIL: TestStage3Gateway1AssetsExposeDraftPublishedIsolation
+    stage3_gateway1_contract_test.go:11: FileAsset must expose State so Author UI can distinguish draft, published, and draft_and_published assets
+FAIL xlab-blog/api/internal/assets
+```
+
+Coordinator interpretation: this is a Gateway 2 implementation-slice failure on worker-2's active task 9, not a coordinator docs regression. Worker-1 did not edit backend code. The relevant boundary has been reported upward/sideways so worker-2 can close the missing asset-state method/type gaps before Gateway 2 is considered green.
+
+Policy check before this update:
+
+```text
+PASS git status/node_modules policy precheck before edits: clean and no tracked web/node_modules.
+```
+
 ## Verification
 
 ```text
