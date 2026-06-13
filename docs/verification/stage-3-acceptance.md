@@ -205,3 +205,25 @@ docs/verification/stage-3-browser-20260613/
 ## Initial task-5 verification
 
 This draft is documentation-only and does not implement feature code. Verification for this task should therefore prove that the repo still builds/tests at the current Stage 2 checkpoint and that the acceptance plan exists for downstream integrated SHAs.
+
+## Gateway 1 contract acceptance review — 2026-06-13
+
+Verdict: **PASS for Gateway 1 contract readiness, with downstream implementation watch items**.
+
+Reviewed integrated leader-branch artifacts:
+
+- `docs/api/openapi.yaml` contains Stage 3 endpoints and schemas for Current/Previous/Published Content, `expected_revision`, revision conflict errors, publish summary, Draft Preview, and draft/published asset state.
+- Backend expected-red contract tests cover Current revision fields, Previous restore, Published Content snapshot queries, Draft Preview denial, revision-conflict mapping, search over `published_file_contents`, and draft/published asset isolation.
+- Frontend expected-red contract test covers revision typing, autosave status states and triggers, required-save blocking, conflict actions, publish state labels, Draft Preview, editor/preview split, and Draft/Published asset UX.
+- `docs/verification/stage-3-security.md` covers Draft Preview denial, draft asset leakage, stale revision overwrite, unsafe assets, and MCP enable/disable/audit/backup/kill-switch expectations.
+- This acceptance plan covers DB/API/browser/MCP black-box scenarios and evidence layout.
+
+Fixture gaps to close before Gateway 2/3/4/6 acceptance execution:
+
+1. Record concrete Stage 3 fixture IDs only after the migration lands: root path, file IDs, starting Current revisions, Previous slot state, Published Content source revisions, draft asset IDs, and published asset IDs.
+2. Add exact SQL hash/count probes after the final migration names and table names are stable; acceptance should compare Current/Previous/Published rows and draft/published asset rows before and after Publish.
+3. Add exact MCP stdio command and audit-log path after the MCP package/process exists; until then the MCP matrix remains the required black-box checklist.
+4. Re-run focused expected-red backend tests on a leader SHA that is not mid-Gateway-2 partial integration. The review run found expected-red coverage present, but the current leader working tree also had downstream build errors around `listFileAssetsByState`, so that failure should be treated as a Gateway 2 implementation watch item rather than a Gateway 1 contract gap.
+5. Keep dependency artifacts out of acceptance commits: no `web/node_modules`, symlinks, caches, `dist`, local DB/uploads, or `.omx` runtime state.
+
+Gateway 1 acceptance can proceed to implementation gates once the coordinator records the reviewed integrated SHA and backend/frontend lanes acknowledge the expected-red tests as intentional pre-implementation failures.
