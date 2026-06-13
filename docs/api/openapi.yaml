@@ -303,6 +303,27 @@ paths:
               schema: { type: string, format: binary }
         '404': { $ref: '#/components/responses/NotFound' }
 
+  /admin/tree:
+    get:
+      tags: [Admin Tree]
+      summary: Return the complete protected Author Workspace content tree
+      description: >-
+        Admin-only Stage 2 tree used by the Chinese Author Workspace. The
+        response is a flat pre-order list with parent_id links so the client can
+        restore expansion/selection state. It includes every Directory and File,
+        including Draft Files and Published Files; public tree/search/recent
+        APIs remain published-only. Stage 2 publication status values are only
+        draft and published.
+      responses:
+        '200':
+          description: Complete protected tree
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTreeResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
   /admin/nodes:
     post:
       tags: [Admin Tree]
@@ -343,7 +364,11 @@ paths:
   /admin/nodes/{node_id}:
     get:
       tags: [Admin Tree]
-      summary: Return admin node detail, including draft data
+      summary: Return Author Workspace node detail, including draft data
+      description: >-
+        Directory responses include overview fields and immediate children;
+        File responses include draft content/settings/assets metadata needed by
+        the Stage 2 workspace. Public APIs do not expose Draft Files.
       parameters:
         - $ref: '#/components/parameters/NodeId'
       responses:
@@ -353,12 +378,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminNodeDetail'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
     patch:
       tags: [Admin Tree]
-      summary: Update node name, slug, parent, or sort order
+      summary: Explicitly update node settings
       description: >-
-        Published path changes create path_redirects for affected published
-        files. Root-level reserved slugs are rejected.
+        Updates Author settings such as name and explicit url_path segment.
+        Explicit URL Path edits are never silently rewritten: validation errors,
+        reserved root segments, and sibling conflicts return machine-readable
+        errors. Directory movement uses the move preview/commit endpoints.
       parameters:
         - $ref: '#/components/parameters/NodeId'
       requestBody:
@@ -374,13 +404,107 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminNodeDetail'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
     delete:
       tags: [Admin Tree]
-      summary: Delete a draft node or draft-only subtree
+      summary: Delete an empty draft Directory or draft File
+      description: >-
+        Stage 2 blocks every non-empty Directory, including draft-only subtrees,
+        and blocks Published Files. Recursive subtree deletion is not available.
+        Conflict responses include machine-readable reason values.
       parameters:
         - $ref: '#/components/parameters/NodeId'
       responses:
-        '204': { description: Draft node deleted }
+        '204': { description: Empty draft node deleted }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /admin/nodes/{parent_id}/children/order:
+    put:
+      tags: [Admin Tree]
+      summary: Reorder same-parent child nodes transactionally
+      description: >-
+        Accepts the complete ordered child id list for one parent only. The
+        server verifies every child currently belongs to parent_id, rejects any
+        reparent attempt, and uses expected_version as a lost-update guard.
+      parameters:
+        - name: parent_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderChildrenRequest'
+      responses:
+        '200':
+          description: Children reordered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReorderChildrenResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /admin/nodes/{node_id}/move-preview:
+    post:
+      tags: [Admin Tree]
+      summary: Preview moving a node to another Directory
+      description: >-
+        Returns destination path, affected published File descendant paths,
+        redirects that would be created for formerly public File paths, subtree
+        rewrite impact, and machine-readable blocked reasons. Directory paths
+        themselves are not public redirect targets unless published File
+        descendants are affected.
+      parameters:
+        - $ref: '#/components/parameters/NodeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveNodeRequest'
+      responses:
+        '200':
+          description: Move preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovePreviewResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /admin/nodes/{node_id}/move:
+    post:
+      tags: [Admin Tree]
+      summary: Commit a previously previewed Directory Picker move
+      parameters:
+        - $ref: '#/components/parameters/NodeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveNodeRequest'
+      responses:
+        '200':
+          description: Node moved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminNodeDetail'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '409': { $ref: '#/components/responses/Conflict' }
   /admin/files/{file_id}/content:
     put:
@@ -809,22 +933,28 @@ components:
 
     CreateNodeRequest:
       type: object
-      required: [kind, name, slug]
+      required: [kind, name]
       properties:
-        parent_id: { type: [string, 'null'], format: uuid }
+        parent_id:
+          type: [string, 'null']
+          format: uuid
+          description: Selected parent Directory; null creates under the root.
         kind: { $ref: '#/components/schemas/NodeKind' }
-        name: { type: string }
-        slug: { type: string }
-        sort_order: { type: integer, default: 0 }
+        name: { type: string, minLength: 1 }
         content_format:
           $ref: '#/components/schemas/ContentFormat'
+      description: >-
+        Stage 2 minimal create request. Clients do not send slug, sort_order,
+        or raw ids in primary UI; backend generates the URL Path segment,
+        preserving Chinese characters, normalizing Latin text, and suffixing
+        initial conflicts.
     UpdateNodeRequest:
       type: object
       properties:
-        parent_id: { type: [string, 'null'], format: uuid }
-        name: { type: string }
-        slug: { type: string }
-        sort_order: { type: integer }
+        name: { type: string, minLength: 1 }
+        url_path:
+          type: string
+          description: Explicit Author-edited URL Path segment or absolute path; never silently rewritten.
     UpdateFileContentRequest:
       type: object
       required: [content_format, body_raw, keywords]
@@ -850,6 +980,84 @@ components:
         redirects_created:
           type: array
           items: { $ref: '#/components/schemas/PathRedirect' }
+    AdminTreeNode:
+      type: object
+      required: [id, parent_id, kind, name, url_path, sort_order, status]
+      properties:
+        id: { type: string, format: uuid }
+        parent_id: { type: [string, 'null'], format: uuid }
+        kind: { $ref: '#/components/schemas/NodeKind' }
+        name: { type: string }
+        url_path: { type: string, example: /研究/笔记 }
+        sort_order: { type: integer }
+        status:
+          type: string
+          enum: [draft, published]
+          description: Stage 2 exposes only draft/published; unpublished-change states are Stage 3.
+        content_format:
+          anyOf:
+            - $ref: '#/components/schemas/ContentFormat'
+            - type: 'null'
+    AdminTreeResponse:
+      type: object
+      required: [nodes]
+      properties:
+        nodes:
+          type: array
+          items: { $ref: '#/components/schemas/AdminTreeNode' }
+    ReorderChildrenRequest:
+      type: object
+      required: [child_ids, expected_version]
+      properties:
+        child_ids:
+          type: array
+          items: { type: string, format: uuid }
+        expected_version:
+          type: integer
+          minimum: 0
+          description: Lost-update guard supplied from the latest tree/detail response.
+    ReorderChildrenResponse:
+      type: object
+      required: [parent_id, child_ids, version]
+      properties:
+        parent_id: { type: string, format: uuid }
+        child_ids:
+          type: array
+          items: { type: string, format: uuid }
+        version: { type: integer, minimum: 0 }
+    MoveNodeRequest:
+      type: object
+      required: [new_parent_id, expected_version]
+      properties:
+        new_parent_id:
+          type: [string, 'null']
+          format: uuid
+          description: Destination Directory; null means root.
+        expected_version: { type: integer, minimum: 0 }
+    MovePreviewResponse:
+      type: object
+      required: [node_id, destination_path, affected_paths, redirects, blocked_reasons]
+      properties:
+        node_id: { type: string, format: uuid }
+        destination_path: { type: string }
+        affected_paths:
+          type: array
+          items: { type: string }
+        redirects:
+          type: array
+          items: { $ref: '#/components/schemas/PathRedirectPreview' }
+        blocked_reasons:
+          type: array
+          items:
+            type: string
+            enum: [cycle, path_traversal, duplicate_path, lost_update, parent_not_directory]
+    PathRedirectPreview:
+      type: object
+      required: [old_path, new_path, node_id]
+      properties:
+        old_path: { type: string }
+        new_path: { type: string }
+        node_id: { type: string, format: uuid }
     PathRedirect:
       type: object
       required: [id, old_path, new_path, node_id, created_at]
@@ -871,6 +1079,11 @@ components:
         error: { type: [string, 'null'] }
         updated_at: { type: [string, 'null'], format: date-time }
   responses:
+    BadRequest:
+      description: Invalid request body or fields
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
     Unauthorized:
       description: Authentication required or invalid token
       content:
