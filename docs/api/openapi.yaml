@@ -1124,16 +1124,16 @@ components:
 
     FileAsset:
       type: object
-      required: [id, file_node_id, filename, mime_type, size_bytes, storage_provider, public_url, state, created_at]
+      required: [id, file_node_id, filename, mime_type, size_bytes, state, created_at]
       properties:
         id: { type: string, format: uuid }
         file_node_id: { type: string, format: uuid }
         filename: { type: string }
         mime_type: { type: string }
         size_bytes: { type: integer, minimum: 0 }
-        storage_provider: { type: string, enum: [local, s3, r2, oss] }
-        storage_key: { type: string }
-        public_url: { type: string }
+        public_url:
+          type: string
+          description: Present only when the asset is public/published.
         state:
           type: string
           enum: [draft, published, draft_and_published]

@@ -34,9 +34,9 @@ type FileAsset struct {
 	Filename         string     `json:"filename"`
 	MIMEType         string     `json:"mime_type"`
 	SizeBytes        int64      `json:"size_bytes"`
-	StorageProvider  string     `json:"storage_provider"`
-	StorageKey       string     `json:"storage_key"`
-	PublicURL        string     `json:"public_url"`
+	StorageProvider  string     `json:"-"`
+	StorageKey       string     `json:"-"`
+	PublicURL        string     `json:"public_url,omitempty"`
 	State            string     `json:"state"`
 	PublishedAssetID *uuid.UUID `json:"published_asset_id"`
 	CreatedAt        time.Time  `json:"created_at"`

@@ -42,7 +42,7 @@ func (r *SQLRepository) CreateAsset(ctx context.Context, asset FileAsset) (FileA
 	const query = `
 		insert into file_assets (id, file_node_id, filename, mime_type, size_bytes, storage_provider, storage_key)
 		values ($1, $2, $3, $4, $5, $6, $7)
-		returning id, file_node_id, filename, mime_type, size_bytes, storage_provider, storage_key, created_at`
+		returning id, file_node_id, filename, mime_type, size_bytes, storage_provider, storage_key, state, published_asset_id, created_at`
 	created, err := scanAsset(r.pool.QueryRow(ctx, query,
 		asset.ID, asset.FileID, asset.Filename, asset.MIMEType, asset.SizeBytes, asset.StorageProvider, asset.StorageKey,
 	), r.publicBaseURL)
