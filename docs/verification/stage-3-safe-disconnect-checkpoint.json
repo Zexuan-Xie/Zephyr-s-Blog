@@ -1,0 +1,61 @@
+{
+  "checkpoint_type": "stage3_safe_disconnect",
+  "timestamp_local": "2026-06-14T00:40:30+08:00",
+  "repo": "/home/zephry_xzx/xlab/blog",
+  "team": "execute-aeolian-blog-a98ab708",
+  "head": "d4c7a5f",
+  "head_subject": "fix: restore MCP TypeScript tool build",
+  "do_not_shutdown": true,
+  "reason_not_shutdown": "Task 18 MCP acceptance and Task 19 MCP security review are still in_progress; Task 20 final closeout is pending on them.",
+  "current_status": {
+    "tasks_total": 20,
+    "completed": 15,
+    "in_progress": [
+      {"id": 2, "owner": "worker-2", "subject": "Coordinator evidence ledger and Team orchestration", "note": "ledger current at b6333bc/d4c7a5f; keep open until 18/19/20 pass"},
+      {"id": 18, "owner": "worker-4", "subject": "Gateway 6 MCP acceptance smoke and evidence", "note": "claimed; running MCP acceptance on leader HEAD d4c7a5f"},
+      {"id": 19, "owner": "worker-5", "subject": "Gateway 6 MCP security review", "note": "claimed; running MCP security review on leader HEAD d4c7a5f"}
+    ],
+    "pending": [
+      {"id": 20, "owner": "worker-1", "subject": "Gateway 7/8 final integrated acceptance and closeout", "blocked_by": [18, 19]}
+    ],
+    "historical_failed": [
+      {"id": 12, "owner": "worker-3", "subject": "Security implementation review after Gateway 2/3/6", "note": "historical REVISE superseded by Task 14 completed + Task 15 PASS; do not try to lifecycle-repair via unsupported APIs"}
+    ]
+  },
+  "important_decisions": [
+    "Do not shutdown team while Task 18/19 are running.",
+    "Task 12 failed status is accepted as historical REVISE; treat Task 14 + Task 15 PASS as superseding evidence.",
+    "MCP is server-local stdio only; no public HTTP/SSE transport.",
+    "Preserve iframe sandbox allow-scripts only; never add allow-same-origin.",
+    "No direct SQL/database/repository imports in MCP handlers; MCP uses backend HTTP boundary.",
+    "Do not commit node_modules, dist, caches, local DB/uploads, or .omx runtime artifacts."
+  ],
+  "mcp_state": {
+    "package": "mcp/",
+    "tools_completed_task17": true,
+    "verification_last_run": [
+      "cd mcp && npm test",
+      "cd mcp && npm run build",
+      "git diff --check"
+    ],
+    "evidence_docs": [
+      "docs/verification/stage-3-mcp-gateway6-skeleton.md",
+      "docs/verification/stage-3-mcp-gateway6-tools.md",
+      "docs/verification/stage-3-security.md (Task 19 will update)",
+      "docs/verification/stage-3-acceptance.md (Task 18/20 will update)"
+    ]
+  },
+  "next_resume_steps": [
+    "cd /home/zephry_xzx/xlab/blog",
+    "omx team status execute-aeolian-blog-a98ab708",
+    "Read .omx/state/team/execute-aeolian-blog-a98ab708/mailbox/leader-fixed.json tail for new worker-4/worker-5 messages.",
+    "If Task 18 completed PASS and Task 19 completed PASS, assign/trigger Task 20 to worker-1 for final integrated acceptance.",
+    "If Task 18 or 19 reports REVISE, inspect exact blockers, repair on leader HEAD, rerun relevant gates, then ask same worker to re-review.",
+    "Before shutdown, require pending=0, in_progress=0, and failed Task 12 explicitly acknowledged as historical superseded gate. Then run omx team shutdown execute-aeolian-blog-a98ab708."
+  ],
+  "last_mailbox_signals": [
+    "worker-4: ACK task 18 claimed; running MCP acceptance on leader HEAD d4c7a5f",
+    "worker-5: pane shows Task 19 security review in progress",
+    "worker-2: Task 2 blocker report; ledger current, waiting for 18/19/20"
+  ]
+}
