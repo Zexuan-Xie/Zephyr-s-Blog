@@ -1,0 +1,69 @@
+# Native API smoke
+date: 2026-06-13T15:04:49+08:00
+head: bc5e7c7e57bd2619c58057b42cd292ceb26cc64f
+integrated-base-under-test: 59311dd6dda990e5edde75262aa11db7335c2472
+
+## health
+{"status":"ok","database":"ok"}
+
+## login admin
+{
+  "user": {
+    "id": "54b6b1a5-8ec1-42a8-a4d2-3bd4704d15f9",
+    "email": "admin@example.com",
+    "role": "admin",
+    "provider": "local",
+    "created_at": "2026-06-06T13:59:16.637512+08:00"
+  },
+  "token_present": true
+}
+
+## me
+{"id":"54b6b1a5-8ec1-42a8-a4d2-3bd4704d15f9","email":"admin@example.com","role":"admin","provider":"local","created_at":"2026-06-06T13:59:16.637512+08:00"}
+
+## admin tree fixture grep and contract shape
+top_level_keys: ['nodes']
+frontend_expected_roots_present: False
+[
+  {
+    "id": "77473f2e-6069-48ff-95a7-3d7173d090c4",
+    "kind": "directory",
+    "name": "Stage 2 Acceptance",
+    "path": "/stage-2-acceptance",
+    "status": "draft",
+    "content_format": null
+  },
+  {
+    "id": "f2f3fb74-33f0-4264-baf2-b26e5d06e83e",
+    "kind": "directory",
+    "name": "Draft Branch",
+    "path": "/stage-2-acceptance/draft-branch",
+    "status": "draft",
+    "content_format": null
+  },
+  {
+    "id": "5b796f40-e15a-42fa-8832-9cfbd1dcd21e",
+    "kind": "file",
+    "name": "Draft Fixture",
+    "path": "/stage-2-acceptance/draft-branch/draft-fixture",
+    "status": "draft",
+    "content_format": "markdown"
+  },
+  {
+    "id": "a260a9f7-ecf3-4c3d-a87e-cc96b44c73bc",
+    "kind": "file",
+    "name": "Published Fixture",
+    "path": "/stage-2-acceptance/published-fixture",
+    "status": "published",
+    "content_format": "markdown"
+  }
+]
+missing: []
+
+## public fixture published resolves
+HTTP/1.1 404 Not Found
+Content-Type: text/plain; charset=utf-8
+X-Content-Type-Options: nosniff
+Date: Sat, 13 Jun 2026 07:04:49 GMT
+Content-Length: 19
+
