@@ -1,6 +1,6 @@
 # xLab Blog Progress
 
-Last updated: 2026-06-13 02:34 CST
+Last updated: 2026-06-13 13:20 CST
 
 This is the durable resume point. Keep it concise and update it after every key milestone.
 
@@ -8,7 +8,7 @@ This is the durable resume point. Keep it concise and update it after every key 
 
 - Branch: `main`; local commits are ahead of `origin/main`.
 - Active plan: `docs/plans/SECOND_DEVELOPMENT.md`.
-- Current breakpoint: Stage 2 is planned and ready for execution planning/Team launch when the user explicitly instructs. Do not start implementation yet.
+- Current breakpoint: Stage 2 plan completed one Critic review and was revised for launch consistency. It is ready for execution planning/Team launch when the user explicitly instructs. Do not start implementation yet.
 - Stage 1 engineering is complete and reviewed, but user acceptance did not pass because Author Workspace UX was inadequate; its blockers are now Stage 2 scope.
 - Current product baseline before Stage 2 implementation: Stage 1 closeout commits through `9b45f6b` documentation updates; recheck `git log` before starting.
 - Runtime services were healthy at the Stage 1 handoff; recheck before verification.
@@ -108,13 +108,18 @@ For runtime/auth/tree/publication changes, also run native PostgreSQL API smoke 
 ## Current execution plan artifact
 
 - Stage 2 Team execution plan: `docs/plans/STAGE_2_TEAM_EXECUTION.md` (tracked canonical copy).
-- Required seats: coordinator/gateway, backend developer, frontend developer, acceptance, security, repair/stabilization, plus independent architect and code-reviewer gates.
+- Required persistent seats: coordinator/gateway, backend developer, frontend developer, acceptance, security. Repair/stabilization is an on-demand gateway-failure lane; independent architect and code-reviewer gates remain required.
 - Gateway flow: launch readiness → data/fixture safety → OpenAPI/backend Red → backend Green → frontend Red → frontend Green → integrated acceptance → security → independent review/closeout.
+
+## Latest planning review
+
+- 2026-06-13: Ran a Critic probe on the Stage 2 plan. Verdict was `REVISE`, not implementation-blocking after fixes.
+- Applied fixes: unified Team launch to five persistent seats plus on-demand repair; added Stage 2/Stage 3 boundary precedence; added minimum OpenAPI contract table and stronger backend Red cases; added public Directory `管理此目录` acceptance/security checks; added disposable restore proof condition; clarified Author-role-only public entry data flow.
 
 ## Immediate next steps
 
-1. Review `docs/plans/STAGE_2_TEAM_EXECUTION.md`, then await explicit user instruction before Stage 2 implementation.
-2. If the user approves execution, launch OMX Team from that plan, starting with Gateway 0/1: clean status check, local database/uploads backup, and `/stage-2-acceptance` fixture setup.
+1. Await explicit user instruction before Stage 2 implementation.
+2. If the user approves execution, launch a five-seat OMX Team from `docs/plans/STAGE_2_TEAM_EXECUTION.md` / `.omx/plans/stage-2-author-workspace-team-execution-plan.md`, starting with Gateway 0/1: clean status check, local database/uploads backup, disposable restore proof when cleanup/schema work applies, and `/stage-2-acceptance` fixture setup.
 3. Before coding, reread `AGENTS.md`, this file, `docs/plans/SECOND_DEVELOPMENT.md`, `docs/specs/CONTEXT.md`, relevant specs, and `docs/api/openapi.yaml` for API changes.
 4. Update `PROGRESS.md` and `docs/verification/` at every key milestone and before stopping.
 

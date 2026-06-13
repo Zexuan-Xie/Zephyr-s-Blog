@@ -265,7 +265,7 @@ Security must prove Anonymous Visitor/Reader denial for Draft Preview, Draft Ass
 
 ## 6. Team execution and evidence model
 
-Use a fresh five-seat Team per stage only when implementation begins:
+Use a fresh five-seat Team per stage only when implementation begins, plus on-demand repair agents/tasks when a gateway fails:
 
 1. coordinator — progress, task ledger, integration evidence;
 2. backend — OpenAPI, Go handlers/services/repositories, migrations, backend tests;
@@ -273,7 +273,7 @@ Use a fresh five-seat Team per stage only when implementation begins:
 4. acceptance — black-box/API/database/browser verification;
 5. security — threat review and abuse tests, no feature code.
 
-Leader integrates worker commits; acceptance/security test only integrated SHAs. Coordinator owns `PROGRESS.md` and the stage team log while Team is active. Evidence ownership:
+Repair is not a default sixth persistent seat unless the active runtime/DAG is explicitly changed; failed gateways get coordinator-created repair tasks routed to the relevant lane or an on-demand debugger/code-simplifier. Leader integrates worker commits; acceptance/security test only integrated SHAs. Coordinator owns `PROGRESS.md` and the stage team log while Team is active. Evidence ownership:
 
 - `docs/verification/stage-<n>-team-log.md` — coordinator;
 - `docs/verification/stage-<n>-acceptance.md` — acceptance;

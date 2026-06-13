@@ -34,11 +34,32 @@ Must deliver:
 9. Dedicated Stage 2 fixture, desktop acceptance path, mobile no-regression sanity, security review, architect CLEAR, code-reviewer APPROVE.
 10. Presentation-grade code quality: readable, extensible, layered, no duplicated SQL/business logic.
 
+Minimum OpenAPI contract to define before backend implementation:
+
+| Capability | Minimum protected contract | Notes |
+|---|---|---|
+| Author Content Tree | `GET /admin/tree` or equivalent | Returns every Directory and File visible to Author, including Draft Files and publication state; public APIs must remain published-only. |
+| Workspace detail | `GET /admin/nodes/{node_id}` reshaped or equivalent | Returns Directory overview data or File content/settings/assets metadata needed by the right workspace. |
+| Minimal create | `POST /admin/nodes` reshaped or equivalent | Request is context-aware: selected parent Directory + `kind` + `名称` and File `格式`; backend generates URL Path segment, preserves Chinese, normalizes Latin text, and suffixes initial conflicts. |
+| Explicit settings update | `PATCH /admin/nodes/{node_id}` or equivalent | Explicit URL Path edits must return validation/conflict errors and must not be silently rewritten. Reserved root segments are rejected. |
+| Same-parent reorder | `PUT /admin/nodes/{parent_id}/children/order` or equivalent | Accepts ordered child IDs for one parent only; transactional; rejects reparent attempts and stale/lost-update cases where possible. |
+| Move preview/commit | preview + commit endpoint(s), or clearly documented equivalent | Directory Picker support: cycle prevention, destination path preview, affected published-path redirects, subtree rewrite impact, and clear blocked reasons. |
+| Delete constraints | `DELETE /admin/nodes/{node_id}` response contract | Blocks non-empty Directories and Published Files with machine-readable reason plus Chinese-safe message source for UI. |
+| Publication state | existing publish/unpublish/content endpoints, documented if reused | Enough for manual save, publish, publish update where supported, and secondary `撤回发布`; no Stage 3 snapshots. |
+
+Backend Red tests must explicitly cover Chinese-preserving URL Path generation, reserved root rejection, initial create conflict suffixes, explicit URL Path conflict without silent rewrite, same-parent reorder transaction/lost-update behavior, move cycle/path traversal rejection, delete constraints, and Anonymous Visitor/Reader denial.
+
 Out of Stage 2:
 
 - Autosave, Content Version history, Draft Preview, Draft/Published Asset split, independent Published Content snapshots.
 - Complete mobile Author workflow.
 - Public homepage / Recent / public reading / comments / Likes / Glass Ricepaper redesign except regression repair and required Author entry.
+
+Stage boundary precedence for execution:
+
+- For Stage 2 implementation, `docs/plans/SECOND_DEVELOPMENT.md` Section 4 is the controlling scope.
+- Any broader Author Workspace material in active specs that describes Draft Preview, autosave, Content Version history, Draft/Published Asset split, independent Published Content snapshots, or no-manual-save behavior is Stage 3 unless repeated in Section 4.
+- Stage 2 File editing remains manual-save and uses the existing asset model; Stage 3 will add autosave, version history, Draft Preview, and Draft/Published Assets.
 
 ## 2. Execution model
 
@@ -51,13 +72,14 @@ Recommended launch shape after user approval:
 cp .omx/plans/stages/stage-2-team-dag.json .omx/plans/team-dag-second-development-active.json
 cmp .omx/plans/stages/stage-2-team-dag.json .omx/plans/team-dag-second-development-active.json
 
-omx team 6 "Execute Stage 2 Chinese Author Workspace plan from .omx/plans/stage-2-author-workspace-team-execution-plan.md"
+omx team 5 "Execute Stage 2 Chinese Author Workspace plan from .omx/plans/stage-2-author-workspace-team-execution-plan.md"
 ```
 
-Why six seats instead of the old five:
+Why five persistent seats plus on-demand repair:
 
-- Stage 2 now has enough UI/product risk to separate frontend feature development from design/UX implementation review, and enough expected fixes to dedicate a repair lane.
-- If runtime only supports five reliable seats, merge `repair` into backend/frontend owners but keep repair tasks as explicit dependent tasks.
+- The current Stage DAG is a strict five-seat bootstrap (`coordinator`, `backend`, `frontend`, `acceptance`, `security`), so Stage 2 must launch with five persistent workers.
+- Repair remains an explicit **on-demand agent role/task lane**: when a gateway fails, the Coordinator creates a targeted repair task and routes it to the relevant development worker or spawns/assigns a temporary `debugger` / `code-simplifier` repair agent if the runtime supports it.
+- This preserves the user-required repair responsibility without fighting the active Team DAG or causing seat-routing ambiguity.
 
 ## 3. Agent roster, responsibilities, intake, and deliverables
 
@@ -68,7 +90,7 @@ Why six seats instead of the old five:
 | 3. Frontend Developer | `designer` or `team-executor` | React implementation | `design-taste-frontend`, `tdd`, `image-to-code` only if visual reference appears | `web/src/pages/AdminPage.tsx`, `web/src/lib/api.ts`, `web/src/lib/types.ts`, styles/tests | Chinese Author Workspace shell, Content Tree, Directory/File workspaces, public Author entry, frontend tests | Backend contracts without OpenAPI first |
 | 4. Acceptance Agent | `test-engineer` or `verifier` | Black-box acceptance and fixture verification | `tdd` for test authoring, `agent-browser`/browser verification when needed | Integrated SHA, fixture spec, acceptance criteria | `docs/verification/stage-2-acceptance.md`, desktop browser evidence, mobile no-regression sanity, API smoke, screenshots/logs | Feature implementation |
 | 5. Security Agent | `code-reviewer` | Threat review and abuse tests | `code-review`, `diagnose` for security repros | Integrated SHA, protected API/public entry changes | `docs/verification/stage-2-security.md`, Draft leakage tests, auth denial tests, destructive bypass review | Feature implementation |
-| 6. Repair / Stabilization Agent | `debugger` or `code-simplifier` | Fixes issues found by gateways without derailing feature lanes | `diagnose`, `ai-slop-cleaner`, `code-simplifier` | Failed gateway reports, minimal repros | Small targeted repair commits, regression tests, cleanup patches | Broad redesign, unassigned feature expansion |
+| 6. Repair / Stabilization Agent (on demand) | `debugger` or `code-simplifier` | Fixes issues found by gateways without derailing feature lanes | `diagnose`, `ai-slop-cleaner`, `code-simplifier` | Failed gateway reports, minimal repros | Small targeted repair commits, regression tests, cleanup patches | Broad redesign, unassigned feature expansion |
 | 7. Independent Architect Review (after integration) | `architect` | Architecture review | `improve-codebase-architecture`, `code-review` | Integrated candidate and evidence | Architect `CLEAR` / required changes in `docs/verification/stage-2-code-review.md` | Authored feature code |
 | 8. Independent Code Review (after architecture) | `code-reviewer` | Code-quality review | `code-review` | Integrated candidate and architect result | Code Review `APPROVE` / required changes in `docs/verification/stage-2-code-review.md` | Authored feature code |
 
@@ -77,7 +99,7 @@ Notes:
 - The named skills are optional aids for each lane, not substitutes for project specs.
 - Coordinator is the only lane that edits `PROGRESS.md` and the stage team log while Team is active.
 - Acceptance/security must reset to integrated SHAs before testing.
-- Repair lane only acts on gateway failures or explicit coordinator assignment.
+- Repair is not a persistent sixth seat in the default launch; it is an explicit on-demand gateway-failure lane. Repair only acts on coordinator-created failure reports with a minimal repro, a bounded write scope, and a required regression test/evidence update.
 
 ## 4. Gateway model
 
@@ -111,6 +133,7 @@ Owner: Coordinator + Acceptance.
 Required:
 
 - Back up local database/uploads before fixture cleanup or schema changes.
+- If cleanup, reset, or schema work is performed, prove disposable restore from the backup; if not applicable, record explicit `Restore proof: N/A` with reason.
 - Create or refresh `/stage-2-acceptance` fixture.
 - Record fixture IDs/paths and cleanup policy.
 - Prove no accidental deletion of preserved baseline content.
@@ -131,7 +154,7 @@ Owner: Backend, reviewed by Coordinator.
 Required:
 
 - Update `docs/api/openapi.yaml` first for protected Author Workspace APIs.
-- Add failing backend tests for protected complete tree, generated URL Path, create conflict suffix, explicit URL Path conflict, reorder/move/delete constraints, and auth denial.
+- Add failing backend tests for protected complete tree, Chinese-preserving generated URL Path, reserved root rejection, create conflict suffix, explicit URL Path conflict without silent rewrite, reorder transaction/lost-update behavior, move cycle/path traversal constraints, delete constraints, and auth denial.
 
 Evidence:
 
@@ -227,11 +250,13 @@ Required integrated SHA path:
 3. Tree refreshes, expands parent, selects/opens new node, shows Chinese toast/path.
 4. Edit File, manual save, publish.
 5. Public File opens; `编辑文件` returns to workspace with File selected.
-6. `撤回发布` hides public File after confirmation.
-7. Settings move/URL Path/delete-constrained scenarios show clear Chinese prompts.
-8. Same-parent drag reorder persists and never reparents.
-9. Mobile no-regression sanity: no major layout break, orientation/exit present.
-10. Public homepage/Recent/public reading/comments/Likes not redesigned.
+6. Public Directory shows Author-only `管理此目录`, and it returns to workspace with that Directory selected.
+7. Anonymous Visitor and Reader do not see `编辑文件` or `管理此目录`.
+8. `撤回发布` hides public File after confirmation.
+9. Settings move/URL Path/delete-constrained scenarios show clear Chinese prompts.
+10. Same-parent drag reorder persists and never reparents.
+11. Mobile no-regression sanity: no major layout break, orientation/exit present.
+12. Public homepage/Recent/public reading/comments/Likes not redesigned.
 
 Evidence:
 
@@ -299,7 +324,7 @@ Coordinator should create concrete tasks after Team launch. Suggested packet DAG
 | S2-07 | Frontend | S2-06 | Directory workspace + minimal create flow | Author tree/create APIs | overview/create/toast/select behavior |
 | S2-08 | Frontend | S2-06 | File workspace + settings + assets | detail/content/publish/assets APIs | manual save, publish, secondary unpublish, settings |
 | S2-09 | Frontend | S2-08 | Public Author manage/edit entry | public resolver/file/directory pages | `管理此目录` / `编辑文件`, node selection routing |
-| S2-10 | Repair | any failed gateway | Targeted repair packet | failure report + repro | minimal fix + regression test |
+| S2-10 | Coordinator-routed Repair | any failed gateway | Targeted repair packet | failure report + repro | minimal fix + regression test |
 | S2-11 | Acceptance | S2-04,S2-09 | Integrated desktop acceptance | integrated SHA, fixture | acceptance evidence PASS/FAIL |
 | S2-12 | Security | S2-04,S2-09 | Security review | integrated SHA | security evidence PASS/FAIL |
 | S2-13 | Architect | S2-11,S2-12 | Architecture review | final candidate + evidence | CLEAR or required changes |
@@ -308,8 +333,8 @@ Coordinator should create concrete tasks after Team launch. Suggested packet DAG
 
 Repair routing:
 
-- Backend failures → S2-10 assigned to Repair with Backend consultation, or new backend subtask if broad.
-- Frontend failures → S2-10 assigned to Repair with Frontend consultation, or new frontend subtask if broad.
+- Backend failures → Coordinator creates S2-10 and assigns it to Backend or an on-demand `debugger`/`code-simplifier` repair agent with Backend consultation; create a new backend subtask if broad.
+- Frontend failures → Coordinator creates S2-10 and assigns it to Frontend or an on-demand `debugger`/`code-simplifier` repair agent with Frontend consultation; create a new frontend subtask if broad.
 - Acceptance/security FAIL → coordinator creates explicit fix task(s), then reruns relevant gateway.
 - Review rejection → coordinator creates targeted refactor/fix tasks; no self-approval.
 
@@ -348,6 +373,10 @@ Docs/evidence files:
 
 Do not edit unrelated public UI unless required by Author entry or regression repair.
 
+Public Author entry data-flow constraint:
+
+- `管理此目录` / `编辑文件` visibility must be based on confirmed Author role, not merely token presence. If public components currently receive only token state, route `currentUser.role === "admin"` or an equivalent role-safe prop through the public page/component boundary.
+
 ## 7. Acceptance criteria
 
 A Stage 2 candidate is acceptable only when all are true:
@@ -356,7 +385,7 @@ A Stage 2 candidate is acceptable only when all are true:
 2. No old primary UI labels: `ADMIN / Tree Manager`, `Node id`, Parent ID, Sort order, or `slug` in Author primary UI.
 3. Newly created Directory/File appears immediately without manual refresh.
 4. Generated File can be selected, edited, published, and unpublish reached.
-5. Public File `编辑文件` returns to the workspace with the File selected.
+5. Public File `编辑文件` and public Directory `管理此目录` are visible only to Author and return to the workspace with the target selected.
 6. Protected Author tree includes Draft Files that public tree/search/recent do not expose.
 7. Same-parent reorder persists and cannot reparent.
 8. Destructive/blocked operations have clear Chinese prompts.
@@ -364,6 +393,8 @@ A Stage 2 candidate is acceptable only when all are true:
 10. Backend, frontend, API smoke, acceptance, security, architect, and code review gates all pass.
 
 ## 8. Verification commands
+
+When shell environment is uncertain, wrap commands with `conda run -n blogenv bash -lc ...` as required by `AGENTS.md`.
 
 Backend:
 
@@ -417,7 +448,7 @@ Recommended execution after user approval:
 Suggested command handoff:
 
 ```bash
-omx team 6 "Execute Stage 2 Chinese Author Workspace plan from .omx/plans/stage-2-author-workspace-team-execution-plan.md"
+omx team 5 "Execute Stage 2 Chinese Author Workspace plan from .omx/plans/stage-2-author-workspace-team-execution-plan.md"
 ```
 
 Team must prove before shutdown:
