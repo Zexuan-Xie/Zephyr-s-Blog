@@ -90,7 +90,7 @@ Required red-test topics:
 | Worker | Lane | Current task focus | Status |
 |---|---|---|---|
 | worker-1 | coordinator / gateway | Task 20 final integrated acceptance and closeout after MCP gates | pending / blocked by 18,19 |
-| worker-2 | backend / MCP | Task 16 MCP skeleton, then task 17 MCP tools | pending |
+| worker-2 | backend / MCP | Task 16 MCP skeleton, then task 17 MCP tools | task 16 in progress |
 | worker-3 | planner | Task 2 coordinator ledger and MCP monitoring | in progress |
 | worker-4 | acceptance / verifier | Task 18 MCP acceptance smoke and evidence | pending / blocked by 16,17 |
 | worker-5 | security / review | Task 19 MCP security review; backend task 15 PASS integrated | pending / blocked by 16,17 |
@@ -336,6 +336,33 @@ PASS source-of-truth read: task 14 completed; task 15 completed/PASS at dd2b493;
 PASS mailbox steering: leader reassigned Task 2 to worker-3 and instructed coordinator ledger only; keep Task 2 open until final closeout.
 PASS node_modules policy precheck before edits: git status --short clean; git ls-files -s web/node_modules empty.
 ```
+
+
+## Coordinator ledger update — 2026-06-14 00:04 CST
+
+Verdict: **MCP Gateway 6 started; downstream MCP gates remain blocked as designed**
+
+Task state reconciliation from OMX task JSON:
+
+- Task 16 (Gateway 6 MCP research and server skeleton): **in_progress**,
+  owner worker-2, lease observed through `2026-06-13T16:11:31.104Z`. This is
+  the only active MCP implementation slice at this checkpoint.
+- Task 17 (Gateway 6 MCP tool implementation slices): **pending**, blocked by
+  task 16.
+- Task 18 (Gateway 6 MCP acceptance smoke and evidence): **pending**, blocked
+  by tasks 16 and 17.
+- Task 19 (Gateway 6 MCP security review): **pending**, blocked by tasks 16
+  and 17.
+- Task 20 (Gateway 7/8 final integrated acceptance and closeout): **pending**,
+  blocked by tasks 18 and 19.
+- Task 2 remains **in_progress** on worker-3 for coordinator ledger monitoring.
+- Task 12 remains a terminal historical REVISE verdict; it is superseded by
+  task 14 completed plus task 15 PASS at `dd2b493`, and the claim API reports
+  `already_terminal` if worker-3 attempts to reclaim it.
+
+Coordinator action: no duplicate MCP edits or acceptance/security testing were
+started from worker-3. Continue to update this ledger only after integrated MCP
+implementation/gate changes.
 
 ## Verification
 

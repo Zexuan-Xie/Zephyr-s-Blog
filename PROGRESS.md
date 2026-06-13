@@ -1,6 +1,6 @@
 # Progress
 
-Last updated: 2026-06-13 23:58 CST
+Last updated: 2026-06-14 00:04 CST
 
 ## Current breakpoint
 
@@ -14,7 +14,7 @@ Gateway status:
 - **Gateway 3 — PASS.** Worker-2 task 10 completed version-state, restore, publish summary/publish/unpublish, Draft Preview, and asset-state HTTP surfaces; backend security repair is accepted after task 15.
 - **Gateway 4 — PASS for frontend implementation.** Worker-3 task 4 completed autosave/version/restore/publish/Draft Preview/draft-published assets UI at commit `9b51d36`; frontend lint/build/contracts/node tests passed.
 - **Security implementation review — backend repair accepted.** Task 12 remains a historical REVISE verdict with findings recorded in `docs/verification/stage-3-security.md`; task 14 completed the backend repair and task 15 post-repair security re-review passed at leader-reported integrated SHA `dd2b493`. MCP-specific security remains a later Gateway 6 gate.
-- **Gateway 6 — MCP in progress.** Tasks 16-19 now track server-local stdio MCP skeleton/tools, acceptance smoke, and security review; task 20 is final integrated acceptance/closeout after MCP gates pass.
+- **Gateway 6 — MCP in progress.** Task 16 server-local stdio MCP skeleton is now in progress on worker-2; tasks 17-19 track MCP tools, acceptance smoke, and security review; task 20 is final integrated acceptance/closeout after MCP gates pass.
 
 Current verification note (2026-06-13 23:58 CST): frontend Gateway 4 verification passed on worker-3 (`npm run lint`, `npm run build`, Stage 3 frontend contract, and all web node tests). Backend security REVISE repair is complete: task 14 records backend `go test`/`go vet`/gofmt PASS evidence, and task 15 records post-repair security review PASS at `dd2b493`. MCP implementation remains pending and must be accepted only after integrated MCP SHAs land.
 
@@ -63,7 +63,7 @@ npm run build
 
 ## Immediate next steps
 
-1. Monitor MCP Gateway 6 task chain: task 16 skeleton, task 17 tool slices, task 18 acceptance smoke/evidence, and task 19 security review.
+1. Monitor MCP Gateway 6 task chain: task 16 skeleton is in progress on worker-2; task 17 tool slices, task 18 acceptance smoke/evidence, and task 19 security review remain pending/blocked as designed.
 2. Keep MCP security/acceptance gates blocked until an actual server-local stdio MCP package exists with explicit enablement, per-call kill switch, audit JSONL, backup/export, no public HTTP/SSE listener, and no direct SQL in handlers.
 3. After MCP acceptance/security pass, let task 20 run final integrated acceptance and closeout; Task 2 remains open until terminal task counts and closeout gates pass.
 4. Keep `PROGRESS.md` and `docs/verification/stage-3-team-log.md` synchronized after each integration or gate decision.
