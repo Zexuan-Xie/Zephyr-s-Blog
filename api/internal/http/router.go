@@ -108,13 +108,6 @@ func NewRouter(deps Dependencies) http.Handler {
 		}
 
 		if authMiddleware != nil {
-			api.Route("/admin", func(admin chi.Router) {
-				admin.Use(authMiddleware.RequireAdmin)
-				admin.Get("/preview/{file_id}", func(w http.ResponseWriter, r *http.Request) {
-					respond.Error(w, http.StatusNotFound, "file content not found")
-				})
-			})
-
 			lifecycleService := deps.LifecycleService
 			adminService := deps.AdminService
 			if deps.Pool != nil && (lifecycleService == nil || adminService == nil) {
@@ -127,7 +120,10 @@ func NewRouter(deps Dependencies) http.Handler {
 				}
 			}
 			if lifecycleService != nil || adminService != nil || assetService != nil || searchService != nil {
-				lifecycleHandler := handlers.NewTreeLifecycleHandler(lifecycleService)
+				var lifecycleHandler *handlers.TreeLifecycleHandler
+				if lifecycleService != nil {
+					lifecycleHandler = handlers.NewTreeLifecycleHandler(lifecycleService)
+				}
 				var assetHandler *handlers.AssetHandler
 				if assetService != nil {
 					assetHandler = handlers.NewAssetHandler(assetService)
@@ -158,6 +154,10 @@ func NewRouter(deps Dependencies) http.Handler {
 						admin.Post("/files/{file_id}/unpublish", lifecycleHandler.UnpublishFile)
 						admin.Get("/preview/{file_id}", lifecycleHandler.DraftPreview)
 						admin.Get("/files/{file_id}/assets", lifecycleHandler.FileAssetState)
+					} else {
+						admin.Get("/preview/{file_id}", func(w http.ResponseWriter, r *http.Request) {
+							respond.Error(w, http.StatusNotFound, "file content not found")
+						})
 					}
 					if assetHandler != nil {
 						admin.Post("/files/{file_id}/assets", assetHandler.Upload)
