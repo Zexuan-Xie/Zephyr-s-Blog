@@ -6,7 +6,7 @@ Last updated: 2026-06-13 18:18 CST
 
 Stage 2 implementation is complete and repaired after the Gateway 6 protected-tree contract drift. The previous OMX team `execute-approved-xlab-015f30a9` is no longer active; main-thread verification took over.
 
-Current HEAD: `7ba0d2921acf22448164d39f2c7c5550aa5f3398` plus the current working-tree fix for public Chinese URL Path decoding. Commit this fix after final review.
+Current HEAD: `cfbc487` (`fix: handle Chinese public URL paths`).
 
 Completed in this checkpoint:
 
