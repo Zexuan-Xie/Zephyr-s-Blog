@@ -42,6 +42,10 @@ export class ApiError extends Error {
   }
 }
 
+export function isRevisionConflict(error: unknown): error is ApiError {
+  return error instanceof ApiError && error.status === 409;
+}
+
 async function requestJson<T>(
   path: string,
   schema: z.ZodType<T>,
@@ -53,6 +57,8 @@ async function requestJson<T>(
   });
 
   if (!response.ok) {
+    // Preserve 409 Conflict responses so the Author Workspace can show
+    // Reload latest / Copy my changes for stale revision saves.
     throw new ApiError(response.status, await readErrorMessage(response));
   }
 
