@@ -27,8 +27,8 @@ test('Stage 2 replaces old Admin chrome with Chinese Author Workspace and protec
 
 test('Stage 2 minimal create flow is slugless and opens the returned node after tree refresh', () => {
   const createStart = adminPageSource.indexOf('async function submitCreate');
-  const updateStart = adminPageSource.indexOf('async function submitNodeUpdate', createStart);
-  const createFlow = adminPageSource.slice(createStart, updateStart);
+  const logoutStart = adminPageSource.indexOf('function logoutAuthor', createStart);
+  const createFlow = adminPageSource.slice(createStart, logoutStart);
 
   assert.match(apiSource, /fetchAdminTree/);
   assert.match(apiSource, /requestJson\(['"]\/admin\/tree['"]/);
@@ -37,7 +37,8 @@ test('Stage 2 minimal create flow is slugless and opens the returned node after 
   assert.doesNotMatch(createFlow, /slug:/);
   assert.doesNotMatch(createFlow, /sort_order:/);
   assert.match(createFlow, /setSelectedId\(created\.node\.id\)/);
-  assert.match(createFlow, /setDetail\(created\)/);
+  assert.match(adminPageSource, /queryFn: \(\) => fetchAdminNode\(effectiveSelectedId\)/);
+  assert.match(adminPageSource, /detail=\{detailQuery\.data \?\? null\}/);
   assert.match(createFlow, /adminTreeQuery\.refetch\(\)/);
   assert.match(createFlow, /created\.node\.path|created\.node\.url_path/);
   assert.match(adminPageSource, /新建目录/);
