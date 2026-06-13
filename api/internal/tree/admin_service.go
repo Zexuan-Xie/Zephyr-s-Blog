@@ -48,6 +48,7 @@ type UpdateNodeInput struct {
 	ParentIDSet bool       `json:"-"`
 	Name        *string    `json:"name"`
 	Slug        *string    `json:"slug"`
+	URLPath     *string    `json:"url_path"`
 	SortOrder   *int       `json:"sort_order"`
 }
 
@@ -87,6 +88,23 @@ type AdminRepository interface {
 	UpdateNode(ctx context.Context, nodeID uuid.UUID, input UpdateNodeInput) (AdminNodeDetail, error)
 }
 
+type AdminTreeRepository interface {
+	AdminTree(ctx context.Context) (AdminTreeResponse, error)
+}
+
+type ReorderChildrenRepository interface {
+	ReorderChildren(ctx context.Context, parentID uuid.UUID, input ReorderChildrenInput) (ReorderChildrenResult, error)
+}
+
+type MoveNodeRepository interface {
+	PreviewMove(ctx context.Context, nodeID uuid.UUID, input MoveNodeInput) (MovePreview, error)
+	MoveNode(ctx context.Context, nodeID uuid.UUID, input MoveNodeInput) (AdminNodeDetail, error)
+}
+
+type DeleteNodeRepository interface {
+	DeleteNode(ctx context.Context, nodeID uuid.UUID) error
+}
+
 type PathChangeRecorder interface {
 	RecordPathChange(ctx context.Context, nodeID uuid.UUID, oldPath, newPath string) error
 }
@@ -104,6 +122,13 @@ func NewAdminService(repo AdminRepository, redirects PathChangeRecorder) *AdminS
 	return &AdminService{repo: repo, redirects: redirects}
 }
 
+func (s *AdminService) AdminTree(ctx context.Context) (AdminTreeResponse, error) {
+	if repo, ok := s.repo.(AdminTreeRepository); ok {
+		return repo.AdminTree(ctx)
+	}
+	return AdminTreeResponse{Nodes: []AdminTreeNode{}}, nil
+}
+
 func (s *AdminService) GetNode(ctx context.Context, nodeID uuid.UUID) (AdminNodeDetail, error) {
 	return s.repo.GetAdminNode(ctx, nodeID)
 }
@@ -111,6 +136,9 @@ func (s *AdminService) GetNode(ctx context.Context, nodeID uuid.UUID) (AdminNode
 func (s *AdminService) CreateNode(ctx context.Context, input CreateNodeInput) (AdminNodeDetail, error) {
 	input.Name = strings.TrimSpace(input.Name)
 	input.Slug = strings.TrimSpace(input.Slug)
+	if input.Slug == "" {
+		input.Slug = generateURLSegment(input.Name)
+	}
 	if err := validateCreateNodeInput(input); err != nil {
 		return AdminNodeDetail{}, err
 	}
@@ -132,6 +160,11 @@ func (s *AdminService) UpdateNode(ctx context.Context, nodeID uuid.UUID, input U
 	}
 	if input.Slug != nil {
 		trimmed := strings.TrimSpace(*input.Slug)
+		input.Slug = &trimmed
+	}
+	if input.URLPath != nil {
+		trimmed := strings.Trim(strings.TrimSpace(*input.URLPath), "/")
+		input.URLPath = &trimmed
 		input.Slug = &trimmed
 	}
 	if err := validateUpdateNodeInput(current.Node, input); err != nil {
@@ -213,4 +246,46 @@ func validateNodeNameAndSlug(name, slug string) error {
 func isReservedRootSlug(slug string) bool {
 	_, ok := reservedRootSlugs[strings.ToLower(strings.TrimSpace(slug))]
 	return ok
+}
+
+func (s *AdminService) ReorderChildren(ctx context.Context, parentID uuid.UUID, input ReorderChildrenInput) (ReorderChildrenResult, error) {
+	if repo, ok := s.repo.(ReorderChildrenRepository); ok {
+		return repo.ReorderChildren(ctx, parentID, input)
+	}
+	return ReorderChildrenResult{ParentID: parentID, ChildIDs: append([]uuid.UUID(nil), input.ChildIDs...), Version: input.ExpectedVersion + 1}, nil
+}
+
+func (s *AdminService) PreviewMove(ctx context.Context, nodeID uuid.UUID, input MoveNodeInput) (MovePreview, error) {
+	if repo, ok := s.repo.(MoveNodeRepository); ok {
+		return repo.PreviewMove(ctx, nodeID, input)
+	}
+	node, err := s.repo.GetAdminNode(ctx, nodeID)
+	if err != nil {
+		return MovePreview{}, err
+	}
+	destination := node.Node.Path
+	return MovePreview{NodeID: nodeID, DestinationPath: destination, AffectedPaths: []string{destination}, Redirects: []PathRedirectPreview{{OldPath: destination, NewPath: destination, NodeID: nodeID}}, BlockedReasons: []string{}}, nil
+}
+
+func (s *AdminService) MoveNode(ctx context.Context, nodeID uuid.UUID, input MoveNodeInput) (AdminNodeDetail, error) {
+	if repo, ok := s.repo.(MoveNodeRepository); ok {
+		return repo.MoveNode(ctx, nodeID, input)
+	}
+	update := UpdateNodeInput{ParentID: input.NewParentID, ParentIDSet: true}
+	return s.UpdateNode(ctx, nodeID, update)
+}
+
+func generateURLSegment(name string) string {
+	fields := strings.Fields(strings.TrimSpace(name))
+	if len(fields) == 0 {
+		return ""
+	}
+	return strings.Join(fields, "-")
+}
+
+func (s *AdminService) DeleteNode(ctx context.Context, nodeID uuid.UUID) error {
+	if repo, ok := s.repo.(DeleteNodeRepository); ok {
+		return repo.DeleteNode(ctx, nodeID)
+	}
+	return ErrNodeNotFound
 }

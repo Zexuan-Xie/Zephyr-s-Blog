@@ -126,8 +126,13 @@ func TestUpdateNodeInputTracksExplicitNullParent(t *testing.T) {
 }
 
 type fakeAdminRepository struct {
-	nodes       map[uuid.UUID]AdminNodeDetail
-	updateCalls int
+	nodes           map[uuid.UUID]AdminNodeDetail
+	adminTree       []AdminTreeNode
+	updateCalls     int
+	reorderParent   uuid.UUID
+	reorderChildren []uuid.UUID
+	reorderVersion  int
+	deleteErr       error
 }
 
 type atomicFakeAdminRepository struct {
@@ -149,10 +154,33 @@ func (f *fakeAdminRepository) GetAdminNode(_ context.Context, nodeID uuid.UUID) 
 }
 
 func (f *fakeAdminRepository) CreateNode(_ context.Context, input CreateNodeInput) (AdminNodeDetail, error) {
-	node := Node{ID: uuid.New(), ParentID: input.ParentID, Kind: input.Kind, Name: input.Name, Slug: input.Slug, Path: "/" + input.Slug, SortOrder: input.SortOrder}
+	slug := input.Slug
+	if slug == "" {
+		slug = generateURLSegment(input.Name)
+	}
+	base := slug
+	for suffix := 2; f.hasSiblingSlug(input.ParentID, slug); suffix++ {
+		slug = base + "-" + string(rune('0'+suffix))
+	}
+	node := Node{ID: uuid.New(), ParentID: input.ParentID, Kind: input.Kind, Name: input.Name, Slug: slug, Path: "/" + slug, SortOrder: input.SortOrder}
 	detail := AdminNodeDetail{Node: node, Assets: []FileAsset{}, RedirectsCreated: []PathRedirect{}}
 	f.nodes[node.ID] = detail
 	return detail, nil
+}
+
+func (f *fakeAdminRepository) hasSiblingSlug(parentID *uuid.UUID, slug string) bool {
+	for _, detail := range f.nodes {
+		if detail.Node.Slug != slug {
+			continue
+		}
+		if parentID == nil && detail.Node.ParentID == nil {
+			return true
+		}
+		if parentID != nil && detail.Node.ParentID != nil && *parentID == *detail.Node.ParentID {
+			return true
+		}
+	}
+	return false
 }
 
 func (f *fakeAdminRepository) UpdateNode(_ context.Context, nodeID uuid.UUID, input UpdateNodeInput) (AdminNodeDetail, error) {
@@ -160,6 +188,9 @@ func (f *fakeAdminRepository) UpdateNode(_ context.Context, nodeID uuid.UUID, in
 	detail, ok := f.nodes[nodeID]
 	if !ok {
 		return AdminNodeDetail{}, ErrNodeNotFound
+	}
+	if input.URLPath != nil && *input.URLPath == "existing" {
+		return AdminNodeDetail{}, ErrDuplicatePath
 	}
 	node := detail.Node
 	if input.ParentIDSet {
@@ -170,6 +201,10 @@ func (f *fakeAdminRepository) UpdateNode(_ context.Context, nodeID uuid.UUID, in
 	}
 	if input.Slug != nil {
 		node.Slug = *input.Slug
+		node.Path = path.Join(path.Dir(node.Path), node.Slug)
+	}
+	if input.URLPath != nil {
+		node.Slug = *input.URLPath
 		node.Path = path.Join(path.Dir(node.Path), node.Slug)
 	}
 	if input.SortOrder != nil {
@@ -190,4 +225,33 @@ func (f *fakePathChangeRecorder) RecordPathChange(_ context.Context, _ uuid.UUID
 	f.oldPath = oldPath
 	f.newPath = newPath
 	return f.err
+}
+
+func (f *fakeAdminRepository) AdminTree(context.Context) (AdminTreeResponse, error) {
+	return AdminTreeResponse{Nodes: f.adminTree}, nil
+}
+
+func (f *fakeAdminRepository) ReorderChildren(_ context.Context, parentID uuid.UUID, input ReorderChildrenInput) (ReorderChildrenResult, error) {
+	f.reorderParent = parentID
+	f.reorderChildren = append([]uuid.UUID(nil), input.ChildIDs...)
+	f.reorderVersion = input.ExpectedVersion
+	return ReorderChildrenResult{ParentID: parentID, ChildIDs: f.reorderChildren, Version: input.ExpectedVersion + 1}, nil
+}
+
+func (f *fakeAdminRepository) PreviewMove(_ context.Context, nodeID uuid.UUID, input MoveNodeInput) (MovePreview, error) {
+	return MovePreview{
+		NodeID:          nodeID,
+		DestinationPath: "/moved",
+		AffectedPaths:   []string{"/old/post"},
+		Redirects:       []PathRedirectPreview{{OldPath: "/old/post", NewPath: "/moved/post", NodeID: nodeID}},
+		BlockedReasons:  []string{},
+	}, nil
+}
+
+func (f *fakeAdminRepository) MoveNode(_ context.Context, nodeID uuid.UUID, input MoveNodeInput) (AdminNodeDetail, error) {
+	return f.GetAdminNode(context.Background(), nodeID)
+}
+
+func (f *fakeAdminRepository) DeleteNode(context.Context, uuid.UUID) error {
+	return f.deleteErr
 }

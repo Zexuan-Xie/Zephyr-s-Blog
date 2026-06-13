@@ -14,6 +14,8 @@ var (
 	ErrPublishedContentFormatChange     = errors.New("published file content_format cannot change")
 	ErrPublishedFileDelete              = errors.New("published file cannot be hard-deleted")
 	ErrDirectoryHasPublishedDescendants = errors.New("directory with published descendants cannot be hard-deleted")
+	ErrNonEmptyDirectoryDelete          = errors.New("non-empty directory cannot be hard-deleted")
+	ErrDuplicatePath                    = errors.New("duplicate url path")
 	ErrInvalidPathChange                = errors.New("old and new paths must be non-empty")
 )
 

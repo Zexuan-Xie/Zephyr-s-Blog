@@ -70,6 +70,52 @@ type FileEntryList struct {
 	Items []FileEntry `json:"items"`
 }
 
+// AdminTreeNode is the flat protected Author Workspace tree item.
+type AdminTreeNode struct {
+	ID            uuid.UUID      `json:"id"`
+	ParentID      *uuid.UUID     `json:"parent_id"`
+	Kind          NodeKind       `json:"kind"`
+	Name          string         `json:"name"`
+	URLPath       string         `json:"url_path"`
+	SortOrder     int            `json:"sort_order"`
+	Status        PublishStatus  `json:"status"`
+	ContentFormat *ContentFormat `json:"content_format,omitempty"`
+}
+
+type AdminTreeResponse struct {
+	Nodes []AdminTreeNode `json:"nodes"`
+}
+
+type ReorderChildrenInput struct {
+	ChildIDs        []uuid.UUID `json:"child_ids"`
+	ExpectedVersion int         `json:"expected_version"`
+}
+
+type ReorderChildrenResult struct {
+	ParentID uuid.UUID   `json:"parent_id"`
+	ChildIDs []uuid.UUID `json:"child_ids"`
+	Version  int         `json:"version"`
+}
+
+type MoveNodeInput struct {
+	NewParentID     *uuid.UUID `json:"new_parent_id"`
+	ExpectedVersion int        `json:"expected_version"`
+}
+
+type PathRedirectPreview struct {
+	OldPath string    `json:"old_path"`
+	NewPath string    `json:"new_path"`
+	NodeID  uuid.UUID `json:"node_id"`
+}
+
+type MovePreview struct {
+	NodeID          uuid.UUID             `json:"node_id"`
+	DestinationPath string                `json:"destination_path"`
+	AffectedPaths   []string              `json:"affected_paths"`
+	Redirects       []PathRedirectPreview `json:"redirects"`
+	BlockedReasons  []string              `json:"blocked_reasons"`
+}
+
 type DirectoryPage struct {
 	Node    *Node  `json:"node"`
 	Path    string `json:"path,omitempty"`
