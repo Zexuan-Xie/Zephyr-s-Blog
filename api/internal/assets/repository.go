@@ -54,11 +54,12 @@ func (r *SQLRepository) CreateAsset(ctx context.Context, asset FileAsset) (FileA
 
 func (r *SQLRepository) FindPublishedAsset(ctx context.Context, assetID uuid.UUID, filename string) (FileAsset, error) {
 	const query = `
-		select a.id, a.file_node_id, a.filename, a.mime_type, a.size_bytes, a.storage_provider, a.storage_key, a.state, a.published_asset_id, a.created_at
-		from file_assets a
-		join nodes n on n.id = a.file_node_id and n.kind = 'file'
+		select pfa.asset_id, pfa.file_node_id, pfa.filename, pfa.mime_type, pfa.size_bytes, pfa.storage_provider, pfa.storage_key,
+			'published'::text as state, pfa.published_asset_id, pfa.published_at as created_at
+		from published_file_assets pfa
+		join nodes n on n.id = pfa.file_node_id and n.kind = 'file'
 		join published_file_contents pfc on pfc.node_id = n.id and pfc.visible
-		where a.id = $1 and a.filename = $2`
+		where pfa.asset_id = $1 and pfa.filename = $2`
 	asset, err := scanAsset(r.pool.QueryRow(ctx, query, assetID, filename), r.publicBaseURL)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return FileAsset{}, ErrAssetNotFound
@@ -147,7 +148,9 @@ func scanAsset(row rowScanner, publicBaseURL string) (FileAsset, error) {
 	); err != nil {
 		return FileAsset{}, err
 	}
-	asset.PublicURL = publicBaseURL + "/" + asset.ID.String() + "/" + asset.Filename
+	if asset.State == "published" || asset.State == "draft_and_published" {
+		asset.PublicURL = publicBaseURL + "/" + asset.ID.String() + "/" + asset.Filename
+	}
 	return asset, nil
 }
 

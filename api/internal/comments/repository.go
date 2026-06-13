@@ -25,7 +25,7 @@ func (r *SQLRepository) PublishedFileExists(ctx context.Context, fileID uuid.UUI
 		select exists(
 			select 1
 			from nodes n
-			join file_contents fc on fc.node_id = n.id and fc.status = 'published'
+			join published_file_contents pfc on pfc.node_id = n.id and pfc.visible
 			where n.id = $1 and n.kind = 'file'
 		)`
 	var exists bool
