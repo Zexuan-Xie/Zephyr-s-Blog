@@ -1,0 +1,26 @@
+# Native API smoke
+date: 2026-06-13T15:03:17+08:00
+head: 4e491dcf95c974f5311d762a2dd22def3df641d0
+integrated-base-under-test: 59311dd6dda990e5edde75262aa11db7335c2472
+
+## health
+{"status":"ok","database":"ok"}
+
+## login admin
+{
+  "user": {
+    "id": "54b6b1a5-8ec1-42a8-a4d2-3bd4704d15f9",
+    "email": "admin@example.com",
+    "role": "admin",
+    "provider": "local",
+    "created_at": "2026-06-06T13:59:16.637512+08:00"
+  },
+  "token_present": true
+}
+
+## me
+{"id":"54b6b1a5-8ec1-42a8-a4d2-3bd4704d15f9","email":"admin@example.com","role":"admin","provider":"local","created_at":"2026-06-06T13:59:16.637512+08:00"}
+
+## admin tree fixture grep
+[]
+missing: ['/stage-2-acceptance', '/stage-2-acceptance/draft-branch', '/stage-2-acceptance/draft-branch/draft-fixture', '/stage-2-acceptance/published-fixture']
