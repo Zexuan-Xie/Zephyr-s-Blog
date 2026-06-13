@@ -1,18 +1,19 @@
 # Progress
 
-Last updated: 2026-06-13 22:41 CST
+Last updated: 2026-06-13 22:47 CST
 
 ## Current breakpoint
 
-Stage 3 is active on Team `execute-aeolian-blog-a98ab708` from protected Stage 2 checkpoint `73bcc9e` (`checkpoint: stage 2 polish before stage 3`). Current integrated leader HEAD observed by the coordinator worktree: `0772b8a`.
+Stage 3 is active on Team `execute-aeolian-blog-a98ab708` from protected Stage 2 checkpoint `73bcc9e` (`checkpoint: stage 2 polish before stage 3`). Current integrated leader HEAD observed by the coordinator worktree: `9599c4e`.
 
 Gateway status:
 
 - **Gateway 0 — PASS.** Stage 2 checkpoint protected; pre-schema backup/restore proof recorded in `docs/verification/stage-3-team-log.md`.
-- **Gateway 1 — contract artifacts integrated; acceptance review in progress.** Backend OpenAPI/red tests, frontend expected-red contracts, acceptance plan, and security contract review are present on the integrated branch. Worker-4 task 11 is reviewing Gateway 1 as PASS/REVISE.
-- **Gateway 2 — in progress.** Worker-2 task 9 is implementing the migration/core publication model; frontend production implementation remains blocked until backend Gateway 2/3 runtime APIs are green.
+- **Gateway 1 — PASS.** Contract acceptance review task 11 completed with downstream fixture/watch items recorded in `docs/verification/stage-3-acceptance.md`.
+- **Gateway 2 — complete enough to unblock Gateway 3.** Worker-2 task 9 completed core migration/publication model; coordinator re-smoke on latest integrated HEAD no longer shows the earlier `listFileAssetsByState`/`FileAsset.State` failure.
+- **Gateway 3 — in progress.** Worker-2 task 10 is implementing backend HTTP APIs and Draft Preview. Frontend Gateway 4 remains blocked on task 10.
 
-Current verification note (2026-06-13 22:41 CST): backend full gate is temporarily **FAIL** on integrated HEAD `0772b8a` while worker-2 Gateway 2 is in progress. Failure is in backend build/tests: `SQLRepository.listFileAssetsByState` missing in `api/internal/tree/lifecycle_repository.go`, plus the expected Stage 3 asset contract still needs `FileAsset.State`. Coordinator reported this as boundary monitoring and did not edit backend code.
+Current verification note (2026-06-13 22:47 CST): backend full gate on integrated HEAD `9599c4e` still **FAILS** only in Gateway 3 route exposure tests: `GET /api/admin/files/{id}/content` returns 405 instead of 200 and reader Draft Preview route returns 404 instead of 403. Coordinator reported this as task 10 boundary monitoring and did not edit backend code.
 
 
 Evidence ledger:
@@ -54,9 +55,9 @@ npm run build
 
 ## Immediate next steps
 
-1. Wait for worker-4 task 11 to mark Gateway 1 contract acceptance PASS/REVISE.
-2. Monitor worker-2 task 9 (Gateway 2 migration/core publication model) and task 10 (Gateway 3 HTTP/Draft Preview APIs).
-3. If Gateway 1/2/3 gates fail, assign narrow repair tasks; otherwise keep frontend Gateway 4 blocked until runtime APIs are green.
+1. Monitor worker-2 task 10 (Gateway 3 HTTP/Draft Preview APIs) until backend route exposure tests pass.
+2. Keep frontend Gateway 4 blocked from production UI changes until task 10 completes; then unblock/assign implementation work.
+3. Prepare security task 12 after Gateway 3 and later MCP/backend slices land.
 4. Keep `PROGRESS.md` and `docs/verification/stage-3-team-log.md` synchronized after each integration or gate decision.
 
 ## Previous notes

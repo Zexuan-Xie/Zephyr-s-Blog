@@ -1,6 +1,6 @@
 # Stage 3 Team Log
 
-Status: Gateway 0 PASS; Gateway 1 contract artifacts integrated; Gateway 1 acceptance review and Gateway 2 backend implementation in progress
+Status: Gateway 0 PASS; Gateway 1 PASS; Gateway 2 complete; Gateway 3 backend HTTP/Draft Preview in progress
 
 Team: `execute-aeolian-blog-a98ab708`
 Coordinator: `worker-1`
@@ -90,9 +90,9 @@ Required red-test topics:
 | Worker | Lane | Current task focus | Status |
 |---|---|---|---|
 | worker-1 | coordinator / gateway | Task 2 evidence ledger and orchestration | in progress |
-| worker-2 | backend | Gateway 2 migration/core publication model | in progress |
-| worker-3 | frontend | Gateway 4 readiness complete; production UI blocked on backend APIs | blocked/pending |
-| worker-4 | acceptance / verifier | Gateway 1 contract acceptance review | in progress |
+| worker-2 | backend | Gateway 3 HTTP APIs and Draft Preview | in progress |
+| worker-3 | frontend | Gateway 4 readiness complete; production UI blocked on Gateway 3 APIs | blocked/in progress |
+| worker-4 | acceptance / verifier | Gateway 1 PASS recorded; downstream fixture gaps pending later implementation | pending |
 | worker-5 | security / review | Gateway 1 security review complete; later implementation review pending | pending |
 
 ## Subagent probes integrated by coordinator
@@ -176,6 +176,39 @@ Policy check before this update:
 
 ```text
 PASS git status/node_modules policy precheck before edits: clean and no tracked web/node_modules.
+```
+
+
+## Coordinator ledger update — 2026-06-13 22:47 CST
+
+Verdict: **Gateway 1 PASS; Gateway 2 completed; Gateway 3 route exposure still in progress**
+
+Current integrated leader HEAD observed by worker-1: `9599c4e`.
+
+Task state changes since the previous coordinator update:
+
+- Task 11 (Gateway 1 contract acceptance review): **completed / PASS**. Acceptance recorded downstream fixture gaps in `docs/verification/stage-3-acceptance.md`.
+- Task 9 (Gateway 2 migration/core publication model): **completed**. Worker-2 reported migration `000002`, revision/last_saved_at, Previous slot, `published_file_contents`, public tree/search/recent snapshot reads, and draft/published asset state/repository methods.
+- Task 10 (Gateway 3 backend HTTP APIs and Draft Preview): **in_progress**.
+- Task 4 (frontend Gateway 4 implementation lane): **in_progress but blocked by task 10**; production UI must still wait for Gateway 3 runtime APIs.
+
+Coordinator backend smoke on `9599c4e`:
+
+```text
+FAIL cd api && CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go test -count=1 ./...
+--- FAIL: TestStage3Gateway1AdminRoutesExposeVersionPreviewAndAssetContracts
+    stage3_gateway1_contract_test.go:52: GET /api/admin/files/d7b0b3ba-25c4-47a4-aa1c-81c74602d58e/content status = 405, want 200; body=
+--- FAIL: TestStage3Gateway1DraftPreviewDeniedToReader
+    stage3_gateway1_contract_test.go:73: reader draft preview status = 404, want 403; body=404 page not found
+FAIL xlab-blog/api/internal/http
+```
+
+Coordinator interpretation: the earlier Gateway 2 missing asset-state build failures are resolved on latest integrated HEAD. Remaining backend failure is now Gateway 3 route exposure/auth mapping, owned by worker-2 task 10. Worker-1 did not edit backend code.
+
+Policy check before this update:
+
+```text
+PASS git status/node_modules policy precheck: clean and no tracked web/node_modules.
 ```
 
 ## Verification
