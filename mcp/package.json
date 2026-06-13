@@ -8,12 +8,17 @@
     "xlab-blog-mcp": "./src/server.mjs"
   },
   "scripts": {
-    "build": "node scripts/check-syntax.mjs",
+    "build": "tsc --noEmit",
     "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@modelcontextprotocol/sdk": "1.29.0",
     "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "25.9.3",
+    "tsx": "4.22.4",
+    "typescript": "6.0.3"
   },
   "engines": {
     "node": ">=22.0.0",
