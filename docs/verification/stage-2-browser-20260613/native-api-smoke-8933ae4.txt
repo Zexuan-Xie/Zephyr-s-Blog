@@ -1,0 +1,5 @@
+# Native API smoke
+date: 2026-06-13T15:01:25+08:00
+head: 8933ae4d1d7230b4532e7b06aa1202e0bc6660c2
+
+## health
