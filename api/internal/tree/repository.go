@@ -90,9 +90,8 @@ func (r *SQLRepository) DirectoryPage(ctx context.Context, parentID *uuid.UUID) 
 
 func (r *SQLRepository) FilePage(ctx context.Context, node Node) (FilePage, error) {
 	const query = `
-		select pfc.node_id, pfc.source_revision, pfc.content_format, pfc.keywords, pfc.body_raw, pfc.body_html, pfc.search_text,
-			'published'::text as status, pfc.published_at, pfc.updated_at as last_saved_at, pfc.embedding_model, pfc.embedding_status, pfc.embedding_error,
-			pfc.embedding_updated_at,
+		select pfc.node_id, pfc.content_format, pfc.keywords, pfc.body_raw, pfc.body_html, pfc.search_text,
+			pfc.published_at, pfc.updated_at,
 			coalesce((select count(*) from likes l where l.target_type = 'file' and l.target_id = pfc.node_id), 0) as like_count,
 			coalesce((select count(*) from comments c where c.file_node_id = pfc.node_id and c.deleted_at is null), 0) as comment_count
 		from published_file_contents pfc
@@ -257,58 +256,33 @@ func scanDirectoryChild(row rowScanner) (any, error) {
 	}, nil
 }
 
-func scanFilePageContent(row rowScanner) (FileContent, int, int, error) {
-	var content FileContent
+func scanFilePageContent(row rowScanner) (PublicFileContent, int, int, error) {
+	var content PublicFileContent
 	var contentFormat string
-	var status string
 	var bodyHTML sql.NullString
-	var publishedAt sql.NullTime
-	var embeddingModel sql.NullString
-	var embeddingStatus string
-	var embeddingError sql.NullString
-	var embeddingUpdatedAt sql.NullTime
 	var likeCount int
 	var commentCount int
 	if err := row.Scan(
 		&content.NodeID,
-		&content.Revision,
 		&contentFormat,
 		&content.Keywords,
 		&content.BodyRaw,
 		&bodyHTML,
 		&content.SearchText,
-		&status,
-		&publishedAt,
-		&content.LastSavedAt,
-		&embeddingModel,
-		&embeddingStatus,
-		&embeddingError,
-		&embeddingUpdatedAt,
+		&content.PublishedAt,
+		&content.UpdatedAt,
 		&likeCount,
 		&commentCount,
 	); err != nil {
-		return FileContent{}, 0, 0, err
+		return PublicFileContent{}, 0, 0, err
 	}
 	content.ContentFormat = ContentFormat(contentFormat)
-	content.Status = PublishStatus(status)
-	content.EmbeddingStatus = EmbeddingStatus(embeddingStatus)
 	if bodyHTML.Valid {
 		content.BodyHTML = &bodyHTML.String
 	}
-	if publishedAt.Valid {
-		content.PublishedAt = &publishedAt.Time
-	}
-	if embeddingModel.Valid {
-		content.EmbeddingModel = &embeddingModel.String
-	}
-	if embeddingError.Valid {
-		content.EmbeddingError = &embeddingError.String
-	}
-	if embeddingUpdatedAt.Valid {
-		content.EmbeddingUpdatedAt = &embeddingUpdatedAt.Time
-	}
 	return content, likeCount, commentCount, nil
 }
+
 
 func readingTimeMinutes(text string) int {
 	words := len(strings.Fields(text))

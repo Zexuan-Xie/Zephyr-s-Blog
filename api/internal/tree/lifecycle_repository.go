@@ -268,35 +268,45 @@ func (r *SQLRepository) PublishedContent(ctx context.Context, nodeID uuid.UUID) 
 	return published, err
 }
 
-func (r *SQLRepository) PublishFile(ctx context.Context, nodeID uuid.UUID) (FileContent, error) {
-	current, err := r.GetFileContent(ctx, nodeID)
+func (r *SQLRepository) UnpublishFile(ctx context.Context, nodeID uuid.UUID, expectedRevision int) (FileContent, error) {
+	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return FileContent{}, err
 	}
-	result, err := r.PublishCurrentSnapshot(ctx, nodeID, current.Revision)
-	if err != nil {
-		return FileContent{}, err
-	}
-	return result.Current, nil
-}
+	defer tx.Rollback(ctx)
 
-func (r *SQLRepository) UnpublishFile(ctx context.Context, nodeID uuid.UUID) (FileContent, error) {
-	const query = `
-		update file_contents
-		set status = 'draft'
-		where node_id = $1
-		returning node_id, revision, content_format, keywords, body_raw, body_html, search_text, status,
-			published_at, last_saved_at, embedding_model, embedding_status, embedding_error, embedding_updated_at`
-	content, err := scanLifecycleFileContent(r.pool.QueryRow(ctx, query, nodeID))
+	current, err := scanLifecycleFileContent(tx.QueryRow(ctx, `
+		select node_id, revision, content_format, keywords, body_raw, body_html, search_text, status,
+			published_at, last_saved_at, embedding_model, embedding_status, embedding_error, embedding_updated_at
+		from file_contents where node_id = $1 for update`, nodeID))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return FileContent{}, ErrFileContentNotFound
 	}
 	if err != nil {
 		return FileContent{}, err
 	}
-	_, err = r.pool.Exec(ctx, `update published_file_contents set visible = false where node_id = $1`, nodeID)
-	return content, err
+	if expectedRevision <= 0 || current.Revision != expectedRevision {
+		return FileContent{}, ErrLostUpdate
+	}
+
+	content, err := scanLifecycleFileContent(tx.QueryRow(ctx, `
+		update file_contents
+		set status = 'draft'
+		where node_id = $1
+		returning node_id, revision, content_format, keywords, body_raw, body_html, search_text, status,
+			published_at, last_saved_at, embedding_model, embedding_status, embedding_error, embedding_updated_at`, nodeID))
+	if err != nil {
+		return FileContent{}, err
+	}
+	if _, err := tx.Exec(ctx, `update published_file_contents set visible = false where node_id = $1`, nodeID); err != nil {
+		return FileContent{}, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return FileContent{}, err
+	}
+	return content, nil
 }
+
 
 func (r *SQLRepository) DeleteNode(ctx context.Context, nodeID uuid.UUID) error {
 	commandTag, err := r.pool.Exec(ctx, `delete from nodes where id = $1`, nodeID)
