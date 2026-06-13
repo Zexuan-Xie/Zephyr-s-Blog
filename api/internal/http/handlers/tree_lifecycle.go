@@ -101,6 +101,8 @@ func (h *TreeLifecycleHandler) respondError(w http.ResponseWriter, err error) {
 		respond.Error(w, http.StatusBadRequest, err.Error())
 	case errors.Is(err, tree.ErrNonEmptyDirectoryDelete):
 		respond.JSON(w, http.StatusConflict, respond.ErrorResponse{Error: err.Error(), Details: map[string]any{"reason": "non_empty_directory"}})
+	case errors.Is(err, tree.ErrLostUpdate):
+		respond.JSON(w, http.StatusConflict, respond.ErrorResponse{Error: "revision conflict", Details: map[string]any{"reason": "revision_conflict"}})
 	case errors.Is(err, tree.ErrPublishedContentFormatChange),
 		errors.Is(err, tree.ErrPublishedFileDelete),
 		errors.Is(err, tree.ErrDirectoryHasPublishedDescendants):
