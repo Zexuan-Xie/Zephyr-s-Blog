@@ -9,8 +9,7 @@ Worker: worker-2.
 
 Primary references requested for Gateway 6 are the official Model Context
 Protocol documentation and TypeScript SDK. The skeleton follows the current
-official TypeScript SDK pattern of creating an `McpServer`, registering tools
-with input schemas, and connecting it to `StdioServerTransport`. The package is
+official TypeScript SDK pattern of creating an `McpServer`, registering tools with `registerTool` and Zod-style input schemas, and connecting it to `StdioServerTransport`. Context7 query of the official TypeScript SDK docs showed this import/transport pattern from `github.com/modelcontextprotocol/typescript-sdk` docs. The package is
 server-local stdio only; it does not add an HTTP/SSE listener.
 
 ## Implemented first slice
