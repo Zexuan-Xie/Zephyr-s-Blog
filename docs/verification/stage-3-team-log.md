@@ -1,6 +1,6 @@
 # Stage 3 Team Log
 
-Status: Gateway 0 PASS; Gateway 1 PASS; Gateway 2/3/4 complete; security implementation review REVISE; backend repair task 14 in progress
+Status: Gateway 0 PASS; Gateway 1 PASS; Gateway 2 PASS; Gateway 3 PASS; Gateway 4 PASS; security review REVISE; backend repair in progress
 
 Team: `execute-aeolian-blog-a98ab708`
 Coordinator: `worker-1`
@@ -89,11 +89,11 @@ Required red-test topics:
 
 | Worker | Lane | Current task focus | Status |
 |---|---|---|---|
-| worker-1 | coordinator / gateway | Task 2 evidence ledger and orchestration | in progress |
+| worker-1 | coordinator / gateway | Original Task 2 evidence ledger lane superseded by worker-3 claim | superseded |
 | worker-2 | backend | Task 14 backend security REVISE repair | in progress |
-| worker-3 | frontend | Gateway 4 frontend implementation complete | completed |
+| worker-3 | frontend / planner | Task 4 complete; Task 2 ledger reconciliation in progress | in progress |
 | worker-4 | acceptance / verifier | Gateway 1 PASS recorded; downstream fixture gaps pending later implementation | pending |
-| worker-5 | security / review | Task 12 security implementation review REVISE; re-review pending repair | pending |
+| worker-5 | security / review | Security REVISE verdict integrated; duplicate task-12 review stopped | complete / revise |
 
 ## Subagent probes integrated by coordinator
 
@@ -211,40 +211,65 @@ Policy check before this update:
 PASS git status/node_modules policy precheck: clean and no tracked web/node_modules.
 ```
 
+## Coordinator ledger update — 2026-06-13 23:35 CST
 
-## Coordinator ledger update — 2026-06-13 23:20 CST
+Verdict: **Gateway 4 frontend implemented; security review REVISE; repair task active**
 
-Verdict: **Gateway 4 integrated; security review REVISE; backend repair active**
+Current coordinator worktree HEAD observed by worker-3: `306d602`.
 
-Current integrated leader HEAD observed by worker-1: `0210285`.
+Task state reconciliation from OMX task JSON:
 
-Task state changes since the previous coordinator update:
+- Task 4 (Frontend Gateway 4 implementation): **completed** by worker-3.
+  - Commit: `9b51d36` (`task: implement stage 3 frontend workspace`).
+  - Implemented autosave/version state, 15s debounce and blur saves, stale
+    revision conflict UI, Current/Previous restore, publish summary/publish/
+    unpublish controls, Author-only Draft Preview, and draft/published asset
+    panels.
+  - Preserved iframe sandbox: `AdminPage.tsx` contains no `allow-same-origin`.
+- Task 12 (Security implementation review): **failed / REVISE gate**.
+  - Security findings are recorded in `docs/verification/stage-3-security.md`.
+  - Backend repair task 14 was created for worker-2.
+- Task 14 (Repair Gateway 2/3 backend security REVISE findings): **in_progress**
+  on worker-2.
+- Task 2 (Coordinator evidence ledger): **in_progress** and currently claimed by
+  worker-3 for ledger reconciliation.
 
-- Task 10 (Gateway 3 backend HTTP APIs and Draft Preview): **completed**. Worker-2 reported route/handler exposure for version state, Previous restore, publish summary/publish/unpublish snapshot semantics, Draft Preview, asset state list, protected draft asset bytes, and 409 `revision_conflict` mapping.
-- Task 4 (Gateway 4 frontend implementation): **completed**. Worker-3 reported autosave/version state, 15s debounce and blur saves, conflict actions, Current/Previous compare and restore, publish summary, Draft Preview iframe sandbox, and draft/published asset panels. Frontend gates passed and `allow-same-origin` was not introduced.
-- Task 12 (security implementation review): **failed / REVISE**. Findings are recorded in `docs/verification/stage-3-security.md` at `0210285`.
-- Task 14 (backend repair for security REVISE findings): **in_progress** on worker-2. This is the active blocker before final acceptance/security closeout.
-- Task 2 ownership was repaired back to worker-1; claim token observed in task file/API state.
+Security REVISE findings to track before closeout:
 
-Security REVISE repair scope from task 14:
+1. Public asset byte route must prove the asset belongs to the last
+   `published_file_assets` snapshot, not merely to a file with visible Published
+   Content.
+2. `storage_key` must be removed from public/admin DTOs and OpenAPI/front-end
+   schemas.
+3. Add explicit Anonymous/Reader denial tests for Draft Preview and draft asset
+   byte routes.
+4. Make unpublish transactional or add focused DB/API proof for the intended
+   consistency model.
+5. Return `current_revision` in structured revision conflict details or align
+   OpenAPI to the implemented response.
+6. Keep MCP gates blocked until actual server-local stdio MCP implementation
+   exists with explicit enablement, per-call kill switch, JSONL audit, backup/
+   export, and no direct SQL in handlers.
 
-1. Public asset route must deny draft-only assets until Publish promotes them.
-2. Publish must require positive `expected_revision`; invalid JSON must be 400.
-3. Comments/likes public file visibility must use `published_file_contents.visible`, not mutable `file_contents.status`.
-4. `revision_conflict` responses must include `current_revision`.
-5. Public File DTO must not expose mutable Current `FileContent` metadata.
-6. Unpublish needs expected revision/version or a documented/tested atomic safe alternative.
-
-Coordinator verification and policy evidence:
+Verification observed during this reconciliation:
 
 ```text
-PASS mailbox: messages 21eb171d and 49c66553 read; 21eb171d delivered; 49c66553 delivered; leader ACK sent.
-PASS task state: task 4 completed, task 10 completed, task 12 failed/REVISE, task 14 in_progress, task 2 owned/claimed by worker-1.
-PASS backend full gate before this REVISE checkpoint: on integrated HEAD db1633c, cd api && CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go test -count=1 ./...; go vet ./...; gofmt scan all passed.
-PASS artifact policy pre-edit: git status --short clean; git ls-files -s web/node_modules empty.
+PASS frontend lint: cd web && npm run lint.
+PASS frontend build/typecheck: cd web && npm run build.
+PASS frontend tests: cd web && node --test tests/*.test.mjs -> 7/7 pass.
+PASS Stage 3 frontend contract: cd web && node --test tests/stage3-author-workspace-contract-red.test.mjs.
+PASS git diff --check before Task 4 commit.
+PASS node_modules policy: git ls-files -s web/node_modules empty.
+PASS sandbox check: grep -R allow-same-origin -n web/src/pages/AdminPage.tsx returned no matches.
+PARTIAL backend tests for review: CGO_ENABLED=0 GOCACHE=/tmp/go-build-worker3 go test ./... passed packages up to api/internal/search; api/internal/search failed because sandbox disallows httptest TCP listen, not because of reviewed code.
 ```
 
-Coordinator decision: keep Task 2 open. Final acceptance/security closeout is blocked on task 14 repair plus security re-review.
+Coordination note:
+
+- Leader steering message `1e2bd489-9b79-4186-8bec-ce7a080a0edf` instructed
+  worker-3 to stop duplicate Task 12 review because a security REVISE verdict was
+  already integrated and repair task 14 exists. Worker-3 ACKed, marked the
+  message delivered, and is now only maintaining the ledger through Task 2.
 
 ## Verification
 

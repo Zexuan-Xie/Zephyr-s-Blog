@@ -1,21 +1,22 @@
 # Progress
 
-Last updated: 2026-06-13 23:20 CST
+Last updated: 2026-06-13 23:35 CST
 
 ## Current breakpoint
 
-Stage 3 is active on Team `execute-aeolian-blog-a98ab708` from protected Stage 2 checkpoint `73bcc9e` (`checkpoint: stage 2 polish before stage 3`). Current integrated leader HEAD observed by the coordinator worktree: `0210285`.
+Stage 3 is active on Team `execute-aeolian-blog-a98ab708` from protected Stage 2 checkpoint `73bcc9e` (`checkpoint: stage 2 polish before stage 3`). Current coordinator worktree HEAD observed while reconciling the ledger: `306d602`.
 
 Gateway status:
 
 - **Gateway 0 — PASS.** Stage 2 checkpoint protected; pre-schema backup/restore proof recorded in `docs/verification/stage-3-team-log.md`.
 - **Gateway 1 — PASS.** Contract acceptance review task 11 completed with downstream fixture/watch items recorded in `docs/verification/stage-3-acceptance.md`.
-- **Gateway 2 — complete.** Worker-2 task 9 completed core migration/publication model.
-- **Gateway 3 — complete.** Worker-2 task 10 completed backend HTTP APIs, Draft Preview, asset state routes, protected draft asset bytes, and revision-conflict mapping; coordinator backend full gate passed on integrated HEAD `db1633c` before the later security review checkpoint.
-- **Gateway 4 — complete.** Worker-3 task 4 completed the frontend autosave/version/publish/preview/assets UI; frontend red contract is green and no `allow-same-origin` was introduced.
-- **Security implementation review — REVISE.** Task 12 failed/revised with findings recorded in `docs/verification/stage-3-security.md` at `0210285`; backend repair task 14 is in progress on worker-2.
+- **Gateway 2 — PASS for core implementation.** Worker-2 task 9 completed migration/core publication model; later security review found asset/DTO issues that are now tracked as repair task 14.
+- **Gateway 3 — PASS for backend HTTP/Draft Preview implementation.** Worker-2 task 10 completed version-state, restore, publish summary/publish/unpublish, Draft Preview, and asset-state HTTP surfaces.
+- **Gateway 4 — PASS for frontend implementation.** Worker-3 task 4 completed autosave/version/restore/publish/Draft Preview/draft-published assets UI at commit `9b51d36`; frontend lint/build/contracts/node tests passed.
+- **Security implementation review — REVISE.** Task 12 closed as failed/revise, with findings recorded in `docs/verification/stage-3-security.md`: public asset serving must bind to the published asset snapshot, `storage_key` must be removed from public/admin DTOs, reader/anonymous denial tests are missing, unpublish needs transaction/proof, and MCP remains unimplemented.
+- **Repair lane — in progress.** Task 14 is active on worker-2 for backend security REVISE repairs.
 
-Current verification note (2026-06-13 23:20 CST): task 14 is the active blocking repair for final acceptance/security. Do not start closeout or final acceptance until the backend REVISE findings are repaired and security re-review passes.
+Current verification note (2026-06-13 23:35 CST): frontend Gateway 4 verification passed on worker-3 (`npm run lint`, `npm run build`, Stage 3 frontend contract, and all web node tests). Security review verification found backend `go test` is environment-limited in this sandbox (`httptest` cannot listen for `api/internal/search`), but all packages before that point passed with `CGO_ENABLED=0 GOCACHE=/tmp/go-build-worker3 go test ./...`; security findings are code-review blockers, not test-runner failures.
 
 
 Evidence ledger:
@@ -37,7 +38,7 @@ Gateway 0 backup before schema work:
 Current coordination constraints:
 
 - Do not add/commit `web/node_modules`, node_modules symlinks, caches, `web/dist`, local DB/uploads, or `.omx` runtime state.
-- Do not start production frontend UI work until backend Gateway 2/3 APIs are integrated.
+- Production frontend Gateway 4 UI is implemented; do not run acceptance/security closeout against non-integrated repair branches.
 - Acceptance/security tests run only against integrated leader SHAs, not isolated worker branches.
 - Preserve iframe sandbox, full-text fallback, Author-only protected surfaces, draft/public isolation, and the Stage 2 simple-English Aeolian UI baseline.
 
@@ -57,10 +58,10 @@ npm run build
 
 ## Immediate next steps
 
-1. Monitor worker-2 task 14 backend repair for the security REVISE findings.
-2. After task 14 completes, trigger/monitor focused security re-review before acceptance closeout.
-3. Keep acceptance/security on integrated SHAs only; final acceptance remains blocked while task 14 is in progress.
-4. Keep `PROGRESS.md` and `docs/verification/stage-3-team-log.md` synchronized after each integration or gate decision.
+1. Monitor worker-2 task 14 until backend security REVISE findings are repaired and integrated.
+2. After task 14 integrates, rerun focused backend security checks for public asset snapshot binding, `storage_key` DTO removal, reader/anonymous denial, revision conflict details, and unpublish consistency.
+3. Keep MCP security/acceptance gates blocked until an actual server-local stdio MCP package exists with explicit enablement, per-call kill switch, audit JSONL, backup/export, and no direct SQL in handlers.
+4. Keep `PROGRESS.md` and `docs/verification/stage-3-team-log.md` synchronized after each integration or gate decision; do not close Task 2 until terminal task counts and closeout gates pass.
 
 ## Previous notes
 # xLab Blog Progress
