@@ -1,4 +1,0 @@
-localStorage.setItem('xlab-blog-token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYWRtaW4iLCJlbWFpbCI6ImFkbWluQGV4YW1wbGUuY29tIiwic3ViIjoiNTRiNmIxYTUtOGVjMS00MmE4LWE0ZDItM2JkNDcwNGQxNWY5IiwiZXhwIjoxNzgxNDIwNzI1LCJpYXQiOjE3ODEzMzQzMjV9.bETvJy9LkBjqslbi5BgQEXiWcZ_CRjYN-TaTJ-RSTGQ');
-localStorage.removeItem('xlab-author-workspace:selected-node');
-localStorage.removeItem('xlab-author-workspace:expanded-directories');
-location.reload();

@@ -1,37 +1,15 @@
 # Stage 2 Acceptance
 
-Status: complete
+Status: Gateway 6 integrated acceptance failed
 
-Verdict: **FAIL**
+Verdict: **FAIL** for Gateway 6 integrated desktop/mobile acceptance.
 
-Integrated SHA tested: `fe97dcd44dc74ca2c0eff36923e9a68882e577f3`
-Team: `execute-approved-xlab-015f30a9`
-Task: `16` / `s2-11-acceptance`
-Worker: `worker-4`
-Evidence directory: `docs/verification/stage-2-browser-20260613/`
+Integrated code SHA under test: `59311dd6dda990e5edde75262aa11db7335c2472`
+Evidence checkpoint commits in worker-4 worktree include generated verification-only commits on top of that SHA; no feature/source code was changed by acceptance.
 
-## Decision
+## Fixture under test
 
-Gateway 6 integrated acceptance fails before browser approval because the required
-backend gate does not compile at the integrated SHA. Per the Stage 2 gate rules,
-worker-4 did not patch feature code in the acceptance lane and did not claim a
-browser PASS on top of a failing backend gate.
-
-Blocking failure:
-
-```text
-api/internal/tree/lifecycle_service_test.go:213:35: method fakeLifecycleRepository.HasChildNodes already declared at api/internal/tree/lifecycle_service_test.go:200:35
-```
-
-This duplicate test-helper method causes both `go test ./...` and `go vet ./...`
-to fail for `xlab-blog/api/internal/tree`.
-
-## Fixture baseline
-
-Gateway 1 fixture evidence remains recorded in
-`docs/verification/stage-2-backup-and-fixture.md`.
-
-Use the recorded fixture root and IDs for the retest after repair:
+Gateway 1 fixture remains the acceptance baseline:
 
 ```text
 /stage-2-acceptance
@@ -41,128 +19,92 @@ draft file:     5b796f40-e15a-42fa-8832-9cfbd1dcd21e
 published file: a260a9f7-ecf3-4c3d-a87e-cc96b44c73bc
 ```
 
-Gateway 1 public smoke:
+Public fixture smoke using the correct resolver route passed during Gateway 6:
 
-- `/stage-2-acceptance/published-fixture` resolves as a published File.
-- `/stage-2-acceptance/draft-branch/draft-fixture` returns HTTP 404 publicly.
+- `GET /api/tree/resolve?path=/stage-2-acceptance/published-fixture` -> HTTP 200.
+- `GET /api/tree/resolve?path=/stage-2-acceptance/draft-branch/draft-fixture` -> HTTP 404.
 
-## Verification results
+Evidence: `docs/verification/stage-2-browser-20260613/native-contract-check-706c8df.txt`.
 
-### Backend gate — FAIL
+## Gate outputs recorded
 
-Command:
+Backend and frontend static/test gates were rerun on the integrated candidate before browser acceptance:
 
-```bash
-cd api
-CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go test -count=1 ./...
-```
+- Backend `go test ./...`: PASS (`stage-2-browser-20260613/backend-go-test-59311dd.txt`)
+- Backend `go vet ./...`: PASS (`stage-2-browser-20260613/backend-go-vet-59311dd.txt`)
+- Backend gofmt scan: PASS (`stage-2-browser-20260613/backend-gofmt-59311dd.txt`)
+- Frontend `node --test tests/*.test.mjs`: PASS (`stage-2-browser-20260613/frontend-node-test-59311dd.txt`)
+- Frontend `npm run lint`: PASS (`stage-2-browser-20260613/frontend-lint-59311dd.txt`)
+- Frontend `npm run build`: PASS (`stage-2-browser-20260613/frontend-build-59311dd.txt`)
 
-Evidence: `stage-2-browser-20260613/backend-go-test.log`
-
-Result:
-
-```text
-FAIL xlab-blog/api/internal/tree [build failed]
-```
-
-Root cause from output:
+Runtime services were started from the worker-4 worktree:
 
 ```text
-internal/tree/lifecycle_service_test.go:213:35: method fakeLifecycleRepository.HasChildNodes already declared at internal/tree/lifecycle_service_test.go:200:35
+API: http://127.0.0.1:8080/api/health -> {"status":"ok","database":"ok"}
+Web: http://127.0.0.1:5173/ -> reachable
 ```
 
-Command:
+## Failure summary
 
-```bash
-cd api
-CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go vet ./...
-```
+Desktop Author Workspace acceptance cannot proceed because the protected content tree does not load.
 
-Evidence: `stage-2-browser-20260613/backend-go-vet.log`
-
-Result:
+Observed in browser at `/admin` with a valid seeded Author token:
 
 ```text
-vet: internal/tree/lifecycle_service_test.go:213:35: method fakeLifecycleRepository.HasChildNodes already declared at internal/tree/lifecycle_service_test.go:200:35
+作者工作台
+内容树
+受保护内容树
+内容树加载失败。请刷新或重新登录。
+请选择内容树中的目录或文件。
 ```
 
-Command:
+Evidence:
 
-```bash
-cd api
-test -z "$(gofmt -l .)"
-```
+- `docs/verification/stage-2-browser-20260613/browser-admin-contract-aa7c0b9.txt`
+- `docs/verification/stage-2-browser-20260613/desktop-admin-contract-aa7c0b9.png`
 
-Evidence: `stage-2-browser-20260613/backend-gofmt.log`
-
-Result: **PASS**; no gofmt output.
-
-### Frontend gate — PASS
-
-Command:
-
-```bash
-cd web
-node --test tests/*.test.mjs
-```
-
-Evidence: `stage-2-browser-20260613/frontend-node-test.log`
-
-Result: **PASS**, 32/32 tests.
-
-Command:
-
-```bash
-cd web
-npm run lint
-```
-
-Evidence: `stage-2-browser-20260613/frontend-lint.log`
-
-Result: **PASS**.
-
-Command:
-
-```bash
-cd web
-npm run build
-```
-
-Evidence: `stage-2-browser-20260613/frontend-build.log`
-
-Result: **PASS**; `tsc --noEmit` and Vite build completed.
-
-### Runtime/browser acceptance — NOT RUN
-
-Desktop/mobile browser acceptance was intentionally not run to a PASS/FAIL UI
-verdict after the backend compile gate failed. Running browser checks against a
-candidate that cannot pass the mandatory backend gate would produce misleading
-acceptance evidence.
-
-Services were reachable before gate execution:
+Native contract check shows the root cause:
 
 ```text
-curl -fsS http://127.0.0.1:8080/api/health -> {"status":"ok","database":"ok"}
-curl -fsS http://127.0.0.1:5173/ >/dev/null -> web-ok
+/api/admin/tree top_level_keys = ['nodes']
+first_node_keys = ['id', 'kind', 'name', 'parent_id', 'sort_order', 'status', 'url_path']
+frontend_expected_roots_present = False
+frontend_expected_path = False
+backend_url_path = True
 ```
 
-## Retest checklist after repair
+The current frontend schema in `web/src/lib/api.ts` expects `roots` and node
+`path` fields for `fetchAdminTree()`. The current backend response returns a flat
+`nodes` array and `url_path`. Zod parsing rejects the response, so the Author
+Workspace tree fails before any create/select/edit/publish path is possible.
 
-After the backend duplicate-method issue is repaired and integrated, worker-4 or
-a follow-up acceptance task should reset to the new leader-integrated SHA and run:
+## Gateway 6 checklist
 
-1. Full backend gate: `go test ./...`, `go vet ./...`, gofmt scan.
-2. Full frontend gate: `node --test tests/*.test.mjs`, `npm run lint`, `npm run build`.
-3. Native API smoke against `/stage-2-acceptance`.
-4. Desktop browser acceptance at `1440x900` with screenshots, console, and network checks.
-5. Mobile no-regression sanity at `390x844` with screenshot, console, and network checks.
+| Requirement | Result | Evidence / note |
+|---|---:|---|
+| Author login -> Chinese Author Workspace | FAIL | Login/identity works, but workspace tree shows `内容树加载失败` after `/api/admin/tree` response parsing fails. |
+| Create Directory/File using minimal forms | NOT RUN | Blocked by tree-load failure; no selectable directory in UI. |
+| Tree refresh/expand/select/open/toast/path | FAIL | Tree data cannot load. |
+| Edit File, manual save, publish | NOT RUN | Blocked by tree-load failure. |
+| Public File opens; `编辑文件` returns to selected file | NOT RUN | Blocked before public Author entry round-trip could be verified. |
+| Public Directory `管理此目录` returns selected Directory | NOT RUN | Blocked before public Author entry round-trip could be verified. |
+| Anonymous/Reader do not see Author actions | NOT RUN | Blocked by integrated desktop hard failure; defer to repair rerun. |
+| `撤回发布` hides public File | NOT RUN | Native public resolver/draft isolation works for fixture, but UI workflow blocked. |
+| Move/delete/reorder prompts | NOT RUN | Blocked by tree-load failure. |
+| Same-parent drag reorder persists | NOT RUN | Blocked by tree-load failure. |
+| Mobile no-regression sanity at 390x844 | FAIL (same blocker) | Mobile shell renders, but same `内容树加载失败`; screenshot `mobile-admin-failure-a774949.png`. |
+| Public homepage/Recent/reading/comments/Likes not redesigned | NOT ASSESSED | Gateway stopped at Author Workspace blocker. |
+| Native API smoke recorded | PASS with contract failure noted | `native-contract-check-706c8df.txt`, `native-api-smoke-bc5e7c7.txt`. |
 
-## Not tested
+## Required repair
 
-- Author primary desktop workflow.
-- Public Author entries in a real browser.
-- Unpublish hiding public File in a real browser.
-- Move/delete/reorder prompts in a real browser.
-- Mobile no-regression sanity.
+Repair the protected tree contract drift before rerunning Gateway 6:
 
-These remain blocked by the backend compile failure above.
+1. Either update backend `GET /api/admin/tree` to return the OpenAPI/frontend shape (`roots`, nested `children`, node `path`), or update frontend schemas/adapters to consume the actual backend shape (`nodes`, `url_path`) and build the protected tree.
+2. Add/adjust a regression test that would fail on this mismatch (API contract test or frontend mocked `fetchAdminTree` parsing test using the integrated backend payload).
+3. Rerun backend/frontend gates, native contract check, desktop acceptance, and mobile sanity.
+
+## Not changed by acceptance
+
+Acceptance did not patch feature code. Evidence-only files were created under
+`docs/verification/stage-2-browser-20260613/` and this acceptance report.
