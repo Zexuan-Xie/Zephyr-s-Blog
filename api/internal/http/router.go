@@ -119,6 +119,14 @@ func NewRouter(deps Dependencies) http.Handler {
 					adminService = tree.NewAdminService(repo, lifecycleService)
 				}
 			}
+			if lifecycleService == nil && adminService == nil && assetService == nil && searchService == nil {
+				api.Route("/admin", func(admin chi.Router) {
+					admin.Use(authMiddleware.RequireAdmin)
+					admin.Get("/preview/{file_id}", func(w http.ResponseWriter, r *http.Request) {
+						respond.Error(w, http.StatusNotFound, "file content not found")
+					})
+				})
+			}
 			if lifecycleService != nil || adminService != nil || assetService != nil || searchService != nil {
 				var lifecycleHandler *handlers.TreeLifecycleHandler
 				if lifecycleService != nil {
