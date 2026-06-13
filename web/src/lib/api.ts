@@ -658,8 +658,6 @@ export interface CreateAdminNodeInput {
   parent_id?: string | null;
   kind: NodeKind;
   name: string;
-  slug?: string;
-  sort_order?: number;
   content_format?: ContentFormat;
 }
 
@@ -667,8 +665,6 @@ export interface UpdateAdminNodeInput {
   parent_id?: string | null;
   name?: string;
   url_path?: string;
-  slug?: string;
-  sort_order?: number;
 }
 
 export interface UpsertFileContentInput {
@@ -690,14 +686,8 @@ export function fetchAdminNode(nodeId: string): Promise<AdminNodeDetail> {
   );
 }
 
-export function createAdminNode(
-  input: CreateAdminNodeInput,
-): Promise<AdminNodeDetail> {
-  return requestJson(
-    "/admin/nodes",
-    adminNodeDetailSchema,
-    jsonAuthInit("POST", input),
-  );
+export function createAdminNode(input: CreateAdminNodeInput): Promise<AdminNodeDetail> {
+  return requestJson("/admin/nodes", adminNodeDetailSchema, jsonAuthInit("POST", input));
 }
 
 export function updateAdminNode(
