@@ -32,20 +32,23 @@ export function AdminPage({ onLogout }: { onLogout: () => void }) {
   });
 
   const flatTree = useMemo(() => flattenTree(adminTreeQuery.data?.roots ?? []), [adminTreeQuery.data]);
-  const selectedNode = flatTree.find((node) => node.id === selectedId) ?? null;
+  const selectedNode = flatTree.find((node) => node.id === selectedId)
+    ?? flatTree.find((node) => node.kind === 'directory')
+    ?? flatTree[0]
+    ?? null;
+  const effectiveSelectedId = selectedNode?.id ?? selectedId;
+  const visibleExpandedIds = useMemo(() => (
+    selectedNode && adminTreeQuery.data
+      ? expandAncestors(expandedIds, selectedNode.id, adminTreeQuery.data.roots)
+      : expandedIds
+  ), [adminTreeQuery.data, expandedIds, selectedNode]);
 
   const detailQuery = useQuery({
-    queryKey: ['admin', 'node-detail', selectedId],
-    queryFn: () => fetchAdminNode(selectedId),
-    enabled: Boolean(selectedId) && Boolean(selectedNode),
+    queryKey: ['admin', 'node-detail', effectiveSelectedId],
+    queryFn: () => fetchAdminNode(effectiveSelectedId),
+    enabled: Boolean(effectiveSelectedId) && Boolean(selectedNode),
     retry: false,
   });
-
-  useEffect(() => {
-    if (requestedTarget) {
-      setSelectedId(requestedTarget);
-    }
-  }, [requestedTarget]);
 
   useEffect(() => {
     if (selectedId) {
@@ -57,24 +60,6 @@ export function AdminPage({ onLogout }: { onLogout: () => void }) {
     window.localStorage.setItem(expandedStorageKey, JSON.stringify([...expandedIds]));
   }, [expandedIds]);
 
-  useEffect(() => {
-    if (!adminTreeQuery.data || flatTree.length === 0) return;
-
-    if (requestedTarget && flatTree.some((node) => node.id === requestedTarget)) {
-      setSelectedId(requestedTarget);
-      setExpandedIds((current) => expandAncestors(current, requestedTarget, adminTreeQuery.data.roots));
-      return;
-    }
-
-    if (selectedId && flatTree.some((node) => node.id === selectedId)) {
-      setExpandedIds((current) => expandAncestors(current, selectedId, adminTreeQuery.data.roots));
-      return;
-    }
-
-    const firstDirectory = flatTree.find((node) => node.kind === 'directory') ?? flatTree[0];
-    setSelectedId(firstDirectory.id);
-    setExpandedIds((current) => firstDirectory.kind === 'directory' ? new Set([...current, firstDirectory.id]) : current);
-  }, [adminTreeQuery.data, flatTree, requestedTarget, selectedId]);
 
   if (!token) {
     return <Navigate to="/login?return_to=%2Fadmin" replace />;
@@ -221,8 +206,8 @@ function TreeNodeRow({ node, depth, expandedIds, selectedId, onSelect, onToggle 
               key={child.id}
               node={child}
               depth={depth + 1}
-              expandedIds={expandedIds}
-              selectedId={selectedId}
+              expandedIds={visibleExpandedIds}
+              selectedId={effectiveSelectedId}
               onSelect={onSelect}
               onToggle={onToggle}
             />
