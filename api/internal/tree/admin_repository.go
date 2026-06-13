@@ -2,6 +2,7 @@ package tree
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 
 	"github.com/google/uuid"
@@ -10,6 +11,43 @@ import (
 )
 
 const uniqueViolationCode = "23505"
+
+func (r *SQLRepository) AdminTree(ctx context.Context) (AdminTreeResponse, error) {
+	const query = nodePathsCTE + `
+		select p.id, p.parent_id, p.kind, p.name, p.path, p.sort_order,
+			fc.content_format, coalesce(fc.status, 'draft') as status
+		from node_paths p
+		left join file_contents fc on fc.node_id = p.id
+		order by p.path, p.kind, p.sort_order, p.name`
+	rows, err := r.pool.Query(ctx, query)
+	if err != nil {
+		return AdminTreeResponse{}, err
+	}
+	defer rows.Close()
+
+	result := AdminTreeResponse{Nodes: []AdminTreeNode{}}
+	for rows.Next() {
+		var node AdminTreeNode
+		var parentID uuid.NullUUID
+		var kind string
+		var contentFormat sql.NullString
+		var status string
+		if err := rows.Scan(&node.ID, &parentID, &kind, &node.Name, &node.URLPath, &node.SortOrder, &contentFormat, &status); err != nil {
+			return AdminTreeResponse{}, err
+		}
+		if parentID.Valid {
+			node.ParentID = &parentID.UUID
+		}
+		node.Kind = NodeKind(kind)
+		node.Status = PublishStatus(status)
+		if contentFormat.Valid {
+			format := ContentFormat(contentFormat.String)
+			node.ContentFormat = &format
+		}
+		result.Nodes = append(result.Nodes, node)
+	}
+	return result, rows.Err()
+}
 
 func (r *SQLRepository) GetAdminNode(ctx context.Context, nodeID uuid.UUID) (AdminNodeDetail, error) {
 	node, err := r.GetNode(ctx, nodeID)

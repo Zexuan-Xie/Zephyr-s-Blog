@@ -152,13 +152,26 @@ func (s *AdminService) GetNode(ctx context.Context, nodeID uuid.UUID) (AdminNode
 func (s *AdminService) CreateNode(ctx context.Context, input CreateNodeInput) (AdminNodeDetail, error) {
 	input.Name = strings.TrimSpace(input.Name)
 	input.Slug = strings.TrimSpace(input.Slug)
-	if input.Slug == "" && !input.SlugSet {
+	autoSlug := input.Slug == "" && !input.SlugSet
+	if autoSlug {
 		input.Slug = generateURLSegment(input.Name)
 	}
 	if err := validateCreateNodeInput(input); err != nil {
 		return AdminNodeDetail{}, err
 	}
-	return s.repo.CreateNode(ctx, input)
+	created, err := s.repo.CreateNode(ctx, input)
+	if err == nil || !autoSlug || !errors.Is(err, ErrDuplicateSlug) {
+		return created, err
+	}
+	baseSlug := input.Slug
+	for suffix := 2; suffix <= 99; suffix++ {
+		input.Slug = fmt.Sprintf("%s-%d", baseSlug, suffix)
+		created, err = s.repo.CreateNode(ctx, input)
+		if err == nil || !errors.Is(err, ErrDuplicateSlug) {
+			return created, err
+		}
+	}
+	return AdminNodeDetail{}, ErrDuplicateSlug
 }
 
 func (s *AdminService) UpdateNode(ctx context.Context, nodeID uuid.UUID, input UpdateNodeInput) (AdminNodeDetail, error) {
