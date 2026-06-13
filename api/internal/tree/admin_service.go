@@ -39,8 +39,24 @@ type CreateNodeInput struct {
 	Kind          NodeKind      `json:"kind"`
 	Name          string        `json:"name"`
 	Slug          string        `json:"slug"`
+	SlugSet       bool          `json:"-"`
 	SortOrder     int           `json:"sort_order"`
 	ContentFormat ContentFormat `json:"content_format,omitempty"`
+}
+
+func (input *CreateNodeInput) UnmarshalJSON(data []byte) error {
+	type createNodeAlias CreateNodeInput
+	var decoded createNodeAlias
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	*input = CreateNodeInput(decoded)
+	_, input.SlugSet = fields["slug"]
+	return nil
 }
 
 type UpdateNodeInput struct {
@@ -136,7 +152,7 @@ func (s *AdminService) GetNode(ctx context.Context, nodeID uuid.UUID) (AdminNode
 func (s *AdminService) CreateNode(ctx context.Context, input CreateNodeInput) (AdminNodeDetail, error) {
 	input.Name = strings.TrimSpace(input.Name)
 	input.Slug = strings.TrimSpace(input.Slug)
-	if input.Slug == "" {
+	if input.Slug == "" && !input.SlugSet {
 		input.Slug = generateURLSegment(input.Name)
 	}
 	if err := validateCreateNodeInput(input); err != nil {

@@ -132,9 +132,13 @@ func NewRouter(deps Dependencies) http.Handler {
 					admin.Use(authMiddleware.RequireAdmin)
 					if adminService != nil {
 						adminHandler := handlers.NewAdminNodeHandler(adminService)
+						admin.Get("/tree", adminHandler.AdminTree)
 						admin.Post("/nodes", adminHandler.CreateNode)
 						admin.Get("/nodes/{node_id}", adminHandler.GetNode)
 						admin.Patch("/nodes/{node_id}", adminHandler.UpdateNode)
+						admin.Put("/nodes/{parent_id}/children/order", adminHandler.ReorderChildren)
+						admin.Post("/nodes/{node_id}/move-preview", adminHandler.PreviewMove)
+						admin.Post("/nodes/{node_id}/move", adminHandler.MoveNode)
 					}
 					if lifecycleService != nil {
 						admin.Delete("/nodes/{node_id}", lifecycleHandler.DeleteNode)

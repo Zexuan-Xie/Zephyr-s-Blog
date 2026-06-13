@@ -99,6 +99,8 @@ func (h *TreeLifecycleHandler) respondError(w http.ResponseWriter, err error) {
 		respond.Error(w, http.StatusNotFound, err.Error())
 	case errors.Is(err, tree.ErrNodeIsNotFile), errors.Is(err, tree.ErrInvalidContentFormat):
 		respond.Error(w, http.StatusBadRequest, err.Error())
+	case errors.Is(err, tree.ErrNonEmptyDirectoryDelete):
+		respond.JSON(w, http.StatusConflict, respond.ErrorResponse{Error: err.Error(), Details: map[string]any{"reason": "non_empty_directory"}})
 	case errors.Is(err, tree.ErrPublishedContentFormatChange),
 		errors.Is(err, tree.ErrPublishedFileDelete),
 		errors.Is(err, tree.ErrDirectoryHasPublishedDescendants):

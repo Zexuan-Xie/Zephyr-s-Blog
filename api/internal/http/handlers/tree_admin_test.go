@@ -105,3 +105,19 @@ func (f *fakeAdminNodeService) CreateNode(context.Context, tree.CreateNodeInput)
 func (f *fakeAdminNodeService) UpdateNode(context.Context, uuid.UUID, tree.UpdateNodeInput) (tree.AdminNodeDetail, error) {
 	return f.detail, f.err
 }
+
+func (f *fakeAdminNodeService) AdminTree(context.Context) (tree.AdminTreeResponse, error) {
+	return tree.AdminTreeResponse{}, f.err
+}
+
+func (f *fakeAdminNodeService) ReorderChildren(_ context.Context, parentID uuid.UUID, input tree.ReorderChildrenInput) (tree.ReorderChildrenResult, error) {
+	return tree.ReorderChildrenResult{ParentID: parentID, ChildIDs: input.ChildIDs, Version: input.ExpectedVersion + 1}, f.err
+}
+
+func (f *fakeAdminNodeService) PreviewMove(_ context.Context, nodeID uuid.UUID, input tree.MoveNodeInput) (tree.MovePreview, error) {
+	return tree.MovePreview{NodeID: nodeID, DestinationPath: "/moved", AffectedPaths: []string{"/old"}, Redirects: []tree.PathRedirectPreview{{OldPath: "/old", NewPath: "/moved", NodeID: nodeID}}, BlockedReasons: []string{}}, f.err
+}
+
+func (f *fakeAdminNodeService) MoveNode(context.Context, uuid.UUID, tree.MoveNodeInput) (tree.AdminNodeDetail, error) {
+	return f.detail, f.err
+}
