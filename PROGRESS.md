@@ -1,6 +1,6 @@
 # xLab Blog Progress
 
-Last updated: 2026-06-13 00:55 CST
+Last updated: 2026-06-13 01:30 CST
 
 This is the durable resume point. Keep it concise and update it after every key milestone.
 
@@ -76,12 +76,14 @@ The native stack is currently running from this session for user acceptance. If 
 
 ## Immediate next steps
 
-1. Resume `$grill-with-docs` Stage 2 replanning from `docs/plans/STAGE_2_REPLAN_BREAKPOINT.md`; next prompt is Q13 about Settings danger/advanced-operation layering. Ask one question at a time until at least 90% intent confidence.
-2. Do not start Stage 2 implementation yet; the Stage 2 plan is being revised from the Author acceptance feedback.
+1. Review the revised Stage 2 plan in `docs/plans/SECOND_DEVELOPMENT.md` Section 16 and the interview record in `docs/plans/STAGE_2_REPLAN_BREAKPOINT.md`. Stage 2 replanning has 90%+ shared-understanding confidence and is ready for execution planning/Team launch when the user instructs.
+2. Do not start Stage 2 implementation until the user explicitly says to proceed.
 3. Preserve the current local database until the Stage 2 pre-stage backup/fixture cleanup step.
 4. If services stop, recover with `~/.local/share/xlab-blog/start-local.sh`.
 
 ## Recent milestones
+
+- **2026-06-13 01:30 CST** — `$grill-with-docs` replanning reached 90%+ confidence for Stage 2 and the final-stage MCP branch. Stage 2 Section 16 was rewritten around a desktop-first Chinese Author Workspace, protected complete Content Tree, minimal create flow, Author-only public edit/manage entry, manual-save File workspace shell, explicit return controls, dedicated fixture, desktop Author workflow acceptance, and mobile no-regression sanity. Final-stage MCP decisions Q21–Q26: build a separate server-local stdio MCP Server with high-trust full Author permissions, complete Author tool set, explicit enablement, audit logs, backup/export safeguards, and emergency disable; no public HTTP/SSE transport in initial scope. Awaiting user instruction before implementation.
 
 - **2026-06-13 00:55 CST** — `$grill-with-docs` Stage 2 replanning interview paused by user request and recorded in `docs/plans/STAGE_2_REPLAN_BREAKPOINT.md`. Confirmed decisions Q1–Q12: replace current Admin page with a Chinese Author Workspace; desktop two-column/mobile single-column; Chinese scope focused on Author flows plus related public entry points; Author-only public Directory/File manage/edit actions; protected expand/collapse Content Tree without search; minimal create flow; same-parent drag sorting only; Directory overview workspace; File workspace shell with manual save; single primary publication action with secondary unpublish; creation toast plus automatic tree selection; explicit return buttons plus lightweight breadcrumbs. Next question is Q13 about Settings danger/advanced-operation layering.
 

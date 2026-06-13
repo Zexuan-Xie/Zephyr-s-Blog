@@ -656,69 +656,162 @@ Primary touchpoints: `web/src/App.tsx`, `GlassNav.tsx`, `SearchPage.tsx`, `AuthP
 - return target cannot open-redirect or loop;
 - no credentials/tokens in logs or Git.
 
-## 16. Stage 2 — Graphical Admin Content Tree and workspace
+## 16. Stage 2 — Chinese Author Workspace and protected Content Tree
+
+Stage 2 replaces the current form-heavy Admin page with a desktop-first, Chinese **Author Workspace**. The protected route may remain `/admin`, but product UI must not present the surface as `Admin / Tree Manager`; it is the Author-facing workspace for managing the Content Tree, Files, assets, publication controls, and node settings.
+
+Stage 2 directly addresses the failed user acceptance from 2026-06-13:
+
+- newly created Directory/File nodes must appear immediately in every relevant Author Workspace tree/navigation surface, so success cannot be mistaken for failure;
+- every subflow needs explicit in-app return controls and lightweight breadcrumbs, not browser-back dependence;
+- generated Files must be selectable, editable, publishable, and unpublishable from the Author Workspace;
+- Authors browsing public Directory/File pages need an Author-only `管理此目录` / `编辑文件` entry back into the workspace;
+- the Author Workspace must be graphical, Chinese, operation-first, minimal, readable, and structurally clear.
 
 ### 16.1 Pre-stage controlled data gate
 
-Execute Section 12 backup, checksum, disposable restore, inventory, and explicit-ID cleanup. Preserve `Smoke Notes / Local Smoke Renamed`; delete only confirmed `Acceptance 1425`, its child File, and `Acceptance 1426`.
+Execute Section 12 backup, checksum, disposable restore, inventory, and explicit-ID cleanup before schema migration, fixture cleanup, or destructive acceptance setup. Preserve `Smoke Notes / Local Smoke Renamed`; delete only confirmed accidental IDs already documented by Stage 1 evidence.
+
+Create or refresh a dedicated Stage 2 acceptance fixture under a clearly named root such as `/stage-2-acceptance`. The fixture must cover:
+
+- Directory and nested Directory cases;
+- Draft File and Published File cases;
+- Chinese and mixed Chinese/English URL Paths;
+- same-parent ordering;
+- cross-Directory move constraints;
+- non-empty Directory and Published File deletion protection;
+- Author-only public Directory/File manage/edit entry.
+
+Document fixture creation and cleanup rules in `docs/verification/stage-2-acceptance.md`.
 
 ### 16.2 Backend/API packets
 
-Update OpenAPI first and implement:
+Update `docs/api/openapi.yaml` first for every shared API contract change. Implement protected Author Workspace APIs with clear repository/service/handler boundaries, keeping SQL in repositories and avoiding UI-specific backend hacks. Prioritize readability, extensibility, and a rigorous structure.
 
-- protected complete Admin Content Tree containing all Directories and Draft/Published/changed Files;
-- lazy same-parent children with child/attention metadata;
-- transaction-safe mixed Directory/File sibling reorder;
-- backend-authoritative Name normalization with Chinese preservation, English lowercase/hyphens, and transaction-safe numeric conflict suffix only on initial creation;
-- strict explicit URL Path conflict handling without silent suffix;
-- impact preview for URL Path changes and Directory Picker moves;
-- atomic subtree path rewrite, cycle prevention, and flattened redirects for formerly public paths;
-- read-only redirect status;
-- protected deletion rules.
+Required capabilities:
 
-Keep SQL in repositories.
+- protected Author Content Tree containing all Directories, Draft Files, Published Files, and Files with unpublished changes;
+- node detail for Directory/File workspace loading, including path, parent, order, status, and relevant child metadata;
+- context-aware create for Directory/File using selected parent Directory, with backend-authoritative Name-to-URL-Path generation;
+- URL Path generation that preserves Chinese characters, normalizes Latin text to lowercase hyphenated segments, and appends numeric suffixes only for initial create conflicts;
+- strict explicit URL Path edit handling without silent rewrite;
+- same-parent mixed Directory/File reorder with transaction safety and lost-update protection where practical;
+- graphical Directory Picker support for cross-Directory moves, including impact preview, cycle prevention, subtree path rewrite, and redirects for formerly public paths;
+- protected deletion constraints with clear reasons for non-empty Directories and Published Files;
+- publication state read/update sufficient for Stage 2 manual-save File workspace, without implementing Stage 3 autosave/version/publication snapshot semantics.
+
+Do not implement Stage 3 Content Version history, Draft Preview, Draft/Published Asset split, or independent Published Content snapshots in Stage 2.
 
 ### 16.3 Frontend packets
 
-Build:
+Build a desktop-first Chinese Author Workspace. Mobile in Stage 2 is no-regression sanity only: phone width must not visibly break, must provide orientation or a basic Content Tree/exit path, and must avoid major overflow/overlap; complete mobile create/edit/move/delete flows are deferred.
 
-- compact Admin shell: Content/current path, context-aware View site, Rebuild search, System status, Logout;
-- complete lazy Content Tree with selection, independent disclosure, node menu, browser-local state restoration, Draft/Published/Changes/Save-failed and collapsed attention states;
-- `＋ New` Directory/File graphical cards in right workspace, Name-only Directory, Name + Markdown/HTML File, final URL Path preview, preserved input, discard protection after input;
-- same-parent desktop drag sorting only; mobile Move up/down; autosave and rollback on failure;
-- Advanced settings with Name, URL Path, Directory Picker, sort position, Technical details, Rename, Delete danger zone;
-- File tabs Content, Assets, Settings;
-- single transient success toast and inline actionable errors.
+#### 16.3.1 Workspace shell
 
-Do not implement Stage 3 autosave/publication model early.
+- Desktop layout: fixed two-column workspace. Left: protected Content Tree. Right: current contextual workspace.
+- Mobile layout: no-regression single-column fallback only for Stage 2.
+- Visual direction: lightweight professional writing/management tool inside Glass Ricepaper; quiet, sparse, readable, and operation-first. Use stronger card/status treatment only for creation success, publication state, save/error state, and danger confirmations.
+- UI copy: Author Workspace and Author-facing flows are Chinese. Public reading pages are not broadly redesigned, except Author-workflow touchpoints and necessary login/identity wording.
+- Top workspace controls include context, public-view action where relevant, system/status actions, and Author logout without reviving the old `Admin / Tree Manager` hero.
 
-### 16.4 Packet DAG
+#### 16.3.2 Content Tree
 
-`.omx/plans/stages/stage-2-packet-dag.json` starts with a coordinator-owned PRD drag-wording preflight, then splits data gate, API/tree read, create/reorder, move/redirect/delete, shell/tree UI, New/settings/order UI, tabs/system UI, acceptance, security, and closeout. The coordinator completes the preflight before claiming the persistent control packet; backend/frontend Red roots depend on it, transitively blocking every implementation packet. Worker 1 records its PASS/checkpoint in `docs/verification/stage-2-team-log.md`; blocked Worker 4 mirrors it into `docs/verification/stage-2-acceptance.md`, preserving sole file ownership.
+- Protected expand/collapse tree; no tree search in Stage 2.
+- Show all Directories, Draft Files, Published Files, and Files with unpublished changes.
+- Restore browser-local selection/expanded state when safe.
+- Creation refreshes the tree, expands the parent Directory, selects the new node, and opens the correct right workspace.
+- Public Directory/File Author entry expands ancestors and selects/opens the target node.
+- Same-parent desktop drag sorting only; drag must never change parent Directory.
+- Mobile sorting is deferred with mobile no-regression sanity only, unless explicitly implemented as safe up/down controls.
+
+#### 16.3.3 Directory workspace
+
+Selecting a Directory opens a Directory overview, not settings by default. The right workspace shows:
+
+- Directory Name and current URL Path;
+- clear `新建 Directory` and `新建 File` actions;
+- child cards for current Directory contents;
+- a Settings entry.
+
+Creating a Directory uses only `名称`; creating a File uses `名称` and `格式` (`Markdown` / `HTML Document`). The UI shows a read-only final URL Path preview and never exposes Parent ID, Node ID, `slug`, or Sort order in the primary creation flow.
+
+Creation success shows a lightweight Chinese toast, refreshes tree/navigation state, expands/selects/opens the new node, and displays the final path clearly.
+
+#### 16.3.4 File workspace
+
+Selecting a File opens a File workspace shell with the Stage 3-compatible shape, but Stage 2 keeps saving manual:
+
+- header: File Name, status (`草稿`, `已发布`, `有未发布修改` where supported), URL Path, public-view action, and one primary publication action;
+- sections/tabs: `内容`, `资源`, `设置`;
+- `内容`: body editor, keywords, manual save, clear Chinese success/error messages;
+- `资源`: upload/view/delete using existing asset model without Stage 3 Draft/Published Asset split;
+- `设置`: Name, URL Path, move, delete constraints, and danger zone.
+
+Publication control uses one primary action: `发布` for Draft, `发布更新` for saved unpublished changes, and status-only `已发布` when current. `撤回发布` is secondary/overflow/danger, not a sibling primary button.
+
+#### 16.3.5 Settings, return, and public Author entry
+
+- Settings are divided into `基础信息`, `位置`, and `危险操作`.
+- Danger actions live at the bottom, are visually distinct, require Chinese second confirmation, and explain blocked Published File / non-empty Directory deletion.
+- Cross-Directory movement uses a graphical Directory Picker and path/impact preview; it never requires Parent ID.
+- All right-workspace subflows that replace the current workspace include explicit return buttons with destination-specific copy such as `返回当前目录`, `返回文件内容`, or `返回设置`.
+- Lightweight breadcrumbs/path indicators aid orientation but are not the only return mechanism.
+- Author-only public Directory/File entries show `管理此目录` or `编辑文件`; clicking enters the workspace with the target node selected.
+
+### 16.4 Packet DAG update
+
+Before Stage 2 implementation, revise the Stage 2 packet DAG and evidence checklist to match this replanned scope. The packet graph should preserve the fresh-Team-per-stage model and split work into at least:
+
+1. coordinator preflight: PRD drag wording alignment, Stage 2 replanned scope application, fixture/data gate, and evidence skeleton;
+2. backend contract/API Red tests and OpenAPI update;
+3. backend protected Author tree/detail/create/reorder/move/delete implementation;
+4. frontend Author Workspace shell/tree/create/directory workspace;
+5. frontend File workspace/settings/public Author entry;
+6. acceptance fixture and desktop browser workflow;
+7. security review for protected tree, Draft leakage, destructive operations, redirects, and public Author entry;
+8. independent architecture/code review and closeout.
+
+Coordinator records checkpoints in `PROGRESS.md` and `docs/verification/stage-2-team-log.md`. Acceptance owns `docs/verification/stage-2-acceptance.md`; security owns `docs/verification/stage-2-security.md`; independent review owns `docs/verification/stage-2-code-review.md`.
 
 ### 16.5 Acceptance PASS
 
-- coordinator-owned PRD drag wording is aligned with `BLOG_FLOW.md` and `DESIGN.md` before any Stage 2 implementation packet starts; Worker 1 records PASS/ACK in the Team log and Worker 4 mirrors it into acceptance evidence;
-- Draft-only branches appear only in protected Admin tree;
-- lazy expansion and selection restoration;
-- English/Chinese/mixed normalization and concurrent same-name creation;
-- explicit URL conflict never silently renames;
-- mixed reorder persists atomically and UI rolls back on failure;
-- Directory move/path change rewrites descendants and redirects atomically;
-- non-empty Directory and Published File deletion remain protected;
-- no raw Node ID or `slug` in UI;
-- new nodes appear/select/open automatically;
-- mobile tree/order controls and full public regression pass.
+Stage 2 user acceptance is desktop-first and follows this primary path:
+
+1. log in as Author and enter the Chinese Author Workspace;
+2. create a Directory and File with minimal Chinese forms;
+3. verify Content Tree refreshes immediately, expands the parent, selects/opens the new node, and shows a clear Chinese toast/path;
+4. edit File content and keywords, manually save, and see clear Chinese feedback;
+5. publish the File and verify public access;
+6. from the public File, click Author-only `编辑文件` and return to the workspace with the File selected;
+7. verify `撤回发布` is reachable as a secondary/danger action and hides the public File after confirmation;
+8. verify Settings move/URL Path/delete-constrained cases show clear Chinese prompts and do not expose Parent ID, Node ID, or `slug`;
+9. verify same-parent desktop drag sorting persists and never reparents;
+10. verify public homepage, Recent cards, public Directory/File reading, comments/Likes, and Glass Ricepaper are not redesigned except required Author entry/regression repair;
+11. verify mobile no-regression sanity only: phone width opens without major layout breakage and provides a basic orientation/exit path.
+
+Automated and documented gates must additionally cover:
+
+- Draft-only branches appear only in protected Author Content Tree;
+- English/Chinese/mixed URL Path normalization and same-parent conflict suffix on create;
+- explicit URL Path conflicts never silently rename;
+- non-empty Directory and Published File deletion are protected;
+- Reader and Anonymous Visitor cannot access Author Workspace APIs or Draft content;
+- full-text search fallback remains preserved when semantic indexing is unavailable;
+- iframe sandbox remains `sandbox="allow-scripts"` without `allow-same-origin`.
 
 ### 16.6 Security PASS
 
-- Anonymous/Reader denied protected tree;
-- no Draft leakage through public tree/search/assets;
-- invalid parent, cycles, path traversal, reorder lost update, redirect loop/chain attacks rejected;
-- destructive action shows truthful impact/confirmation;
-- backup and restore evidence PASS.
+- Anonymous Visitor and Reader are denied protected Author Workspace APIs.
+- Draft Files and draft-only branches do not leak through public tree, search, recent, assets, or public Author entry logic.
+- Invalid parent, cycles, path traversal, reorder lost update, redirect loop/chain attacks, and destructive operation bypasses are rejected.
+- Destructive actions show truthful impact and confirmation.
+- Public Author-only edit/manage entry is hidden from Reader/Anonymous Visitor and does not expose Draft targets.
+- Backup/restore and acceptance fixture evidence are recorded.
 
 ## 17. Stage 3 — Autosave, versions, publication snapshots, Draft Preview, Draft/Published Assets
+
+Stage 3 additionally has a new final-stage MCP requirement from user replanning: build a separate Blog MCP Server process/package so external AI tools can interact with the Blog. The user wants a high-trust server-local stdio MCP Server with full Author permissions so trusted AI agents running on the server can autonomously create, edit, publish, unpublish, move, delete, modify URL Paths, manage assets, and read/search the Content Tree. The MCP Server should expose a complete Author tool set by Stage 3 closeout, grouped into read (`list_content_tree`, `get_file`, `search_files`), content (`create_directory`, `create_file`, `update_file_content`, `update_file_settings`), publish (`publish_file`, `unpublish_file`), tree (`move_node`, `reorder_children`, `delete_node`), assets (`upload_asset`, `delete_asset`, `list_assets`), and maintenance (`rebuild_search_index`, `export_backup`). It should reuse backend service/API-client capabilities instead of duplicating business logic or SQL, and include minimal engineering safeguards for presentation-quality architecture: explicit enablement configuration, operation audit logs, automatic backup/export before destructive batches where practical, authentication/deployment posture, and emergency disable behavior. Public HTTP/SSE MCP transport is out of initial scope and may be added later behind explicit auth and network-binding controls.
+
 
 ### 17.1 Migration/data model packet
 
