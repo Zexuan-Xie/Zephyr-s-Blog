@@ -7,26 +7,43 @@ function source(path) {
 }
 
 const adminPageSource = source('../src/pages/AdminPage.tsx');
-const stage2ContractSource = source('./stage2-author-workspace-contract.test.mjs');
 const apiSource = source('../src/lib/api.ts');
 
-test('Stage 2 shell delegates minimal create Red coverage to the Gateway 4 contract', () => {
-  assert.match(stage2ContractSource, /Stage 2 minimal create flow is slugless/);
-  assert.ok(stage2ContractSource.includes('createAdminNode\\(input: CreateAdminNodeInput\\): Promise<AdminNodeDetail>'));
+test('Stage 2 minimal create is slugless and opens the returned node after tree refresh', () => {
+  const createStart = adminPageSource.indexOf('async function submitCreate');
+  const logoutStart = adminPageSource.indexOf('function logoutAuthor', createStart);
+  const createFlow = adminPageSource.slice(createStart, logoutStart);
+
   assert.match(apiSource, /createAdminNode\(input: CreateAdminNodeInput\): Promise<AdminNodeDetail>/);
-  assert.match(adminPageSource, /新建与移动操作将在后续工作包中接入/);
+  assert.doesNotMatch(apiSource, /CreateAdminNodeInput[\s\S]*slug:/);
+  assert.match(createFlow, /const createForm = event\.currentTarget/);
+  assert.match(createFlow, /let created: AdminNodeDetail/);
+  assert.match(createFlow, /created = await createAdminNode\(input\)/);
+  assert.match(createFlow, /setSelectedId\(created\.node\.id\)/);
+  assert.match(createFlow, /setExpandedIds/);
+  assert.match(createFlow, /await adminTreeQuery\.refetch\(\)/);
+  assert.match(createFlow, /created\.node\.path/);
+  assert.doesNotMatch(createFlow, /slug:/);
+  assert.doesNotMatch(createFlow, /sort_order:/);
 });
 
-test('Stage 2 shell removes old implementation-language create controls from primary UI', () => {
+test('Stage 2 create UI is Chinese, minimal, and hides implementation controls', () => {
+  assert.match(adminPageSource, /新建目录/);
+  assert.match(adminPageSource, /新建文件/);
+  assert.match(adminPageSource, /创建并打开/);
+  assert.match(adminPageSource, /URL Path preview/);
+  assert.match(adminPageSource, /readOnly/);
   assert.doesNotMatch(adminPageSource, />Slug</);
   assert.doesNotMatch(adminPageSource, /Check slug|root slugs|slug uniqueness/i);
   assert.doesNotMatch(adminPageSource, /Parent id/i);
   assert.doesNotMatch(adminPageSource, /Sort order/i);
-  assert.match(adminPageSource, /URL Path/);
 });
 
-test('Stage 2 create contract remains Red until the directory create packet implements it', () => {
-  assert.ok(stage2ContractSource.includes('setSelectedId\\(created\\.node\\.id\\)'));
-  assert.ok(stage2ContractSource.includes('adminTreeQuery\\.refetch\\(\\)'));
-  assert.doesNotMatch(adminPageSource, /async function submitCreate/);
+test('Stage 2 create failures use Chinese actionable feedback', () => {
+  assert.match(adminPageSource, /formatAdminCreateError\(error\)/);
+  assert.match(adminPageSource, /登录已过期，请重新登录/);
+  assert.match(adminPageSource, /需要作者权限才能创建内容/);
+  assert.match(adminPageSource, /目标目录不存在/);
+  assert.match(adminPageSource, /URL Path 已存在/);
+  assert.match(adminPageSource, /创建失败，请检查网络后重试/);
 });
