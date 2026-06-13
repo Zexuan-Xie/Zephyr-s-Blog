@@ -65,6 +65,18 @@ type fakeTreeLifecycleService struct {
 	err     error
 }
 
+func (f *fakeTreeLifecycleService) GetFileVersionState(context.Context, uuid.UUID) (tree.FileVersionState, error) {
+	return tree.FileVersionState{Current: f.content, DraftAssets: []tree.FileAsset{}, PublishedAssets: []tree.FileAsset{}}, f.err
+}
+
+func (f *fakeTreeLifecycleService) RestorePreviousContent(context.Context, uuid.UUID, int) (tree.FileVersionState, error) {
+	return tree.FileVersionState{Current: f.content, DraftAssets: []tree.FileAsset{}, PublishedAssets: []tree.FileAsset{}}, f.err
+}
+
+func (f *fakeTreeLifecycleService) PublishCurrentSnapshot(context.Context, uuid.UUID, int) (tree.PublishResult, error) {
+	return tree.PublishResult{Current: f.content, Published: tree.PublishedContent{NodeID: f.content.NodeID, SourceRevision: f.content.Revision, ContentFormat: f.content.ContentFormat, Visible: true}}, f.err
+}
+
 func (f *fakeTreeLifecycleService) UpsertFileContent(context.Context, uuid.UUID, tree.UpsertFileContentInput) (tree.FileContent, error) {
 	return f.content, f.err
 }

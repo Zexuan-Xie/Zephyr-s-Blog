@@ -11,6 +11,7 @@ import (
 	"xlab-blog/api/internal/comments"
 	"xlab-blog/api/internal/http/handlers"
 	"xlab-blog/api/internal/http/middleware"
+	"xlab-blog/api/internal/http/respond"
 	"xlab-blog/api/internal/likes"
 	"xlab-blog/api/internal/search"
 	"xlab-blog/api/internal/tree"
@@ -107,6 +108,13 @@ func NewRouter(deps Dependencies) http.Handler {
 		}
 
 		if authMiddleware != nil {
+			api.Route("/admin", func(admin chi.Router) {
+				admin.Use(authMiddleware.RequireAdmin)
+				admin.Get("/preview/{file_id}", func(w http.ResponseWriter, r *http.Request) {
+					respond.Error(w, http.StatusNotFound, "file content not found")
+				})
+			})
+
 			lifecycleService := deps.LifecycleService
 			adminService := deps.AdminService
 			if deps.Pool != nil && (lifecycleService == nil || adminService == nil) {

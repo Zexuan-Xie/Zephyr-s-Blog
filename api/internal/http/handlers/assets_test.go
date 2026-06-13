@@ -109,6 +109,10 @@ func (f *fakeAssetService) OpenPublished(context.Context, uuid.UUID, string) (as
 	return f.asset, f.object, f.err
 }
 
+func (f *fakeAssetService) OpenDraft(ctx context.Context, assetID uuid.UUID, filename string) (assets.FileAsset, assets.StoredObject, error) {
+	return f.OpenPublished(ctx, assetID, filename)
+}
+
 func (f *fakeAssetService) Delete(context.Context, uuid.UUID) error {
 	return f.err
 }
