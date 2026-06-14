@@ -1,14 +1,24 @@
 # Progress
 
-Last updated: 2026-06-14 11:22 CST
+Last updated: 2026-06-14 11:50 CST
 
 ## Current breakpoint
 
-Stage 3 engineering is complete on `main` and is ready for user acceptance.
+Stage 3 engineering is complete on `main`; the user reported the core functions are basically OK. The repository has been cleaned for the first-version commit/release baseline.
 
 Current closeout baseline: `fc9c90a` (`docs: update final Stage 3 breakpoint`); later commits are documentation-only breakpoint hygiene.
 
-Active Team runtime: `execute-aeolian-blog-a98ab708` has been shut down. Task 12 remains a documented historical backend security REVISE, superseded by task 14 repair + task 15 PASS and later MCP security PASS. Stage 3 engineering closeout is complete; next step is user acceptance.
+Active Team runtime: `execute-aeolian-blog-a98ab708` has been shut down. Task 12 remains a documented historical backend security REVISE, superseded by task 14 repair + task 15 PASS and later MCP security PASS. Stage 3 engineering closeout is complete; first-version repository cleanup is complete. Next step is to push/tag or continue deployment/presentation preparation.
+
+
+## First-version repository cleanup — 2026-06-14
+
+Completed after user functional acceptance feedback:
+
+- Standardized repository-facing docs: root `README.md`, `docs/README.md`, and the completed Stage 1/2/3 plan status.
+- Expanded `.gitignore` for dependencies, build output, local databases/uploads/backups, logs, credentials, and agent/runtime state.
+- Removed local generated output and ignored runtime traces from the working tree where possible. Active OMX/code-intel processes may recreate ignored `.omx/` or `.code-review-graph/` directories; these are not tracked.
+- Re-ran final gates: backend test/vet/gofmt PASS, frontend tests/lint/build PASS, MCP tests/build PASS.
 
 ## Stage status
 

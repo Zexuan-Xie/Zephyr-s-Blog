@@ -1,18 +1,18 @@
 # xLab Blog Second Development Plan
 
-Last revised: 2026-06-13 CST
+Last revised: 2026-06-14 CST
 
-This is the active development plan. Historical implementation detail is compacted in Git history and `docs/archive/INITIAL_BUILD_SUMMARY.md`; do not revive stale OMX task state or old detached-worker plans.
+This plan records the staged second-development implementation that is now complete through Stage 3. Historical implementation detail is compacted in Git history, `docs/archive/INITIAL_BUILD_SUMMARY.md`, and `docs/verification/`; do not revive stale OMX task state or old detached-worker plans.
 
 ## 1. Product and scope locks
 
 The project remains a single-Author full-stack Blog organized by a Unix-like **Content Tree**. Use the product language in `docs/specs/CONTEXT.md`: `Author`, `Reader`, `Anonymous Visitor`, `Author Workspace`, `Content Tree`, `Directory`, `File`, `URL Path`, `Content Version`, and `Published Content`. `Admin` describes privileges/routes only; never expose `slug` in product UI.
 
-Locked stages:
+Completed stages:
 
-1. **Reliability, navigation, and identity** — engineering complete; user acceptance found Author Workspace UX blockers that are folded into Stage 2.
-2. **Chinese Author Workspace and protected Content Tree** — current active implementation target.
-3. **Autosave, publication snapshots, Draft Preview, Draft/Published Assets, and Blog MCP Server** — final product stage plus server-local MCP.
+1. **Reliability, navigation, and identity** — engineering complete.
+2. **Simple-English Author Workspace and protected Content Tree** — engineering complete and accepted as the Author baseline.
+3. **Autosave, Content Versions, Published Content snapshots, Draft Preview, Draft/Published Assets, and server-local stdio Blog MCP Server** — engineering complete; user acceptance is the remaining release gate.
 
 Scope exclusions unless repairing regressions:
 
@@ -21,9 +21,9 @@ Scope exclusions unless repairing regressions:
 - no public Directory/File reading redesign;
 - no comments/Likes redesign;
 - no Glass Ricepaper redesign;
-- no cross-Directory drag-and-drop reparenting;
-- no Author Workspace tree search in Stage 2;
-- no container/server deployment before native stages and user acceptance pass.
+- no broad public reading/comment/Like redesign before a new explicit plan;
+- no public HTTP/SSE MCP transport before a new explicit auth/network-binding design;
+- no container/server deployment before the accepted native first-version baseline is preserved.
 
 Engineering quality is part of the deliverable because the project will be presented and defended: code must be readable, extensible, and structurally clear; avoid UI-specific backend hacks, duplicated business logic, hidden fallbacks, swallowed errors, fake success, and untested alternate paths.
 
@@ -75,9 +75,9 @@ Stage 1 engineering is complete and independently reviewed, but final user accep
 
 Stage 1 fixes already landed include role-aware login defaults, Reader logout staying on public pages, Author logout from `/admin` to `/`, and status-specific auth errors. Evidence remains in `docs/verification/stage-1-*` and Git history.
 
-## 4. Stage 2 — Chinese Author Workspace and protected Content Tree
+## 4. Stage 2 — Simple-English Author Workspace and protected Content Tree
 
-Stage 2 replaces the current form-heavy Admin page with a desktop-first Chinese **Author Workspace**. The route may remain `/admin`, but product UI should not say `Admin / Tree Manager`.
+Stage 2 replaced the form-heavy Admin page with a desktop-first simple-English **Author Workspace**. The route may remain `/admin`, but product UI should not say `Admin / Tree Manager`.
 
 ### 4.1 Data and fixture gate
 
@@ -110,14 +110,14 @@ Do **not** implement Stage 3 Content Version history, Draft Preview, Draft/Publi
 
 ### 4.3 Frontend scope
 
-Build a desktop-first Chinese Author Workspace. Mobile Stage 2 is no-regression sanity only: it must open without major layout breakage and provide orientation/exit, but full mobile create/edit/move/delete flows are deferred.
+Build a desktop-first simple-English Author Workspace. Mobile Stage 2 is no-regression sanity only: it must open without major layout breakage and provide orientation/exit, but full mobile create/edit/move/delete flows are deferred.
 
 #### Workspace shell
 
 - Desktop two-column layout: left protected Content Tree, right contextual workspace.
 - Visual direction: lightweight professional writing/management tool inside Glass Ricepaper; quiet, sparse, readable, operation-first, and minimal.
 - Use stronger card/status treatment only when it improves understanding or prevents mistakes: creation success, publication state, save/error state, and danger confirmations.
-- Author Workspace and Author-facing flows are Chinese. Public pages are not broadly redesigned except required Author-workflow touchpoints.
+- Author Workspace and Author-facing flows use simple English. Public pages are not broadly redesigned except required Author-workflow touchpoints.
 
 #### Content Tree
 
