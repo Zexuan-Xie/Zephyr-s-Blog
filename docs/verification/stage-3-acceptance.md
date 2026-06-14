@@ -227,3 +227,32 @@ Fixture gaps to close before Gateway 2/3/4/6 acceptance execution:
 5. Keep dependency artifacts out of acceptance commits: no `web/node_modules`, symlinks, caches, `dist`, local DB/uploads, or `.omx` runtime state.
 
 Gateway 1 acceptance can proceed to implementation gates once the coordinator records the reviewed integrated SHA and backend/frontend lanes acknowledge the expected-red tests as intentional pre-implementation failures.
+
+
+## Gateway 6 MCP acceptance smoke — 2026-06-14
+
+Verdict: **PASS for MCP acceptance smoke on integrated repair SHA `47bea64`**.
+
+Evidence source: `mcp/tests/stdio-smoke.test.mjs` plus direct MCP unit tests in `mcp/tests/skeleton.test.mjs`.
+
+Covered acceptance matrix items:
+
+- G1 disabled by default: stdio client can list tools, but `health_check` refuses with `Blog MCP disabled`; JSONL audit records `refused`.
+- G2 enabled local stdio only: tests connect with `StdioClientTransport`; production grep finds only `StdioServerTransport` and no HTTP/SSE listener.
+- G3-G8 tools: stdio smoke calls all required read/search/content/publish/tree/assets/maintenance tools against a disposable local HTTP backend stub, proving backend-boundary requests and `Authorization: Bearer ...` propagation when configured.
+- G8 backup/export: safe `export_backup { "label": "acceptance" }` writes under `BLOG_MCP_BACKUP_DIR`; traversal, absolute path, and symlink escape labels are rejected before backend calls or writes.
+- G9 audit: representative ok/error/refused calls produce JSONL entries with timestamp/tool/result and redacted or summarized args.
+- G10 kill switch: `BLOG_MCP_KILL_SWITCH=true` refuses an enabled stdio call.
+- G11 no direct SQL: static grep over `mcp/src` has no DB/SQL matches; tool handlers use `BlogBackendClient`.
+
+Transcript summary:
+
+```text
+PASS cd mcp && npm test
+  tests: 15 pass / 0 fail
+  includes stdio disabled, kill switch, safe/rejected backup, full tool surface backend-boundary smoke
+PASS cd mcp && npm run build
+PASS git diff --check
+PASS grep -R "pgx\|database/sql\|SELECT \|INSERT \|UPDATE \|DELETE \|SQL" -n mcp/src -> no matches
+PASS grep -R "listen\|createServer\|Sse\|SSE\|StreamableHTTP\|StdioServerTransport" -n mcp/src mcp/package.json mcp/README.md -> no production public MCP transport; stdio only
+```

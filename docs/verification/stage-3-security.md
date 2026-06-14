@@ -343,3 +343,33 @@ The MCP implementation satisfies several core architectural controls, but it can
 
 Repair `export_backup` path handling as above, add regression tests, and rerun this MCP security review. Task 18 black-box acceptance should also include safe backup path and rejected unsafe path transcripts.
 
+
+## Task 19 repair review — MCP backup path hardening
+
+Reviewed integrated leader HEAD `47bea64`, which repairs the Task 19 `export_backup` arbitrary output path finding.
+
+### Verdict: PASS for MCP Gateway 6 security
+
+The previous blocking finding is resolved. `export_backup` no longer accepts a caller-supplied output directory. The tool now uses configured `BLOG_MCP_BACKUP_DIR` (default `~/.local/share/xlab-blog/mcp-backups`) plus an optional relative `label` subdirectory. The implementation rejects absolute labels, `.`/empty/`..` path segments, traversal outside the root, and symlink labels that resolve outside the canonical backup root before any backend calls or backup writes. Backup files are still created with `wx` exclusive-create semantics.
+
+### Evidence checked
+
+- `mcp/src/config.ts` adds `backupDir` from `BLOG_MCP_BACKUP_DIR` or the server-local default.
+- `mcp/src/tools.ts` changes `export_backup` input to optional `label` only and passes the configured backup root, not a caller-supplied output directory.
+- `mcp/src/backendClient.ts` resolves/canonicalizes the backup root, validates relative labels, creates path segments one at a time, checks `realpath` after every existing/created segment, rejects symlink escapes, and writes the final backup with `flags: "wx"`.
+- `mcp/tests/skeleton.test.mjs` covers safe export, traversal rejection, absolute-label rejection, and symlink escape rejection, including no backend call on rejected labels.
+- `mcp/tests/stdio-smoke.test.mjs` covers disabled-by-default stdio refusal, kill-switch refusal, safe/rejected `export_backup` over real MCP stdio, and all required tool names calling the backend API boundary with `Authorization` when enabled.
+
+### Verification commands
+
+```text
+PASS cd mcp && npm test  # 15/15
+PASS cd mcp && npm run build
+PASS git diff --check
+PASS grep -R "pgx\|database/sql\|SELECT \|INSERT \|UPDATE \|DELETE \|SQL" -n mcp/src -> no matches
+PASS grep -R "listen\|createServer\|Sse\|SSE\|StreamableHTTP\|StdioServerTransport" -n mcp/src mcp/package.json mcp/README.md -> production MCP src uses StdioServerTransport only; README states no HTTP/SSE
+```
+
+### Remaining note
+
+This is a high-trust, server-local Author MCP surface by design. It remains disabled by default, kill-switch guarded per call, JSONL-audited, stdio-only, and routed through the backend HTTP API boundary rather than direct SQL.

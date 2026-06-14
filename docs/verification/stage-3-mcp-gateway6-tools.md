@@ -1,9 +1,9 @@
 # Stage 3 Gateway 6 MCP Tools Evidence
 
-Status: **PASS (leader implementation slice)**
+Status: **PASS (leader implementation slice; backup path repair included)**
 
 Task: 17 — Gateway 6 MCP tool implementation slices.
-Integrated SHA: 5949af1 + follow-up TS compile fix commit.
+Integrated SHA: 5949af1 + follow-up TS compile fix commit + backup path repair `47bea64`.
 
 ## Implemented tool surface
 
@@ -27,16 +27,17 @@ The server-local `mcp/` package now registers the full required Blog MCP tool su
 - `BLOG_MCP_KILL_SWITCH` is checked before every tool call.
 - Every tool call writes JSONL audit with tool name, destructive flag, redacted argument summary, and `ok`/`error`/`refused` result.
 - Destructive delete/rebuild operations require `confirm=true`; otherwise they refuse before backend calls and audit the refusal as an error.
-- `export_backup` writes a local JSON backup of the admin tree plus current file version states to support backup-before-destructive-batch workflows.
+- `export_backup` writes a local JSON backup of the admin tree plus current file version states to support backup-before-destructive-batch workflows. It is constrained to `BLOG_MCP_BACKUP_DIR` (default `~/.local/share/xlab-blog/mcp-backups`) and accepts only an optional relative `label` subdirectory; traversal, absolute labels, and symlink escapes are refused before backend calls or writes.
 
 ## Verification commands
 
 ```text
 PASS cd mcp && npm install --no-audit --no-fund
-PASS cd mcp && npm test
+PASS cd mcp && npm test  # 15 tests including stdio smoke, full tool surface, safe export, traversal/absolute/symlink rejection
 PASS cd mcp && npm run build
 PASS git diff --check
 PASS grep -R "pgx\|database/sql\|SELECT \|INSERT \|UPDATE \|DELETE \|SQL" -n mcp/src -> no matches
+PASS grep -R "listen\|createServer\|Sse\|SSE\|StreamableHTTP\|StdioServerTransport" -n mcp/src mcp/package.json mcp/README.md -> only server-local StdioServerTransport in production src plus README no-HTTP/SSE prose
 ```
 
 ## Unit smoke transcript summary
@@ -50,5 +51,13 @@ PASS grep -R "pgx\|database/sql\|SELECT \|INSERT \|UPDATE \|DELETE \|SQL" -n mcp
 5. Destructive tools refuse while disabled before validation/mutation.
 6. Enabled content tool calls the backend boundary with `Authorization: Bearer ...` and audits `ok`.
 7. Enabled destructive delete refuses without `confirm=true` before any backend call and audits `error`.
+8. `export_backup` succeeds under `BLOG_MCP_BACKUP_DIR` and writes an exclusive-create JSON backup.
+9. `export_backup` rejects `../escape` before backend calls or writes and audits `error`.
+10. `export_backup` rejects absolute labels before backend calls or writes and audits `error`.
+11. `export_backup` rejects symlink labels that resolve outside the backup root before backend calls or writes and audits `error`.
+12. Stdio smoke lists tools while disabled and refuses before backend calls.
+13. Stdio smoke verifies enabled kill-switch refusal.
+14. Stdio smoke verifies safe/rejected backup labels through a real stdio MCP client.
+15. Stdio smoke verifies all required Stage 3 MCP tools call the backend boundary and audit `ok` when enabled.
 
-Full black-box MCP stdio acceptance is assigned to Task 18 after this implementation is integrated.
+Task 18 black-box MCP stdio acceptance is now covered by `mcp/tests/stdio-smoke.test.mjs` and the verification transcript above on integrated repair SHA `47bea64`.
