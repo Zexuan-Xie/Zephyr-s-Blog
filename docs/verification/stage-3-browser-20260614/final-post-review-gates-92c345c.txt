@@ -1,0 +1,433 @@
+# Stage 3 final post-review gates at HEAD 92c345c on 2026-06-14T11:12:16+08:00
+## Backend go test
+?   	xlab-blog/api/cmd/server	[no test files]
+ok  	xlab-blog/api/internal/assets	0.005s
+ok  	xlab-blog/api/internal/auth	0.542s
+ok  	xlab-blog/api/internal/comments	0.003s
+ok  	xlab-blog/api/internal/config	0.003s
+?   	xlab-blog/api/internal/db	[no test files]
+ok  	xlab-blog/api/internal/http	0.010s
+ok  	xlab-blog/api/internal/http/handlers	0.087s
+ok  	xlab-blog/api/internal/http/middleware	0.003s
+?   	xlab-blog/api/internal/http/respond	[no test files]
+ok  	xlab-blog/api/internal/likes	0.003s
+ok  	xlab-blog/api/internal/render	0.005s
+ok  	xlab-blog/api/internal/search	0.018s
+ok  	xlab-blog/api/internal/tree	0.004s
+ok  	xlab-blog/api/internal/users	0.003s
+## Backend go vet
+## Backend gofmt
+PASS
+## Frontend node tests
+TAP version 13
+# Subtest: Stage 2 minimal create is slugless and opens the returned node after tree refresh
+ok 1 - Stage 2 minimal create is slugless and opens the returned node after tree refresh
+  ---
+  duration_ms: 0.999727
+  type: 'test'
+  ...
+# Subtest: Stage 2 create UI is simple, minimal, and hides implementation controls
+ok 2 - Stage 2 create UI is simple, minimal, and hides implementation controls
+  ---
+  duration_ms: 0.446695
+  type: 'test'
+  ...
+# Subtest: Stage 2 create failures use simple actionable feedback
+ok 3 - Stage 2 create failures use simple actionable feedback
+  ---
+  duration_ms: 0.153193
+  type: 'test'
+  ...
+# Subtest: Task 14 file workspace exposes manual save, assets, settings, and publish controls
+ok 4 - Task 14 file workspace exposes manual save, assets, settings, and publish controls
+  ---
+  duration_ms: 1.258581
+  type: 'test'
+  ...
+# Subtest: Task 14 API helpers bind Stage 2 workspace endpoints without widening create input
+ok 5 - Task 14 API helpers bind Stage 2 workspace endpoints without widening create input
+  ---
+  duration_ms: 0.453092
+  type: 'test'
+  ...
+# Subtest: Task 14 directory settings include guarded delete and tree-based same-parent drag
+ok 6 - Task 14 directory settings include guarded delete and tree-based same-parent drag
+  ---
+  duration_ms: 0.251581
+  type: 'test'
+  ...
+# Subtest: Task 14 settings provide Directory Picker move preview and danger feedback
+ok 7 - Task 14 settings provide Directory Picker move preview and danger feedback
+  ---
+  duration_ms: 0.312964
+  type: 'test'
+  ...
+# Subtest: App owns the single current-user state and distinguishes invalid credentials from outages
+ok 8 - App owns the single current-user state and distinguishes invalid credentials from outages
+  ---
+  duration_ms: 1.091113
+  type: 'test'
+  ...
+# Subtest: the global bar has one search field, Directory, Recent, and one truthful identity entry
+ok 9 - the global bar has one search field, Directory, Recent, and one truthful identity entry
+  ---
+  duration_ms: 0.234426
+  type: 'test'
+  ...
+# Subtest: Admin routing keeps Anonymous and Reader outcomes distinct
+ok 10 - Admin routing keeps Anonymous and Reader outcomes distinct
+  ---
+  duration_ms: 0.078156
+  type: 'test'
+  ...
+# Subtest: Search is a results-only page because the global bar owns the sole search input
+ok 11 - Search is a results-only page because the global bar owns the sole search input
+  ---
+  duration_ms: 0.087813
+  type: 'test'
+  ...
+# Subtest: login and logout use safe, loop-free destinations
+ok 12 - login and logout use safe, loop-free destinations
+  ---
+  duration_ms: 0.107426
+  type: 'test'
+  ...
+# Subtest: return targets preserve safe application paths, queries, and hashes
+ok 13 - return targets preserve safe application paths, queries, and hashes
+  ---
+  duration_ms: 0.256954
+  type: 'test'
+  ...
+# Subtest: return targets reject external, auth-loop, backslash, and control-character variants
+ok 14 - return targets reject external, auth-loop, backslash, and control-character variants
+  ---
+  duration_ms: 0.161821
+  type: 'test'
+  ...
+# Subtest: Author and Reader logout destinations match the identity contract
+ok 15 - Author and Reader logout destinations match the identity contract
+  ---
+  duration_ms: 0.311846
+  type: 'test'
+  ...
+# Subtest: authentication errors preserve actionable status distinctions
+ok 16 - authentication errors preserve actionable status distinctions
+  ---
+  duration_ms: 0.273982
+  type: 'test'
+  ...
+# Subtest: Task 15 threads confirmed identity into public directory and file surfaces
+ok 17 - Task 15 threads confirmed identity into public directory and file surfaces
+  ---
+  duration_ms: 0.934125
+  type: 'test'
+  ...
+# Subtest: Task 15 directory manage entry is Author-only and targets Admin selection
+ok 18 - Task 15 directory manage entry is Author-only and targets Admin selection
+  ---
+  duration_ms: 0.243034
+  type: 'test'
+  ...
+# Subtest: Task 15 file edit entry is Author-only and targets Admin selection
+ok 19 - Task 15 file edit entry is Author-only and targets Admin selection
+  ---
+  duration_ms: 0.238781
+  type: 'test'
+  ...
+# Subtest: HTML Documents stay isolated behind the exact iframe sandbox
+ok 20 - HTML Documents stay isolated behind the exact iframe sandbox
+  ---
+  duration_ms: 1.684967
+  type: 'test'
+  ...
+# Subtest: only the Markdown branch injects sanitized HTML into the main DOM
+ok 21 - only the Markdown branch injects sanitized HTML into the main DOM
+  ---
+  duration_ms: 0.303779
+  type: 'test'
+  ...
+# Subtest: both Markdown render paths use the hardened DOMPurify config
+ok 22 - both Markdown render paths use the hardened DOMPurify config
+  ---
+  duration_ms: 0.387551
+  type: 'test'
+  ...
+# Subtest: Packet F reader interactions use API endpoints and login return target
+ok 23 - Packet F reader interactions use API endpoints and login return target
+  ---
+  duration_ms: 0.394277
+  type: 'test'
+  ...
+# Subtest: Packet G assets keep public URLs and admin upload/delete API helpers for later workspace packets
+ok 24 - Packet G assets keep public URLs and admin upload/delete API helpers for later workspace packets
+  ---
+  duration_ms: 0.337033
+  type: 'test'
+  ...
+# Subtest: Packet H search page calls search API and renders source badges
+ok 25 - Packet H search page calls search API and renders source badges
+  ---
+  duration_ms: 0.454306
+  type: 'test'
+  ...
+# Subtest: Stage 2 Author Workspace shell wires protected tree and keeps HTML sandbox isolated to readers
+ok 26 - Stage 2 Author Workspace shell wires protected tree and keeps HTML sandbox isolated to readers
+  ---
+  duration_ms: 0.698292
+  type: 'test'
+  ...
+# Subtest: Stage 2 polish uses Aeolian brand and simple Author Workspace language
+ok 27 - Stage 2 polish uses Aeolian brand and simple Author Workspace language
+  ---
+  duration_ms: 1.933772
+  type: 'test'
+  ...
+# Subtest: Stage 2 minimal create flow is slugless and opens the returned node after tree refresh
+ok 28 - Stage 2 minimal create flow is slugless and opens the returned node after tree refresh
+  ---
+  duration_ms: 0.359776
+  type: 'test'
+  ...
+# Subtest: Stage 2 empty Author Workspace can create the first root content item
+ok 29 - Stage 2 empty Author Workspace can create the first root content item
+  ---
+  duration_ms: 0.221735
+  type: 'test'
+  ...
+# Subtest: Stage 2 primary UI hides implementation identifiers while allowing Stage 3 publication UX
+ok 30 - Stage 2 primary UI hides implementation identifiers while allowing Stage 3 publication UX
+  ---
+  duration_ms: 0.292432
+  type: 'test'
+  ...
+# Subtest: Stage 2 workspace provides explicit return controls for subflows
+ok 31 - Stage 2 workspace provides explicit return controls for subflows
+  ---
+  duration_ms: 0.098286
+  type: 'test'
+  ...
+# Subtest: Stage 2 public Author entries are role-gated and open admin with selected target
+ok 32 - Stage 2 public Author entries are role-gated and open admin with selected target
+  ---
+  duration_ms: 0.150761
+  type: 'test'
+  ...
+# Subtest: Stage 2 polish exposes tree-based same-parent drag
+ok 33 - Stage 2 polish exposes tree-based same-parent drag
+  ---
+  duration_ms: 0.107357
+  type: 'test'
+  ...
+# Subtest: Stage 2 frontend types model the protected tree and Stage 3 publish statuses
+ok 34 - Stage 2 frontend types model the protected tree and Stage 3 publish statuses
+  ---
+  duration_ms: 0.093194
+  type: 'test'
+  ...
+# Subtest: Stage 2 admin tree adapter accepts backend flat nodes contract and builds frontend roots
+ok 35 - Stage 2 admin tree adapter accepts backend flat nodes contract and builds frontend roots
+  ---
+  duration_ms: 0.264026
+  type: 'test'
+  ...
+# Subtest: Stage 2 public resolver decodes browser pathname before API query encoding
+ok 36 - Stage 2 public resolver decodes browser pathname before API query encoding
+  ---
+  duration_ms: 0.33876
+  type: 'test'
+  ...
+# Subtest: Stage 2 drawer exposes expandable public tree
+ok 37 - Stage 2 drawer exposes expandable public tree
+  ---
+  duration_ms: 0.221159
+  type: 'test'
+  ...
+# Subtest: Stage 3 frontend models Current/Previous versions, optimistic revision saves, and restore
+ok 38 - Stage 3 frontend models Current/Previous versions, optimistic revision saves, and restore
+  ---
+  duration_ms: 1.306601
+  type: 'test'
+  ...
+# Subtest: Stage 3 Author Workspace autosaves with required-save triggers and guarded failure behavior
+ok 39 - Stage 3 Author Workspace autosaves with required-save triggers and guarded failure behavior
+  ---
+  duration_ms: 0.504047
+  type: 'test'
+  ...
+# Subtest: Stage 3 frontend handles stale revision conflicts without auto-merging
+ok 40 - Stage 3 frontend handles stale revision conflicts without auto-merging
+  ---
+  duration_ms: 0.336446
+  type: 'test'
+  ...
+# Subtest: Stage 3 publish controls distinguish stable Published Content snapshots from draft edits
+ok 41 - Stage 3 publish controls distinguish stable Published Content snapshots from draft edits
+  ---
+  duration_ms: 0.454193
+  type: 'test'
+  ...
+# Subtest: Stage 3 Draft Preview is Author-only and separate from public Published Content
+ok 42 - Stage 3 Draft Preview is Author-only and separate from public Published Content
+  ---
+  duration_ms: 0.360999
+  type: 'test'
+  ...
+# Subtest: Stage 3 asset UX separates Draft Assets from Published Assets and safe promotion/delete semantics
+ok 43 - Stage 3 asset UX separates Draft Assets from Published Assets and safe promotion/delete semantics
+  ---
+  duration_ms: 0.233512
+  type: 'test'
+  ...
+1..43
+# tests 43
+# suites 0
+# pass 43
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 338.344589
+## Frontend lint
+
+> xlab-blog-web@0.1.0 lint
+> eslint .
+
+## Frontend build
+
+> xlab-blog-web@0.1.0 build
+> tsc --noEmit && vite build
+
+vite v8.0.16 building client environment for production...
+[2Ktransforming...✓ 1891 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                      0.44 kB │ gzip:   0.28 kB
+dist/assets/instrument-serif-regular-CGHjAgsg.ttf   62.28 kB
+dist/assets/index-BSwSw_7d.css                      20.28 kB │ gzip:   5.39 kB
+dist/assets/index-CIR1syLy.js                      471.43 kB │ gzip: 142.08 kB
+
+✓ built in 358ms
+## MCP tests
+
+> xlab-blog-mcp@0.1.0 test
+> node --import tsx --test tests/*.test.mjs
+
+TAP version 13
+# Subtest: health_check refuses when BLOG_MCP_ENABLED is not true and writes audit JSONL
+ok 1 - health_check refuses when BLOG_MCP_ENABLED is not true and writes audit JSONL
+  ---
+  duration_ms: 10.069081
+  type: 'test'
+  ...
+# Subtest: health_check refuses when per-call kill switch is active
+ok 2 - health_check refuses when per-call kill switch is active
+  ---
+  duration_ms: 5.695912
+  type: 'test'
+  ...
+# Subtest: health_check succeeds when explicitly enabled and records ok audit event
+ok 3 - health_check succeeds when explicitly enabled and records ok audit event
+  ---
+  duration_ms: 4.002208
+  type: 'test'
+  ...
+# Subtest: registers the full Stage 3 MCP tool surface
+ok 4 - registers the full Stage 3 MCP tool surface
+  ---
+  duration_ms: 1.95556
+  type: 'test'
+  ...
+# Subtest: destructive tools require explicit enablement before input validation or mutation
+ok 5 - destructive tools require explicit enablement before input validation or mutation
+  ---
+  duration_ms: 5.379952
+  type: 'test'
+  ...
+# Subtest: enabled content tool calls backend boundary with auth and audits ok
+ok 6 - enabled content tool calls backend boundary with auth and audits ok
+  ---
+  duration_ms: 32.488019
+  type: 'test'
+  ...
+# Subtest: enabled destructive delete refuses without confirm before backend call and audits error
+ok 7 - enabled destructive delete refuses without confirm before backend call and audits error
+  ---
+  duration_ms: 7.876447
+  type: 'test'
+  ...
+# Subtest: export_backup writes only under BLOG_MCP_BACKUP_DIR and audits ok
+ok 8 - export_backup writes only under BLOG_MCP_BACKUP_DIR and audits ok
+  ---
+  duration_ms: 8.445803
+  type: 'test'
+  ...
+# Subtest: export_backup rejects traversal label before backend calls or writes
+ok 9 - export_backup rejects traversal label before backend calls or writes
+  ---
+  duration_ms: 5.363274
+  type: 'test'
+  ...
+# Subtest: export_backup rejects absolute label before backend calls or writes
+ok 10 - export_backup rejects absolute label before backend calls or writes
+  ---
+  duration_ms: 5.982467
+  type: 'test'
+  ...
+# Subtest: export_backup rejects symlink labels that resolve outside backup root
+ok 11 - export_backup rejects symlink labels that resolve outside backup root
+  ---
+  duration_ms: 9.026498
+  type: 'test'
+  ...
+# Subtest: enabled mutating tool refuses before backend call when audit log cannot be opened
+ok 12 - enabled mutating tool refuses before backend call when audit log cannot be opened
+  ---
+  duration_ms: 2.480698
+  type: 'test'
+  ...
+# Subtest: stdio smoke: disabled server lists tools and refuses before backend calls
+ok 13 - stdio smoke: disabled server lists tools and refuses before backend calls
+  ---
+  duration_ms: 359.370178
+  type: 'test'
+  ...
+# Subtest: stdio smoke: kill switch refuses an enabled call
+ok 14 - stdio smoke: kill switch refuses an enabled call
+  ---
+  duration_ms: 328.062276
+  type: 'test'
+  ...
+# Subtest: stdio smoke: export_backup safe and rejected labels are audited
+ok 15 - stdio smoke: export_backup safe and rejected labels are audited
+  ---
+  duration_ms: 388.063652
+  type: 'test'
+  ...
+# Subtest: stdio smoke: all required tools operate through the backend boundary and audit ok
+ok 16 - stdio smoke: all required tools operate through the backend boundary and audit ok
+  ---
+  duration_ms: 521.556118
+  type: 'test'
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 16
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1971.638149
+## MCP build
+
+> xlab-blog-mcp@0.1.0 build
+> tsc --noEmit
+
+## static checks
+src/server.ts:3:import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+src/server.ts:8:export function createServer(): McpServer {
+src/server.ts:29:  const server = createServer();
+src/server.ts:30:  const transport = new StdioServerTransport();
+README.md:9:- Separate process/package; not mounted in the public web app and not exposed over HTTP/SSE.
+## diff check
+PASS final post-review gates at 92c345c

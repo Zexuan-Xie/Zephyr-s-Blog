@@ -373,3 +373,26 @@ PASS grep -R "listen\|createServer\|Sse\|SSE\|StreamableHTTP\|StdioServerTranspo
 ### Remaining note
 
 This is a high-trust, server-local Author MCP surface by design. It remains disabled by default, kill-switch guarded per call, JSONL-audited, stdio-only, and routed through the backend HTTP API boundary rather than direct SQL.
+
+## Post-review MCP security hardening — 2026-06-14
+
+Reviewed repair commit `92c345c` after independent review feedback.
+
+### Verdict: PASS / APPROVE
+
+Resolved review findings:
+
+- Audit availability is now a precondition for enabled MCP tool execution. `runGuardedTool` writes a `started` audit JSONL event before input validation/backend calls; if that append fails, the tool returns an error before mutation. Regression test: `enabled mutating tool refuses before backend call when audit log cannot be opened` uses `/dev/full` and verifies no backend call.
+- Backup filesystem policy now lives in `mcp/src/backup.ts` `BackupExportService`, not in `BlogBackendClient`; MCP keeps a clean backend API-client boundary for blog state changes.
+- Backup finalization uses a temp file plus hard-link-to-final inside the canonical backup Directory and removes the temp file, preserving exclusive creation and reducing validate-then-open exposure.
+- README startup command now matches the actual TypeScript stdio entrypoint.
+
+Final evidence:
+
+```text
+PASS cd mcp && npm test  # 16/16
+PASS cd mcp && npm run build
+PASS MCP direct SQL/DB grep over mcp/src: no matches
+PASS MCP transport grep: production source uses StdioServerTransport only
+PASS final integrated post-review gates at 92c345c
+```

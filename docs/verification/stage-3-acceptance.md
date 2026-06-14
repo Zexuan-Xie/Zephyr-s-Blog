@@ -288,3 +288,14 @@ Notes:
 - Frontend dependencies were installed locally to run TypeScript/build gates; `web/node_modules/` and `web/dist/` remain ignored and untracked.
 - The browser smoke used the local Author account configured by `~/.local/share/xlab-blog/start-local.sh` and disposable Stage 3 smoke content in the local database.
 - The MCP acceptance/security PASS is separately recorded in this document and `docs/verification/stage-3-security.md`; the final gate transcript includes MCP tests/build after the backup path hardening repair.
+
+## Post-review hardening update — 2026-06-14
+
+A final independent review found one MCP audit robustness issue and one architecture WATCH item. Both were repaired in `92c345c`:
+
+- MCP now writes a durable `started` audit JSONL event before any enabled tool parses input or calls the backend; if audit preflight fails, the tool refuses before mutation.
+- Backup export filesystem policy moved out of `BlogBackendClient` into `BackupExportService`, keeping the backend client as a thin HTTP API boundary.
+- Backup write flow now writes a temporary file inside the canonical backup Directory and hard-links it to the final exclusive backup path, then cleans up the temporary file.
+- `mcp/README.md` startup command now matches the TypeScript entrypoint.
+
+Final post-review gates are recorded in `docs/verification/stage-3-browser-20260614/final-post-review-gates-92c345c.txt` and PASS.
