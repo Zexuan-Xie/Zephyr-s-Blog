@@ -117,6 +117,10 @@ conda run -n blogenv bash -lc '
 
 Stage evidence is under [`docs/verification/`](docs/verification/), especially Stage 3 acceptance, security, code-review, and browser/API artifacts.
 
+## Docker deployment
+
+For the first server deployment without a domain, use `http://154.37.222.233:8080` and follow [`docs/deployment/DOCKER_SERVER_DEPLOYMENT.md`](docs/deployment/DOCKER_SERVER_DEPLOYMENT.md). Copy `.env.production.example` to `.env` on the server and replace all `CHANGE_ME` values before starting Compose.
+
 ## MCP posture
 
 The Blog MCP Server in `mcp/` is intended for trusted AI agents running on the server/local machine.

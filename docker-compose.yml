@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-xlab_blog}
       POSTGRES_USER: ${POSTGRES_USER:-xlab_blog}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-postgres-password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
@@ -18,10 +18,10 @@ services:
       context: ./api
     environment:
       HTTP_ADDR: ${HTTP_ADDR:-:8080}
-      DATABASE_URL: ${DATABASE_URL:-postgres://xlab_blog:change-me-postgres-password@db:5432/xlab_blog?sslmode=disable}
-      JWT_SECRET: ${JWT_SECRET:-change-me-minimum-32-bytes}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change-me-admin-password}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}
       ASSET_UPLOAD_DIR: ${ASSET_UPLOAD_DIR:-/app/uploads}
       ASSET_PUBLIC_BASE_URL: ${ASSET_PUBLIC_BASE_URL:-/api/assets}
       EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-qwen}
@@ -63,7 +63,7 @@ services:
       web:
         condition: service_healthy
     ports:
-      - "8080:80"
+      - "${PUBLIC_HTTP_PORT:-8080}:80"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - web_dist:/srv:ro

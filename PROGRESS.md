@@ -1,6 +1,6 @@
 # Progress
 
-Last updated: 2026-06-14 11:50 CST
+Last updated: 2026-06-14 13:18 CST
 
 ## Current breakpoint
 
@@ -19,6 +19,32 @@ Completed after user functional acceptance feedback:
 - Expanded `.gitignore` for dependencies, build output, local databases/uploads/backups, logs, credentials, and agent/runtime state.
 - Removed local generated output and ignored runtime traces from the working tree where possible. Active OMX/code-intel processes may recreate ignored `.omx/` or `.code-review-graph/` directories; these are not tracked.
 - Re-ran final gates: backend test/vet/gofmt PASS, frontend tests/lint/build PASS, MCP tests/build PASS.
+
+
+## Docker/server deployment preparation — 2026-06-14
+
+Server target provided by user:
+
+- OS: Ubuntu Server 24.04 LTS.
+- Public IP: `154.37.222.233`.
+- Domain: none yet.
+- Docker: installed.
+
+Local Docker validation completed after WSL Docker Desktop integration:
+
+- `docker compose config`: PASS.
+- `docker compose build`: PASS; `blog-api` and `blog-web` images built.
+- `docker compose up -d`: PASS; db/api/web/caddy reached healthy/running.
+- HTTP smoke: `http://127.0.0.1:8080/api/health` returned database ok; root returned Aeolian HTML.
+
+Deployment hardening prepared:
+
+- `docker-compose.yml` now requires production `POSTGRES_PASSWORD`, `DATABASE_URL`, `JWT_SECRET`, and `ADMIN_PASSWORD` instead of silently using weak defaults.
+- `PUBLIC_HTTP_PORT` controls the Caddy host port; first no-domain deployment uses `8080`.
+- `.env.production.example` added for the server.
+- `docs/deployment/DOCKER_SERVER_DEPLOYMENT.md` added with server setup, smoke, backup, update, and troubleshooting steps.
+
+Next action: push repo to remote, clone/pull on the server, create `.env` from `.env.production.example`, open inbound TCP 8080, then run `docker compose up -d --build` on the server.
 
 ## Stage status
 
