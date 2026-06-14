@@ -308,3 +308,38 @@ MCP-specific security remains out of scope until the MCP slice lands, but the ba
 
 Repeat security review for MCP once implemented: disabled-by-default behavior, per-call kill switch, audit JSONL, destructive tool confirmation, backup/export, and no direct SQL in MCP handlers are still pending future evidence.
 
+## Task 19 Gateway 6 MCP security review
+
+Reviewed integrated leader HEAD `d4c7a5f` after MCP tasks 16 and 17 completed. Scope: server-local MCP package under `mcp/`, tool registration, backend API boundary, disabled/kill-switch guards, audit JSONL, destructive confirmations, backup/export, direct SQL/DB avoidance, stdio-only transport, input/path validation, stale revision parity, and protected API auth boundary.
+
+### Verdict: REVISE
+
+The MCP implementation satisfies several core architectural controls, but it cannot pass the security gate until backup/export path validation is fixed and tested.
+
+### Blocking finding
+
+1. **HIGH — `export_backup` writes to an arbitrary caller-supplied path without canonicalization or allowlist.**
+   `mcp/src/tools.ts` accepts `output_dir` as any non-empty string, then `mcp/src/backendClient.ts:155-158` calls `mkdir(args.outputDir, { recursive: true })` and writes `path.join(args.outputDir, aeolian-backup-*.json)` with `createWriteStream(..., { flags: "wx" })`. There is no `path.resolve`, `realpath`, base-directory allowlist, or traversal/absolute-path denial. Any enabled MCP client can direct backup writes to arbitrary local directories writable by the MCP process. This violates the Task 19 path/input validation requirement and turns the trusted backup helper into a local file-write primitive. Required fix: constrain backups to a configured backup root such as `BLOG_MCP_BACKUP_DIR` or `~/.local/share/xlab-blog/mcp-backups`, resolve/canonicalize paths, reject traversal/absolute outputs outside that root, and add tests for `..`, absolute paths, symlink/realpath behavior where feasible, and successful safe export.
+
+### Positive findings
+
+- Disabled-by-default and kill-switch gates are centralized in `assertEnabled`, and `runGuardedTool` checks them before input validation or backend calls.
+- Every registered tool routes through `runGuardedTool` and writes JSONL audit for `ok`, `error`, and `refused` outcomes with secret-like argument redaction.
+- Server startup uses `StdioServerTransport`; grep found no HTTP/SSE MCP listener in `mcp/src`.
+- Tool handlers call `BlogBackendClient`; grep found no direct DB clients, repository imports, or SQL in `mcp/src`.
+- Protected API boundary is preserved through `/api/admin/...` backend HTTP calls and optional `Authorization: Bearer ${BLOG_ADMIN_TOKEN}`; revision-sensitive tools require positive `expected_revision`/`expected_version` inputs and delegate stale revision checks to backend APIs.
+- `delete_node`, `delete_asset`, and `rebuild_search_index` require `confirm=true` before backend calls; missing confirmation is audited as an error.
+- Unit smoke tests cover disabled refusal, kill-switch refusal, tool-surface registration, backend auth header use, and destructive delete refusal before backend mutation.
+
+### Verification commands
+
+- PASS `cd mcp && npm test && npm run build`
+- PASS `grep -R "pgx\|database/sql\|SELECT \|INSERT \|UPDATE \|DELETE \|SQL" -n mcp/src` produced no matches.
+- PASS `grep -R "listen\|createServer\|Sse\|SSE\|StreamableHTTP\|StdioServerTransport" -n mcp/src mcp/package.json mcp/README.md` found only `StdioServerTransport` and README no-HTTP/SSE prose.
+- REVISE `grep -R "resolve\|normalize\|realpath\|relative\|outputDir\|output_dir\|createWriteStream\|mkdir" -n mcp/src mcp/tests mcp/README.md` showed arbitrary `outputDir` use and no canonicalization/allowlist tests.
+- PASS `git diff --check` before this documentation update.
+
+### Required repair before MCP security PASS
+
+Repair `export_backup` path handling as above, add regression tests, and rerun this MCP security review. Task 18 black-box acceptance should also include safe backup path and rejected unsafe path transcripts.
+
