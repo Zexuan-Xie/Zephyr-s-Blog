@@ -1232,6 +1232,7 @@ function FileOverview({
         await publishFile(node.id, saved.revision);
         onFeedback("Published Content snapshot updated.");
       } else {
+        if (!currentContent) return;
         await unpublishFile(node.id, currentContent.revision);
         onFeedback("Unpublished. Published Content is retained but hidden.");
       }
