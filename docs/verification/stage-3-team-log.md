@@ -483,3 +483,24 @@ PASS iframe sandbox preservation check
 ```
 
 OMX task state will be reconciled manually because all worker panes are dead. Task 12 remains a documented historical failed gate with superseding PASS evidence; tasks 18, 19, 20, and 2 are completed from leader evidence.
+
+## OMX Team shutdown — 2026-06-14 11:22 CST
+
+Verdict: **Team runtime closed cleanly after explicit historical-issue acknowledgement**
+
+Leader reconciliation before shutdown:
+
+```text
+Task totals: pending=0, in_progress=0, completed=19, failed=1.
+Task 12 failed state is historical REVISE only; it is superseded by task 14 backend repair + task 15 security PASS and later task 19 MCP security PASS.
+Task 2 coordinator ledger was manually completed from leader evidence.
+Task 20 final integrated closeout PASS remains the terminal Stage 3 engineering gate.
+```
+
+Shutdown command required `--confirm-issues` because task 12 intentionally remains failed for audit history. Worker worktree auto-merge attempts for stale worker refs reported conflicts, but leader HEAD was unchanged and already contains the integrated accepted work. `git status --short` after shutdown was clean.
+
+```text
+omx team shutdown execute-aeolian-blog-a98ab708 --confirm-issues
+Team shutdown complete: execute-aeolian-blog-a98ab708
+omx team status execute-aeolian-blog-a98ab708 -> status=missing
+```
