@@ -7,6 +7,7 @@ export interface BlogMcpConfig {
   auditLogPath: string;
   apiBaseUrl: string;
   adminToken?: string;
+  backupDir: string;
 }
 
 function parseBool(value: string | undefined): boolean {
@@ -21,6 +22,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BlogMcpConfig 
       env.BLOG_MCP_AUDIT_LOG ?? path.join(os.homedir(), ".local", "share", "xlab-blog", "mcp-audit.jsonl"),
     apiBaseUrl: env.BLOG_API_BASE_URL ?? "http://127.0.0.1:8080",
     adminToken: env.BLOG_ADMIN_TOKEN,
+    backupDir: path.resolve(
+      env.BLOG_MCP_BACKUP_DIR ?? path.join(os.homedir(), ".local", "share", "xlab-blog", "mcp-backups"),
+    ),
   };
 }
 

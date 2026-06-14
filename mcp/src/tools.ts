@@ -155,7 +155,15 @@ export function buildToolDefinitions(config: BlogMcpConfig, client: BlogBackendC
 
     tool("rebuild_search_index", "Rebuild search index", "Request backend search index rebuild. Requires confirm=true.", { confirm: z.boolean() }, true,
       guarded(config, client, "rebuild_search_index", true, z.object({ confirm: z.boolean() }), (api, args) => { requireConfirm(args, "rebuild_search_index requires confirm=true"); return api.rebuildSearchIndex(); })),
-    tool("export_backup", "Export backup", "Export a local JSON backup of the Author content tree before destructive batches.", { output_dir: nonEmptyString }, false,
-      guarded(config, client, "export_backup", false, z.object({ output_dir: nonEmptyString }), (api, args) => api.exportBackup({ outputDir: args.output_dir }))),
+    tool(
+      "export_backup",
+      "Export backup",
+      "Export a local JSON backup under BLOG_MCP_BACKUP_DIR before destructive batches. Optional label is a relative subdirectory only.",
+      { label: z.string().optional() },
+      false,
+      guarded(config, client, "export_backup", false, z.object({ label: z.string().optional() }), (api, args) =>
+        api.exportBackup({ backupDir: config.backupDir, label: args.label }),
+      ),
+    ),
   ];
 }

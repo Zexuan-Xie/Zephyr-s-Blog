@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, symlink } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -153,6 +153,136 @@ test('enabled destructive delete refuses without confirm before backend call and
     assert.equal(audit.tool, 'delete_asset');
     assert.equal(audit.result, 'error');
     assert.equal(audit.destructive, true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('export_backup writes only under BLOG_MCP_BACKUP_DIR and audits ok', async () => {
+  const tmp = await mkdtemp(path.join(os.tmpdir(), 'xlab-blog-mcp-test-'));
+  const auditLogPath = path.join(tmp, 'audit.jsonl');
+  const backupDir = path.join(tmp, 'backups');
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init = {}) => {
+    calls.push({ url: String(url), init });
+    if (String(url).endsWith('/api/admin/tree')) {
+      return new Response(JSON.stringify({ nodes: [{ id: '00000000-0000-4000-8000-000000000001', kind: 'file', url_path: '/safe' }] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    if (String(url).includes('/api/admin/files/00000000-0000-4000-8000-000000000001/content')) {
+      return new Response(JSON.stringify({ current: { body_raw: 'draft' }, revision: 1 }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    return new Response(JSON.stringify({ error: 'unexpected url' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  };
+  try {
+    const config = loadConfig({ BLOG_MCP_ENABLED: 'true', BLOG_MCP_AUDIT_LOG: auditLogPath, BLOG_MCP_BACKUP_DIR: backupDir });
+    const client = new BlogBackendClient({ baseUrl: config.apiBaseUrl });
+    const tool = buildToolDefinitions(config, client).find((item) => item.name === 'export_backup');
+    const result = await tool.handler({ label: 'before-delete' });
+    const payload = JSON.parse(result.content[0].text);
+    const audit = JSON.parse((await readFile(auditLogPath, 'utf8')).trim().split('\n').at(-1));
+    const backupText = await readFile(payload.file_path, 'utf8');
+
+    assert.equal(result.isError, undefined);
+    assert.equal(path.relative(backupDir, payload.file_path).startsWith('..'), false);
+    assert.match(payload.file_path, /before-delete/);
+    assert.match(backupText, /"exported_at"/);
+    assert.equal(calls.length, 2);
+    assert.equal(audit.tool, 'export_backup');
+    assert.equal(audit.result, 'ok');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('export_backup rejects traversal label before backend calls or writes', async () => {
+  const tmp = await mkdtemp(path.join(os.tmpdir(), 'xlab-blog-mcp-test-'));
+  const auditLogPath = path.join(tmp, 'audit.jsonl');
+  const backupDir = path.join(tmp, 'backups');
+  const originalFetch = globalThis.fetch;
+  let called = false;
+  globalThis.fetch = async () => {
+    called = true;
+    return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
+  };
+  try {
+    const config = loadConfig({ BLOG_MCP_ENABLED: 'true', BLOG_MCP_AUDIT_LOG: auditLogPath, BLOG_MCP_BACKUP_DIR: backupDir });
+    const client = new BlogBackendClient({ baseUrl: config.apiBaseUrl });
+    const tool = buildToolDefinitions(config, client).find((item) => item.name === 'export_backup');
+    const result = await tool.handler({ label: '../escape' });
+    const audit = JSON.parse((await readFile(auditLogPath, 'utf8')).trim().split('\n').at(-1));
+
+    assert.equal(result.isError, true);
+    assert.equal(called, false);
+    assert.match(result.content[0].text, /invalid path segment|stay inside BLOG_MCP_BACKUP_DIR/);
+    assert.equal(audit.tool, 'export_backup');
+    assert.equal(audit.result, 'error');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('export_backup rejects absolute label before backend calls or writes', async () => {
+  const tmp = await mkdtemp(path.join(os.tmpdir(), 'xlab-blog-mcp-test-'));
+  const auditLogPath = path.join(tmp, 'audit.jsonl');
+  const backupDir = path.join(tmp, 'backups');
+  const originalFetch = globalThis.fetch;
+  let called = false;
+  globalThis.fetch = async () => {
+    called = true;
+    return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
+  };
+  try {
+    const config = loadConfig({ BLOG_MCP_ENABLED: 'true', BLOG_MCP_AUDIT_LOG: auditLogPath, BLOG_MCP_BACKUP_DIR: backupDir });
+    const client = new BlogBackendClient({ baseUrl: config.apiBaseUrl });
+    const tool = buildToolDefinitions(config, client).find((item) => item.name === 'export_backup');
+    const result = await tool.handler({ label: path.join(os.tmpdir(), 'escape') });
+    const audit = JSON.parse((await readFile(auditLogPath, 'utf8')).trim().split('\n').at(-1));
+
+    assert.equal(result.isError, true);
+    assert.equal(called, false);
+    assert.match(result.content[0].text, /must be relative/);
+    assert.equal(audit.tool, 'export_backup');
+    assert.equal(audit.result, 'error');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+
+test('export_backup rejects symlink labels that resolve outside backup root', async () => {
+  const tmp = await mkdtemp(path.join(os.tmpdir(), 'xlab-blog-mcp-test-'));
+  const auditLogPath = path.join(tmp, 'audit.jsonl');
+  const backupDir = path.join(tmp, 'backups');
+  const outsideDir = path.join(tmp, 'outside');
+  await mkdir(backupDir, { recursive: true });
+  await mkdir(outsideDir, { recursive: true });
+  await symlink(outsideDir, path.join(backupDir, 'linked-outside'), 'dir');
+
+  const originalFetch = globalThis.fetch;
+  let called = false;
+  globalThis.fetch = async () => {
+    called = true;
+    return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
+  };
+  try {
+    const config = loadConfig({ BLOG_MCP_ENABLED: 'true', BLOG_MCP_AUDIT_LOG: auditLogPath, BLOG_MCP_BACKUP_DIR: backupDir });
+    const client = new BlogBackendClient({ baseUrl: config.apiBaseUrl });
+    const tool = buildToolDefinitions(config, client).find((item) => item.name === 'export_backup');
+    const result = await tool.handler({ label: 'linked-outside' });
+    const audit = JSON.parse((await readFile(auditLogPath, 'utf8')).trim().split('\n').at(-1));
+
+    assert.equal(result.isError, true);
+    assert.equal(called, false);
+    assert.match(result.content[0].text, /escapes BLOG_MCP_BACKUP_DIR/);
+    assert.equal(audit.tool, 'export_backup');
+    assert.equal(audit.result, 'error');
   } finally {
     globalThis.fetch = originalFetch;
   }
