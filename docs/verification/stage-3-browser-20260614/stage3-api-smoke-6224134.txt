@@ -1,0 +1,80 @@
+Stage 3 API smoke on 2026-06-14T10:44:36+08:00 HEAD 6224134
+health:
+{"status":"ok","database":"ok"}
+
+create directory Stage3 Smoke 1781405076:
+{
+  "id": "8ba13afd-764c-40de-9810-307b52e2aed9",
+  "name": "Stage3 Smoke 1781405076",
+  "path": "/Stage3-Smoke-1781405076",
+  "kind": "directory"
+}
+create file:
+{
+  "id": "7e0882a7-0678-488d-b088-43f602904e7a",
+  "name": "Wind Note",
+  "path": "/Stage3-Smoke-1781405076/Wind-Note",
+  "kind": "file",
+  "status": null
+}
+initial version:
+{
+  "current": {
+    "revision": null,
+    "status": null,
+    "body_raw": null
+  },
+  "previous": null,
+  "published": null
+}
+save current changed content from revision 1:
+{
+  "revision": 2,
+  "status": "draft",
+  "body_raw": "# Wind Note\n\nDraft smoke 1781405076"
+}
+stale save should conflict:
+409
+{
+  "error": "revision conflict",
+  "details": {
+    "current_revision": 2,
+    "reason": "revision_conflict"
+  }
+}
+draft preview:
+{
+  "iframe_sandbox": "allow-scripts",
+  "html_contains": true,
+  "assets": []
+}
+anonymous preview denial status:
+401
+publish revision 2:
+{
+  "current": {
+    "revision": null,
+    "status": null
+  },
+  "published": {
+    "source_revision": null,
+    "visible": null
+  }
+}
+public resolve after publish:
+{
+  "type": "file",
+  "path": null,
+  "file": {
+    "id": null,
+    "name": null,
+    "status": null
+  }
+}
+unpublish:
+{
+  "revision": 2,
+  "status": "draft"
+}
+public resolve after unpublish status:
+404

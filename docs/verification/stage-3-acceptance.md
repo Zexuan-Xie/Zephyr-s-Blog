@@ -256,3 +256,35 @@ PASS git diff --check
 PASS grep -R "pgx\|database/sql\|SELECT \|INSERT \|UPDATE \|DELETE \|SQL" -n mcp/src -> no matches
 PASS grep -R "listen\|createServer\|Sse\|SSE\|StreamableHTTP\|StdioServerTransport" -n mcp/src mcp/package.json mcp/README.md -> no production public MCP transport; stdio only
 ```
+
+## Final integrated acceptance evidence — 2026-06-14
+
+Verdict: **PASS for automated gates, API smoke, browser smoke, and MCP smoke on integrated SHA `6224134`**.
+
+Evidence artifacts under `docs/verification/stage-3-browser-20260614/`:
+
+- `final-gates-6224134.txt` — backend `go test`/`go vet`/gofmt, frontend node tests/lint/build, MCP tests/build, and `git diff --check` all PASS.
+- `stage3-api-smoke-6224134.txt` — local PostgreSQL API smoke covering Author login, create Directory/File, revision save, stale revision conflict, Draft Preview `iframe_sandbox=allow-scripts`, Anonymous Preview 401, publish, public resolve, unpublish, and public 404 after unpublish.
+- `stage3-author-workspace-6224134.png` — browser screenshot of Author Workspace with Content Tree, selected File, Publish summary, Current/Previous, and Draft Preview.
+- `stage3-author-after-unpublish-6224134.png` and `stage3-browser-after-unpublish-6224134.txt` — browser evidence after unpublish showing File state as Draft and Publish action available.
+- `stage3-browser-unpublish-api-state-6224134.txt` — browser/network/API evidence for `POST /api/admin/files/{file_id}/unpublish`, `current_status=draft`, `published_visible=false`, and public resolve 404.
+
+Final gate transcript summary:
+
+```text
+PASS cd api && CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go test -count=1 ./...
+PASS cd api && CGO_ENABLED=0 GOCACHE=/tmp/xlab-blog-go-cache go vet ./...
+PASS cd api && test -z "$(gofmt -l .)"
+PASS cd web && node --test tests/*.test.mjs  # 43/43
+PASS cd web && npm run lint
+PASS cd web && npm run build
+PASS cd mcp && npm test  # 15/15
+PASS cd mcp && npm run build
+PASS git diff --check
+```
+
+Notes:
+
+- Frontend dependencies were installed locally to run TypeScript/build gates; `web/node_modules/` and `web/dist/` remain ignored and untracked.
+- The browser smoke used the local Author account configured by `~/.local/share/xlab-blog/start-local.sh` and disposable Stage 3 smoke content in the local database.
+- The MCP acceptance/security PASS is separately recorded in this document and `docs/verification/stage-3-security.md`; the final gate transcript includes MCP tests/build after the backup path hardening repair.

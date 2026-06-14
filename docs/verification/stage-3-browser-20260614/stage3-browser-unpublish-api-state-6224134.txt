@@ -1,0 +1,9 @@
+After direct browser DOM click on Unpublish at 2026-06-14T10:55:05+08:00:
+[42471.98] POST http://127.0.0.1:5173/api/admin/files/7e0882a7-0678-488d-b088-43f602904e7a/unpublish (Fetch) 200
+API state:
+{
+  "current_status": "draft",
+  "published_visible": false
+}
+Public resolve status:
+404
