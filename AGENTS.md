@@ -18,15 +18,13 @@ Use `Author`, `Reader`, `Anonymous Visitor`, `Author Workspace`, `Content Tree`,
 
 ## Current scope
 
-The active work is staged:
+The staged implementation is now at Stage 3 engineering closeout:
 
-1. Reliability, navigation, and identity — engineering complete; user acceptance feedback is folded into Stage 2.
-2. Simple-English Author Workspace and protected Content Tree — current target. Desktop-first; mobile is no-regression sanity only.
-3. Autosave, version history, publication snapshots, Draft Preview, Draft/Published Assets, and a server-local stdio Blog MCP Server.
+1. Reliability, navigation, and identity — engineering complete.
+2. Simple-English Author Workspace and protected Content Tree — engineering complete and preserved as the Author baseline.
+3. Autosave, Content Versions, Published Content snapshots, Draft Preview, Draft/Published Assets, and a server-local stdio Blog MCP Server — engineering complete; user acceptance is the next checkpoint.
 
-Stage 2 must replace the form-heavy Admin page with a simple-English, graphical, operation-first Author Workspace. It must keep code readable, extensible, and architecturally clear for project presentation/defense.
-
-Do not redesign public homepage, Recent cards, public Directory/File reading, comments/Likes, or the Glass Ricepaper system except to repair regressions or add required Author-only public manage/edit entry.
+Maintain presentation/defense quality: code should stay readable, extensible, and architecturally clear. Do not redesign public homepage, Recent cards, public Directory/File reading, comments/Likes, or the Glass Ricepaper system except to repair regressions.
 
 ## Engineering rules
 
@@ -68,9 +66,17 @@ Frontend:
 
 ```bash
 cd web
-node --test tests/render-safety.test.mjs
+node --test tests/*.test.mjs
 npm run lint
 npm run build
 ```
 
-For runtime/auth/tree/publication changes, also run native PostgreSQL API smoke and browser acceptance. Stage 2 requires desktop Author workflow acceptance and mobile no-regression sanity; Stage 3 additionally requires autosave/publication/Draft Preview/Asset/MCP evidence.
+MCP:
+
+```bash
+cd mcp
+npm test
+npm run build
+```
+
+For runtime/auth/tree/publication changes, also run native PostgreSQL API smoke and browser acceptance. Stage 3 additionally requires autosave/publication/Draft Preview/Asset/MCP evidence.

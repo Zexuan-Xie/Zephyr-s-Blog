@@ -455,3 +455,31 @@ Boundary notes:
 - Real blog tools, backup/export behavior for destructive batches, black-box
   stdio transcripts, and MCP security PASS are explicitly deferred to tasks
   17-19.
+
+## Final Stage 3 closeout update — 2026-06-14 11:18 CST
+
+Verdict: **Stage 3 engineering complete; ready for user acceptance**
+
+Final integrated HEAD after documentation: `bbd835a`.
+Final code HEAD with gates: `92c345c`.
+
+Task/gateway reconciliation:
+
+- Gateway 0/1/2/3/4: PASS.
+- Backend security repair: Task 12 historical REVISE is superseded by task 14 repair + task 15 PASS.
+- Gateway 6 MCP implementation/acceptance/security: PASS after backup path hardening and post-review audit/backup-boundary repair.
+- Independent code review: APPROVE after `92c345c`; evidence in `docs/verification/stage-3-code-review.md`.
+- Final acceptance evidence: PASS; see `docs/verification/stage-3-acceptance.md` and `docs/verification/stage-3-browser-20260614/`.
+
+Final gates:
+
+```text
+PASS backend go test/vet/gofmt
+PASS frontend node tests/lint/build
+PASS MCP tests/build
+PASS API smoke and browser smoke
+PASS MCP no-direct-SQL and stdio-only checks
+PASS iframe sandbox preservation check
+```
+
+OMX task state will be reconciled manually because all worker panes are dead. Task 12 remains a documented historical failed gate with superseding PASS evidence; tasks 18, 19, 20, and 2 are completed from leader evidence.
