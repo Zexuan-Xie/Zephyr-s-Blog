@@ -6,7 +6,7 @@ export interface AuditEvent {
   tool: string;
   destructive: boolean;
   args_summary: Record<string, unknown>;
-  result: "ok" | "error" | "refused";
+  result: "started" | "ok" | "error" | "refused";
   message?: string;
 }
 

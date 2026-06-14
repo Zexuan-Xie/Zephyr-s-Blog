@@ -287,3 +287,27 @@ test('export_backup rejects symlink labels that resolve outside backup root', as
     globalThis.fetch = originalFetch;
   }
 });
+
+test('enabled mutating tool refuses before backend call when audit log cannot be opened', async () => {
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init = {}) => {
+    calls.push({ url: String(url), init });
+    return new Response(JSON.stringify({ node: { id: 'should-not-happen' } }), {
+      status: 201,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  };
+  try {
+    const config = loadConfig({ BLOG_MCP_ENABLED: 'true', BLOG_MCP_AUDIT_LOG: '/dev/full' });
+    const client = new BlogBackendClient({ baseUrl: config.apiBaseUrl });
+    const tool = buildToolDefinitions(config, client).find((item) => item.name === 'create_directory');
+    const result = await tool.handler({ name: 'No audit no mutation' });
+
+    assert.equal(result.isError, true);
+    assert.match(result.content[0].text, /MCP audit log unavailable before create_directory/);
+    assert.equal(calls.length, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

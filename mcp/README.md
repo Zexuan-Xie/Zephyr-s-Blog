@@ -25,7 +25,7 @@ To start the stdio server after dependencies are installed:
 
 ```bash
 cd mcp
-BLOG_MCP_ENABLED=true node src/server.mjs
+BLOG_MCP_ENABLED=true node --import tsx src/server.ts
 ```
 
 Registered tools: `list_content_tree`, `get_file`, `search_files`, `create_directory`, `create_file`, `update_file_content`, `update_file_settings`, `publish_file`, `unpublish_file`, `move_node`, `reorder_children`, `delete_node`, `upload_asset`, `delete_asset`, `list_assets`, `rebuild_search_index`, `export_backup`, plus `health_check`.

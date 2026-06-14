@@ -166,12 +166,13 @@ test('stdio smoke: export_backup safe and rejected labels are audited', async ()
   }
 
   const auditLines = (await readFile(auditLogPath, 'utf8')).trim().split('\n').map((line) => JSON.parse(line));
-  assert.deepEqual(auditLines.map((line) => [line.tool, line.result]), [
+  assert.deepEqual(auditLines.filter((line) => line.result !== 'started').map((line) => [line.tool, line.result]), [
     ['export_backup', 'ok'],
     ['export_backup', 'error'],
     ['export_backup', 'error'],
     ['export_backup', 'error'],
   ]);
+  assert.equal(auditLines.filter((line) => line.tool === 'export_backup' && line.result === 'started').length, 4);
 });
 
 

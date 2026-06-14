@@ -3,6 +3,7 @@ import type { BlogMcpConfig } from "./config.js";
 import { assertEnabled } from "./config.js";
 import { summarizeArgs, writeAudit } from "./audit.js";
 import type { BlogBackendClient } from "./backendClient.js";
+import { BackupExportService } from "./backup.js";
 
 export interface ToolResultContent {
   type: "text";
@@ -62,22 +63,43 @@ export async function runGuardedTool<T extends Record<string, unknown>>(
   }
 
   try {
-    const result = await operation();
     await writeAudit(config.auditLogPath, {
       tool: toolName,
       destructive,
       args_summary: summarizeArgs(args),
-      result: "ok",
+      result: "started",
     });
+  } catch (error) {
+    return errorResult(new Error(`MCP audit log unavailable before ${toolName}: ${error instanceof Error ? error.message : String(error)}`));
+  }
+
+  try {
+    const result = await operation();
+    try {
+      await writeAudit(config.auditLogPath, {
+        tool: toolName,
+        destructive,
+        args_summary: summarizeArgs(args),
+        result: "ok",
+      });
+    } catch {
+      // A durable started event already exists, so do not turn a successful
+      // backend operation into a client-visible failure if final audit append
+      // fails after the operation returns.
+    }
     return result;
   } catch (error) {
-    await writeAudit(config.auditLogPath, {
-      tool: toolName,
-      destructive,
-      args_summary: summarizeArgs(args),
-      result: "error",
-      message: error instanceof Error ? error.message : String(error),
-    });
+    try {
+      await writeAudit(config.auditLogPath, {
+        tool: toolName,
+        destructive,
+        args_summary: summarizeArgs(args),
+        result: "error",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    } catch {
+      // Preserve the original operation/input error for the MCP client.
+    }
     return errorResult(error);
   }
 }
@@ -108,7 +130,11 @@ function guarded<T extends ZodRawShape>(
     });
 }
 
-export function buildToolDefinitions(config: BlogMcpConfig, client: BlogBackendClient): ToolDefinition[] {
+export function buildToolDefinitions(
+  config: BlogMcpConfig,
+  client: BlogBackendClient,
+  backupService = new BackupExportService(config.backupDir),
+): ToolDefinition[] {
   return [
     tool(
       "health_check",
@@ -162,7 +188,7 @@ export function buildToolDefinitions(config: BlogMcpConfig, client: BlogBackendC
       { label: z.string().optional() },
       false,
       guarded(config, client, "export_backup", false, z.object({ label: z.string().optional() }), (api, args) =>
-        api.exportBackup({ backupDir: config.backupDir, label: args.label }),
+        backupService.exportBackup(api, args.label),
       ),
     ),
   ];
